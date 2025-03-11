@@ -1,6 +1,6 @@
-# kTSVR-Tauri (Tauri + React + Vite + Typescript + Rust) Template
+# ProGit
 
-This repository serves as a template for creating desktop applications using React and Typescript, with Rust as the backend. It includes some common configurations and assets I commonly use in my projects.
+ProGit is a first of its kind version control software build specifically for audio professionals. It is built using Tauri, React and Typescript.
 
 ## Setup
 

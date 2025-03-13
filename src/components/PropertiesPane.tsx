@@ -81,7 +81,7 @@ const PropertiesPane: React.FC = () => {
               <br />
               <br />
 
-              There may be cached information available for this file. To preview, update, or use this file, please locate it or stop tracking it.
+              There may be cached information available for this file, but we can't help you update it! To preview or update this file tell us where to find it, or stop tracking changes.
               <br />
               <br />
               
@@ -105,7 +105,8 @@ const PropertiesPane: React.FC = () => {
         </div>
       ) : (
         <div className="no-selection">
-          <p>No file selected.</p>
+          <h4>Nothing Selected</h4>
+          <h5>Select a file from the list to view its properties</h5>
         </div>
       )}
     </div>

@@ -65,3 +65,12 @@
 .warning-btn:hover {
     background-color: #2a2a2a;
 }
+
+.no-selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100%;
+    user-select: none;
+}

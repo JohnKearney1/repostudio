@@ -3,7 +3,7 @@ import { FilePlusIcon, ArchiveIcon, ReloadIcon, CubeIcon } from '@radix-ui/react
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';
-import { useFileStore, FileMetadata } from './store';
+import { useFileStore, FileMetadata, usePopupStore } from './store';
 import './FilePane.css';
 
 const FilePane: React.FC = () => {
@@ -102,11 +102,12 @@ const FilePane: React.FC = () => {
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+
   return (
     <div className="file-pane">
       <div className="toolbar">
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%', borderBottom: '1px solid black' }}>
-          <button className="toolbar-button">
+          <button className="toolbar-button" onClick={() => usePopupStore.getState().setVisible(true)}>
             <CubeIcon style={{ paddingRight: '0.75rem', width: '20px', height: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', textAlign: 'left' }}>
               <h4>Repository</h4>

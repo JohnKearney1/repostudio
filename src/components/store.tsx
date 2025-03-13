@@ -25,3 +25,14 @@ export const useFileStore = create<FileStore>((set) => ({
   selectedFile: null,
   setSelectedFile: (file: FileMetadata | null) => set({ selectedFile: file }),
 }));
+
+// state to track the visibility of the popup
+interface PopupStore {
+  isVisible: boolean;
+  setVisible: (visible: boolean) => void;
+}
+
+export const usePopupStore = create<PopupStore>((set) => ({
+  isVisible: false,
+  setVisible: (visible: boolean) => set({ isVisible: visible }),
+}));

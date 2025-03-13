@@ -2,7 +2,10 @@ import "./App.css";
 import FilePane from "./components/FilePane";
 import WindowBar from "./components/WindowBar";
 import PropertiesPane from "./components/PropertiesPane";
+import Popup from "./components/Popup";
 import { useEffect } from "react";
+import { usePopupStore } from "./components/store";
+import RepositorySelector from "./components/RepositorySelector";
 
 function App() {
 
@@ -21,6 +24,8 @@ function App() {
     };
   }, []);  
 
+  const { isVisible } = usePopupStore();
+
   return (
     <div className="app">
         {/* Top of the App (Column) */}
@@ -28,6 +33,10 @@ function App() {
         
         {/* Main Content (Row) */}
         <div className="main-content">
+          {/* Popup for Repositories */}
+          <Popup isVisible={isVisible}>
+            <RepositorySelector />
+          </Popup>
           {/* Left Content*/}
           <div className="left-content">
             <FilePane />

@@ -1,6 +1,5 @@
 use rusqlite::{params, Connection, Result};
 use std::path::PathBuf;
-use chrono::Utc;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use serde_json;
@@ -18,6 +17,7 @@ pub struct FileMetadata {
     pub quality: Option<String>,
     pub samplerate: Option<i32>,
     pub tags: Option<String>, // Stored as a JSON string (list of tags)
+    pub accessible: bool,
 }
 
 /// Returns the path where the database will be stored.
@@ -98,17 +98,23 @@ pub fn get_files() -> Result<Vec<FileMetadata>> {
     )?;
     
     let file_iter = stmt.query_map([], |row| {
+        // Get the file path
+        let path: String = row.get(3)?;
+        // Check if the file exists on disk
+        let accessible = std::path::Path::new(&path).exists();
+        
         Ok(FileMetadata {
             id: row.get(0)?,
             name: row.get(1)?,
             encoding: row.get(2)?,
-            path: row.get(3)?,
+            path,
             precedence: row.get(4)?,
             other_versions: row.get(5)?,
             spectrogram: row.get(6)?,
             quality: row.get(7)?,
             samplerate: row.get(8)?,
             tags: row.get(9)?,
+            accessible,
         })
     })?;
     
@@ -118,6 +124,16 @@ pub fn get_files() -> Result<Vec<FileMetadata>> {
     }
     Ok(files)
 }
+
+// Check if a file record exists in the database by its path.
+pub fn file_exists(path: &str) -> Result<bool> {
+    let conn = establish_connection()?;
+    // SQLite returns 1 if exists, 0 otherwise.
+    let mut stmt = conn.prepare("SELECT EXISTS(SELECT 1 FROM files WHERE path = ?1)")?;
+    let exists: i32 = stmt.query_row(params![path], |row| row.get(0))?;
+    Ok(exists != 0)
+}
+
 
 /// Deletes a file record by its id.
 pub fn delete_file(id: &str) -> Result<()> {

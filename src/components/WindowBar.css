@@ -1,0 +1,80 @@
+.min-btn {
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+    color: white;
+    width: 0.75rem;
+    height: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.min-btn:hover {
+    background-color: #27c93f;
+    color: black;
+}
+
+.max-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+    color: white;
+    width: 0.75rem;
+    height: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.max-btn:hover {
+    background-color: #ffbd2e;
+    color: black
+}
+
+.close-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+    color: white;
+    width: 0.75rem;
+    height: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background-color: #ff5f56;
+    color: black;
+}
+
+.window-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+  background-color: #1a1a1a;
+  color: white;
+}
+
+.window-title {
+    user-select: none;
+    font-size: 0.8rem;
+    font-weight: 300;
+    padding-left: 0.5rem;
+}
+
+.window-controls {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-direction: row;
+}

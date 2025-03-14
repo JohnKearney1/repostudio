@@ -6,14 +6,24 @@ export interface FileMetadata {
   name: string;
   encoding: string;
   path: string;
-  precedence?: string;
-  other_versions?: string;
-  spectrogram?: string;
-  quality?: string;
-  samplerate?: number;
-  tags?: string;
-  accessible: boolean; // Add this line
+  precedence: number | null;
+  related_files: string | null;
+  spectrogram: string | null;
+  quality: string | null;
+  samplerate: number | null;
+  tags: string | null;
+  date_created: string;
+  date_modified: string;
+  audio_fingerprint: string | null;
+  accessible: boolean;
 }
+
+export interface Repository {
+  id: string;
+  name: string;
+  description: string;
+}
+
 
 
 interface FileStore {
@@ -35,4 +45,18 @@ interface PopupStore {
 export const usePopupStore = create<PopupStore>((set) => ({
   isVisible: false,
   setVisible: (visible: boolean) => set({ isVisible: visible }),
+}));
+
+interface RepositoryStore {
+  repositories: Repository[];
+  setRepositories: (repos: Repository[]) => void;
+  selectedRepository: Repository | null;
+  setSelectedRepository: (repo: Repository | null) => void;
+}
+
+export const useRepositoryStore = create<RepositoryStore>((set) => ({
+  repositories: [],
+  setRepositories: (repos: Repository[]) => set({ repositories: repos }),
+  selectedRepository: null,
+  setSelectedRepository: (repo: Repository | null) => set({ selectedRepository: repo }),
 }));

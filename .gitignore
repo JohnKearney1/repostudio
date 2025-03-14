@@ -35,4 +35,5 @@ dist-ssr
 *.sw?
 
 # Tauri DB 
-/src-tauri/file_data.db
+/src-tauri/*.db
+/src-tauri/*.sqlite

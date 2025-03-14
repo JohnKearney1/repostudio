@@ -1,0 +1,106 @@
+.repo-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 1rem;
+
+}
+
+.repo-info {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #202020;
+    border: none;
+    color: white;
+    border-radius: 0.5rem;
+}
+
+.repo-desc {
+    background-color: #202020;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s;
+    resize: none;
+}
+
+.repo-desc:focus {
+    outline: none;
+}
+
+.repo-btn-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    background-color: #202020;
+    z-index: 1;
+    padding: 1rem;
+}
+
+.repo-btn-container2 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+}
+
+.repo-btn {
+    margin: 0;
+    padding: 0.75rem;
+    border: none;
+    background-color: #1a1a1a;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+.repo-btn:hover {
+    background-color: #2a2a2a;
+}
+
+.repo-btn2 {
+    background-color: #202020;
+    color: white;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    padding: 0.5rem;
+    overflow: auto;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    text-wrap: nowrap;
+    text-align: left;
+    transition: background-color 0.3s;
+}
+
+.repo-btn2:hover {
+    background-color: #1a1a1a;
+}

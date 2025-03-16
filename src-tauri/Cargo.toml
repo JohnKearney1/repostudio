@@ -28,3 +28,6 @@ chrono = "0.4.40"
 uuid = "1.15.1"
 tauri-plugin-fs = "2.0.0"
 regex = "1"
+anyhow = "1.0"
+symphonia = { version = "0.5", features = ["default", "mp3", "wav", "flac", "ogg"] }
+rusty-chromaprint = "0.3"

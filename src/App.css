@@ -86,6 +86,13 @@ h6 {
 
 .main-content {
   display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+
+.panel-container  {
+  display: flex;
   flex-direction: row;
   flex: 1;
 }

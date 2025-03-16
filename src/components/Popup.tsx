@@ -1,13 +1,13 @@
 import React from 'react';
-import { usePopupStore } from './store';
 import { motion } from 'framer-motion';
 
 interface PopupProps {
     isVisible: boolean;
     children: React.ReactNode;
+    setVisible: (visible: boolean) => void;
 }
 
-const Popup: React.FC<PopupProps> = ({ isVisible, children }) => {
+const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
     if (!isVisible) return null;
 
     const overlayStyle: React.CSSProperties = {
@@ -34,7 +34,9 @@ const Popup: React.FC<PopupProps> = ({ isVisible, children }) => {
     };
 
     return (
-        <motion.div style={overlayStyle} onClick={() => usePopupStore.getState().setVisible(false)}
+        <motion.div style={overlayStyle} onClick={
+            () => setVisible(false)
+        }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

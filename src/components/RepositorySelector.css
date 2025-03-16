@@ -17,6 +17,7 @@
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
+    padding-bottom: 0;
     background-color: #202020;
     border: none;
     color: white;
@@ -76,6 +77,7 @@
     gap: 0.5rem;
     width: 100%;
     transition: background-color 0.3s;
+    border-radius: 0.5rem;
 }
 
 .repo-btn:hover {
@@ -104,3 +106,52 @@
 .repo-btn2:hover {
     background-color: #1a1a1a;
 }
+
+.repo-btn2.selected {
+    color: rgb(43, 228, 43);
+    background-color: #2a2a2a;
+}
+
+.repo-name-input {
+    background-color: #202020;
+    border: none;
+    color: white;
+    border-radius: 0.5rem;
+    width: 70%;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.repo-name-input:focus {
+    outline: none;
+}
+
+.repo-name-input-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+    background-color: #202020;
+  }
+  
+  .saved-alert {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    position: absolute; 
+    top: 50%;
+    right: 0%; 
+    transform: translateY(-50%);
+    background-color: #4caf50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+    opacity: 0.9;
+  }
+  

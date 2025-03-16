@@ -1,12 +1,31 @@
 .audio-player {
     display: flex;
     align-items: center;
+    flex-direction: column;
     gap: 1rem;
     background-color: #1a1a1a;
-    padding: 0.69rem 0rem;
-    flex: 1;
-    width: 95%;
+    padding: 0.5rem 0 2rem ;
+    width: 100%;
+    user-select: none;
   }
+.audio-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  flex-direction: row;
+
+}
+
+.audio-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  flex-direction: row;
+}
   
   .audio-player button {
     background: none;

@@ -1,43 +1,109 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
+import { useFileStore } from './store';
+import { readFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import './AudioPlayer.css';
 
-interface AudioPlayerProps {
-  src: string;
+interface StoredAudio {
+  fileId: string;
+  url: string;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
+const LOCAL_AUDIO_KEY = 'audioPlayerUrl';
+
+const AudioPlayer: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // If multiple files are selected, use the first one.
+  const { selectedFiles } = useFileStore();
+  const singleSelected = selectedFiles[0] || null;
+
+  // State to hold the generated audio URL.
+  const [audioUrl, setAudioUrl] = useState<string>('');
+
+  // Helper: save audio URL info to localStorage.
+  const saveAudioInfo = (fileId: string, url: string) => {
+    const data: StoredAudio = { fileId, url };
+    localStorage.setItem(LOCAL_AUDIO_KEY, JSON.stringify(data));
+  };
+
+  // Helper: retrieve stored audio info.
+  const getStoredAudioInfo = (): StoredAudio | null => {
+    const stored = localStorage.getItem(LOCAL_AUDIO_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored) as StoredAudio;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    // Reset audioUrl on every change.
+    setAudioUrl('');
+    if (singleSelected) {
+      const storedInfo = getStoredAudioInfo();
+      if (storedInfo && storedInfo.fileId === singleSelected.id) {
+        // If we have a saved URL for this file, use it.
+        setAudioUrl(storedInfo.url);
+        console.log('Using stored audio url:', storedInfo.url);
+      } else {
+        // Otherwise, read the file and generate a new Blob URL.
+        readFile(singleSelected.path, { baseDir: BaseDirectory.Audio })
+          .then((file) => {
+            const url = URL.createObjectURL(new Blob([file]));
+            setAudioUrl(url);
+            console.log('Generated new audio url:', url);
+            // Save to localStorage for future use.
+            saveAudioInfo(singleSelected.id, url);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    }
+  }, [singleSelected?.id, singleSelected?.audio_fingerprint]);
+
+  // Reset playback state when audioUrl changes.
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+    }
+  }, [audioUrl]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
+    
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
     };
-
+    
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
     };
-
+    
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
-
-    // Cleanup event listeners on unmount
+    
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [src]);
+  }, [audioUrl]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
-
+    
     if (isPlaying) {
       audio.pause();
     } else {
@@ -46,16 +112,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const newTime = parseFloat(event.target.value);
+    
+    const newTime = parseFloat(e.target.value);
     audio.currentTime = newTime;
     setCurrentTime(newTime);
   };
 
-  // Format time in minutes:seconds format
   const formatTime = (time: number): string => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -64,22 +129,38 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
 
   return (
     <div className="audio-player">
-      <audio ref={audioRef} src={src} preload="metadata" />
-      <button onClick={togglePlayPause}
-        className="play-pause-button"
-      >
-        {isPlaying ? (<PauseIcon height={'20px'} width={'20px'}/>) : (<PlayIcon height={'20px'} width={'20px'}/>)}
-      </button>
-      <input
-        type="range"
-        min="0"
-        max={duration}
-        step="0.1"
-        value={currentTime}
-        onChange={handleSeek}
-      />
-      <div className="time-display">
-        {formatTime(currentTime)} / {formatTime(duration)}
+      <div className="audio-controls">
+        {audioUrl && (
+          <audio ref={audioRef} src={audioUrl} preload="metadata" />
+        )}
+        <button onClick={togglePlayPause} className="play-pause-button">
+          {isPlaying ? (
+            <PauseIcon height="20px" width="20px" />
+          ) : (
+            <PlayIcon height="20px" width="20px" />
+          )}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max={duration}
+          step="0.1"
+          value={currentTime}
+          onChange={handleSeek}
+        />
+        <div className="time-display">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
+      </div>
+      <div className="audio-info">
+        {singleSelected ? (
+          <>
+            <h4 className="audio-title">{singleSelected.name}</h4>
+            <h5 className="audio-path">{singleSelected.encoding}</h5>
+          </>
+        ) : (
+          <div className="no-audio-selected">No audio file selected</div>
+        )}
       </div>
     </div>
   );

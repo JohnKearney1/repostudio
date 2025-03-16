@@ -96,3 +96,67 @@
     background-color: #3a3a3a;
 }
   
+.progress-item {
+    background-color: #202020;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    width: 100%;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+    border-top: black solid 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sort-options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    border-bottom: black solid 1px;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    background-color: #1a1a1a;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    appearance: none; /* Remove default browser styling */
+    width: 100%;
+    border: none;
+  }
+  
+  /* When focused, darken the background slightly */
+  .dropdown-menu:focus,
+  .dropdown-menu:hover {
+    background-color: #2a2a2a;
+    outline: none;
+  }
+  
+  /* Ascending/descending toggle button styling */
+  .sort-toggle-button {
+    background-color: #1a1a1a;
+    color: white;
+    padding: 0.5rem;
+    border: none;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 0.25rem;
+  }
+  
+  /* Hover effect for the toggle button */
+  .sort-toggle-button:hover {
+    background-color: #2a2a2a;
+  }
+  

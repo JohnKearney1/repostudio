@@ -1,6 +1,24 @@
 // fileStore.ts
 import { create } from 'zustand';
 
+interface FingerprintProgressState {
+  current: number;
+  total: number;
+  initProgress: (total: number) => void;
+  increment: () => void;
+  updateTotal: (newTotal: number) => void;
+  clear: () => void;
+}
+
+export const useFingerprintStore = create<FingerprintProgressState>((set) => ({
+  current: 0,
+  total: 0,
+  initProgress: (total: number) => set({ current: 0, total }),
+  increment: () => set((state) => ({ current: state.current + 1 })),
+  updateTotal: (newTotal: number) => set(() => ({ total: newTotal })),
+  clear: () => set({ current: 0, total: 0 }),
+}));
+
 export interface FileMetadata {
   id: string;
   name: string;
@@ -24,19 +42,23 @@ export interface Repository {
   description: string;
 }
 
-
-
+// Updated FileStore to track multiple selected files.
 interface FileStore {
-  selectedFile: FileMetadata | null;
-  setSelectedFile: (file: FileMetadata | null) => void;
+  selectedFiles: FileMetadata[];
+  setSelectedFiles: (files: FileMetadata[]) => void;
+  allFiles: FileMetadata[];
+  setAllFiles: (files: FileMetadata[]) => void;
 }
 
 export const useFileStore = create<FileStore>((set) => ({
-  selectedFile: null,
-  setSelectedFile: (file: FileMetadata | null) => set({ selectedFile: file }),
+  selectedFiles: [],
+  setSelectedFiles: (files: FileMetadata[]) => set({ selectedFiles: files }),
+  allFiles: [],
+  setAllFiles: (files: FileMetadata[]) => set({ allFiles: files
+  }),
 }));
 
-// state to track the visibility of the popup
+// Popup store remains unchanged.
 interface PopupStore {
   isVisible: boolean;
   setVisible: (visible: boolean) => void;
@@ -47,6 +69,7 @@ export const usePopupStore = create<PopupStore>((set) => ({
   setVisible: (visible: boolean) => set({ isVisible: visible }),
 }));
 
+// Repository store remains unchanged.
 interface RepositoryStore {
   repositories: Repository[];
   setRepositories: (repos: Repository[]) => void;

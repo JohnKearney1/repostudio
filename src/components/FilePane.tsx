@@ -1,71 +1,101 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FilePlusIcon, ArchiveIcon, CubeIcon, PieChartIcon, DoubleArrowDownIcon, DoubleArrowUpIcon, RocketIcon
- } from '@radix-ui/react-icons';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
+import './FilePane.css';
+import { fileAddScript } from '../scripts/FileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';
-import { useFileStore, FileMetadata, usePopupStore, useRepositoryStore, useFingerprintStore } from './store';
-import './FilePane.css';
-import { motion } from 'framer-motion';
-
-
-// SCRIPTS
-import { loadFilesScript, fileAddScript } from '../scripts/FileOperations';
-
-
-const LOCAL_SELECTION_KEY = 'selectedFileIds';
+import { 
+  FilePlusIcon, 
+  ArchiveIcon, 
+  CubeIcon, 
+  PieChartIcon, 
+  DoubleArrowDownIcon, 
+  DoubleArrowUpIcon, 
+  RocketIcon 
+} from '@radix-ui/react-icons';
+import { 
+  useFileStore, 
+  FileMetadata, 
+  usePopupStore, 
+  useRepositoryStore, 
+  useFingerprintStore,
+  useFingerprintQueueStore 
+} from './store';
 
 const FilePane: React.FC = () => {
-
-  // Holds the selected repository and the list of repositorie
+  /* State / Store Declarations */
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
-  const setSelectedRepository = useRepositoryStore((state) => state.setSelectedRepository);
-  const allRepositories = useRepositoryStore((state) => state.repositories);
-
-  // Load files for the selected repository
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
   const allFiles = useFileStore((state) => state.allFiles);
-
-  useEffect(() => {
-    console.log("Repositories: " + selectedRepository);
-    console.log("Files: " + useFileStore.getState().allFiles);
-  }, []);
-
-  useEffect(() => {
-    if (selectedRepository) {
-      // Load files for the new repository
-      loadFilesScript();
-    }
-  }, [selectedRepository]);
-  
-  
-
-  // Function to open settings
-  const handleOpenSettings = () => {
-    console.log("Opening settings...");
-  }
-  
-  
-
-  // const [files, setFiles] = useState<FileMetadata[]>([]);
+  const currentFingerprintQueueProgress = useFingerprintStore((state) => state.current); // Fingerprint progress state
+  const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total); // Fingerprint progress state
+  const { addToQueue } = useFingerprintQueueStore(); // Fingerprint queue state
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [sortOption, setSortOption] = useState<'alphabetical' | 'dateCreated' | 'dateModified' | 'encoding'>('alphabetical');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // state for tracking folder add progress.
-  const [folderProgress, setFolderProgress] = useState<{ current: number; total: number } | null>(null);
+  // useRef to store the previous repository value
+  const prevRepositoryRef = useRef(selectedRepository);
 
-  // Fingerprint progress store.
-  const { current, total, increment, clear, updateTotal } = useFingerprintStore();
+  /* Component Mount */
+  useEffect(() => {
+    console.log("Repositories: " + selectedRepository);
+    console.log("Files: " + useFileStore.getState().allFiles);
+  }, []);
 
-  // Set filteredFiles based on the loaded files from the store
+  // When the repository changes, load files (while preserving the current selection)
+  useEffect(() => {
+    // Check if repository changed
+    if (prevRepositoryRef.current?.id !== selectedRepository?.id) {
+      console.log("Repository changed:", selectedRepository);
+      // Update ref to the new repository.
+      prevRepositoryRef.current = selectedRepository;
+      // Capture the current selection and load files.
+      const preservedSelection = [...selectedFiles];
+      loadFiles(preservedSelection);
+    }
+  }, [selectedRepository, selectedFiles]);
+
+  /// Filter files by search query.
   const filteredFiles = allFiles.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  /// File loading function that preserves selection.
+  const loadFiles = async (preservedSelection: FileMetadata[]) => {
+    const { setAllFiles, setSelectedFiles } = useFileStore.getState();
+    const { selectedRepository } = useRepositoryStore.getState();
+    const repoId = selectedRepository?.id;
+
+    try {
+      if (!repoId) {
+        console.warn("No repository selected.");
+        setAllFiles([]);
+        setSelectedFiles([]);
+        return;
+      }
+      console.log("Loading files from repository:", repoId);
+      const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
+        repoId,
+      });
+      console.log("Files returned from backend:", newFiles);
+      // Update full file list.
+      setAllFiles(newFiles);
+      // Reapply the selection state.
+      const preserved = preservedSelection.filter((file) =>
+        newFiles.some((newFile) => newFile.id === file.id)
+      );
+      setSelectedFiles(preserved);
+    } catch (error) {
+      console.error("Failed to load files:", error);
+    }
+  };
+
+  // Sorting logic for the files.
   const sortedFiles = useMemo(() => {
     const sorted = [...filteredFiles].sort((a, b) => {
       let comp = 0;
@@ -90,12 +120,7 @@ const FilePane: React.FC = () => {
     return sorted;
   }, [filteredFiles, sortOption, sortOrder]);
 
-
-
-  // useEffect(() => {
-  //   localStorage.setItem(LOCAL_SELECTION_KEY, JSON.stringify(selectedFiles.map((f) => f.id)));
-  // }, [selectedFiles]);
-
+  // File add and folder add functions (unchanged)
   const handleFileAdd = async () => {
     try {
       const selected = await open({
@@ -111,7 +136,7 @@ const FilePane: React.FC = () => {
         console.log("No file selected");
         return;
       }
-
+      // Further logic for file adding...
     } catch (error) {
       console.error(error);
     }
@@ -144,133 +169,114 @@ const FilePane: React.FC = () => {
           path: `${selectedDir}/${file.name}`,
         }));
       console.log(`Found ${audioFiles.length} audio files`);
-    
+
       await Promise.all(
         audioFiles.map((file) => {
           const filePath = (file as any).path;
-          fileAddScript(selectedRepository, filePath, () => {});
+          return fileAddScript(selectedRepository, filePath, () => {});
         })
       );
-      // After processing all files, clear the progress and refresh.
-      setFolderProgress(null);
-      await loadFilesScript();
       console.log("Files should now be loaded");
+      const preservedSelection = [...selectedFiles];
+      await loadFiles(preservedSelection);
     } catch (error) {
       console.error("Failed to add folder:", error);
     }
   };
 
+  const handleOpenSettings = () => {
+    console.log("Opening settings...");
+  };
 
+  // Updated handleFileSelect using a functional update
   const handleFileSelect = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => {
+      // Only process genuine click events.
+      if (e.detail === 0) return;
+  
+      // Always read the most recent selected files.
+      const latestSelected = useFileStore.getState().selectedFiles;
       let newSelection: FileMetadata[] = [];
+  
       if (e.shiftKey) {
-        if (anchorIndex === null) {
-          newSelection = [sortedFiles[index]];
-          setAnchorIndex(index);
-          setLastSelectedIndex(index);
-        } else {
-          const start = Math.min(anchorIndex, index);
-          const end = Math.max(anchorIndex, index);
-          newSelection = sortedFiles.slice(start, end + 1);
-          setLastSelectedIndex(index);
-        }
+        // Range selection: use the existing anchor (or fallback to current click)
+        const currentAnchor = anchorIndex !== null ? anchorIndex : index;
+        setAnchorIndex(currentAnchor);
+        setLastSelectedIndex(index);
+        newSelection = sortedFiles.slice(
+          Math.min(currentAnchor, index),
+          Math.max(currentAnchor, index) + 1
+        );
       } else if (e.ctrlKey || e.metaKey) {
-        const alreadySelected = selectedFiles.some((f) => f.id === sortedFiles[index].id);
-        if (alreadySelected) {
-          newSelection = selectedFiles.filter((f) => f.id !== sortedFiles[index].id);
+        // When ctrl/meta is held down, toggle the clicked file without clearing others.
+        console.log("latestSelected:", latestSelected);
+        if (latestSelected.some((f) => f.id === sortedFiles[index].id)) {
+          newSelection = latestSelected.filter((f) => f.id !== sortedFiles[index].id);
         } else {
-          newSelection = [...selectedFiles, sortedFiles[index]];
-          if (selectedFiles.length === 0) {
+          console.log("latestSelected:", latestSelected);
+          newSelection = [...latestSelected, sortedFiles[index]];
+          console.log("New selection:", newSelection);
+          if (latestSelected.length === 0) {
             setAnchorIndex(index);
           }
         }
         setLastSelectedIndex(index);
       } else {
-        newSelection = [sortedFiles[index]];
+        // No modifier keys: select only the clicked file.
         setAnchorIndex(index);
         setLastSelectedIndex(index);
+        newSelection = [sortedFiles[index]];
       }
   
-      // Immediately update localStorage with the new selection.
-      localStorage.setItem(
-        LOCAL_SELECTION_KEY,
-        JSON.stringify(newSelection.map((f) => f.id))
-      );
-      // Then update state.
-      setSelectedFiles(newSelection);
+      // Only update if the selection has actually changed.
+      if (JSON.stringify(newSelection) !== JSON.stringify(latestSelected)) {
+        setSelectedFiles(newSelection);
+      }
   
-      // If the file needs a fingerprint, trigger computation.
+      // Always add the file to the fingerprint queue if needed.
       if (!file.audio_fingerprint && selectedRepository) {
-        const missingCount = newSelection.filter((f) => !f.audio_fingerprint).length;
-        updateTotal(missingCount);
-      
-        invoke("compute_fingerprint_command", {
-          repoId: selectedRepository.id,
-          fileId: file.id,
-        })
-          .then(() => {
-            console.log(`Fingerprint computed for file ${file.id}`);
-            increment();
-            const state = useFingerprintStore.getState();
-            if (state.current >= state.total) {
-              clear();
-            }
-
-            // Set the files using the store
-            useFileStore.setState((state) => {
-              return {
-                ...state,
-                allFiles: state.allFiles.map((f) => f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f)
-              }
-            });
-          })
-          .catch((error) => {
-            console.error("Failed to compute fingerprint:", error);
-          });
+        addToQueue(file);
       }
-      
     },
-    [
-      anchorIndex,
-      sortedFiles,
-      selectedFiles,
-      selectedRepository,
-      updateTotal,
-      increment,
-      clear,
-      setSelectedFiles,
-    ]
+    [sortedFiles, anchorIndex, selectedRepository, addToQueue, setSelectedFiles]
   );
   
   
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!sortedFiles.length) return;
-    e.preventDefault();
-    let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
-    let newIndex = currentIndex;
-    if (e.key === 'ArrowDown') {
-      newIndex = Math.min(sortedFiles.length - 1, currentIndex + 1);
-    } else if (e.key === 'ArrowUp') {
-      newIndex = Math.max(0, currentIndex - 1);
-    }
-    if (e.shiftKey) {
-      if (anchorIndex === null) {
+
+
+  // Keyboard navigation remains unchanged.
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!sortedFiles.length) return;
+      e.preventDefault();
+      // Get the most recent selection from our ref
+      let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
+      let newIndex = currentIndex;
+      if (e.key === 'ArrowDown') {
+        newIndex = Math.min(sortedFiles.length - 1, currentIndex + 1);
+      } else if (e.key === 'ArrowUp') {
+        newIndex = Math.max(0, currentIndex - 1);
+      }
+      if (e.shiftKey) {
+        if (anchorIndex === null) {
+          setAnchorIndex(newIndex);
+          setLastSelectedIndex(newIndex);
+          setSelectedFiles([sortedFiles[newIndex]]);
+        } else {
+          const start = Math.min(anchorIndex, newIndex);
+          const end = Math.max(anchorIndex, newIndex);
+          setLastSelectedIndex(newIndex);
+          setSelectedFiles(sortedFiles.slice(start, end + 1));
+        }
+      } else {
         setAnchorIndex(newIndex);
         setLastSelectedIndex(newIndex);
         setSelectedFiles([sortedFiles[newIndex]]);
-      } else {
-        const start = Math.min(anchorIndex, newIndex);
-        const end = Math.max(anchorIndex, newIndex);
-        setSelectedFiles(sortedFiles.slice(start, end + 1));
-        setLastSelectedIndex(newIndex);
       }
-    } else {
-      setAnchorIndex(newIndex);
-      setLastSelectedIndex(newIndex);
-      setSelectedFiles([sortedFiles[newIndex]]);
-    }
-  };
+    },
+    [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
+  );
+  
   
   return (
     <div className="file-pane">
@@ -308,7 +314,7 @@ const FilePane: React.FC = () => {
       />
       <div className="sort-options">
         <button className="sort-toggle-button" onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
-          {sortOrder === 'asc' ? (<DoubleArrowDownIcon />) : (<DoubleArrowUpIcon />)}
+          {sortOrder === 'asc' ? <DoubleArrowDownIcon /> : <DoubleArrowUpIcon />}
         </button>
         <select className="dropdown-menu" value={sortOption} onChange={(e) => setSortOption(e.target.value as any)}>
           <option value="alphabetical">Alphabetic</option>
@@ -317,12 +323,10 @@ const FilePane: React.FC = () => {
           <option value="encoding">By Encoding</option>
         </select>
       </div>
-
       <div className="file-view" tabIndex={0} onKeyDown={handleKeyDown}>
         {sortedFiles.length > 0 ? (
           <div className="file-list">
-            {/* Render progress bar if fingerprinting is in progress */}
-            {total > 0 && (
+            {totalFingerprintQueuedItems > 0 && (
               <div className="list-item progress-item" style={{ position: 'sticky', top: 0, backgroundColor: '#1a1a1a', borderBottom: '1px solid black' }}>
                 <motion.div
                   style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -331,23 +335,8 @@ const FilePane: React.FC = () => {
                 >
                   <PieChartIcon />
                 </motion.div>
-                Fingerprinting {current}/{total}
+                Fingerprinting {currentFingerprintQueueProgress}/{totalFingerprintQueuedItems}
               </div>
-            )}
-            {/* Render folder-add progress if in progress */}
-            {folderProgress && folderProgress.total > 0 && (
-              <>
-                <motion.div
-                style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                    <PieChartIcon />
-                  </motion.div>
-                <div className="list-item progress-item" style={{ position: 'sticky', top: 0, backgroundColor: '#1a1a1a', borderBottom: '1px solid black' }}>
-                  Adding Files {folderProgress.current}/{folderProgress.total}
-                </div>
-              </>
             )}
             {sortedFiles.map((file, index) => (
               <div
@@ -362,15 +351,7 @@ const FilePane: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-              flexDirection: 'column',
-            }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column' }}>
             <h4>Nothing's Here!</h4>
             <br />
             <h5>Try adding a file or folder</h5>

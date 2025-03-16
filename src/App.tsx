@@ -10,14 +10,14 @@ import { useFileStore } from "./components/store";
 import AudioPlayer from "./components/AudioPlayer";
 
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
-import { loadFilesScript } from "./scripts/FileOperations";
+// import { loadFilesScript } from "./scripts/FileOperations";
 
 function App() {
 
   // Load repositories and set the first repository as selected.
   useEffect(() => {
+    console.warn("LOADING REPOSITORIES SCRIPT - APP.tsx - USE EFFECT");
     loadRepositoriesScript();
-    loadFilesScript();
   }, []);
 
   // If there is one or more selected files, show the audio player component.

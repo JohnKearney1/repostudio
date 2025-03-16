@@ -22,7 +22,7 @@ export const loadRepositoriesScript = async () => {
         repos = await invoke("get_repositories_command");
       }
   
-      console.log("Repositories returned from backend:", repos);
+      console.warn("LOAD REPOSITORIES SCRIPT FINISHED: SETTING REPOSITORIES AND SELECTED REPOSITORY");
       setRepositories(repos);
       setSelectedRepository(repos[0]);
     } catch (error) {

@@ -44,22 +44,17 @@ const AudioPlayer: React.FC = () => {
   };
 
   useEffect(() => {
-    // Reset audioUrl on every change.
     setAudioUrl('');
     if (singleSelected) {
       const storedInfo = getStoredAudioInfo();
       if (storedInfo && storedInfo.fileId === singleSelected.id) {
-        // If we have a saved URL for this file, use it.
         setAudioUrl(storedInfo.url);
-        console.log('Using stored audio url:', storedInfo.url);
       } else {
-        // Otherwise, read the file and generate a new Blob URL.
         readFile(singleSelected.path, { baseDir: BaseDirectory.Audio })
           .then((file) => {
             const url = URL.createObjectURL(new Blob([file]));
             setAudioUrl(url);
             console.log('Generated new audio url:', url);
-            // Save to localStorage for future use.
             saveAudioInfo(singleSelected.id, url);
           })
           .catch((error) => {
@@ -67,7 +62,8 @@ const AudioPlayer: React.FC = () => {
           });
       }
     }
-  }, [singleSelected?.id, singleSelected?.audio_fingerprint]);
+  }, [singleSelected?.id]);
+  
 
   // Reset playback state when audioUrl changes.
   useEffect(() => {

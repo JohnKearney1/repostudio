@@ -5,27 +5,38 @@ import { FileMetadata } from "../components/store";
 
 /// Loads the all the files for a given repository.
 export const loadFilesScript = async () => {
+  const { setAllFiles, selectedFiles, setSelectedFiles } = useFileStore.getState();
+  const { selectedRepository } = useRepositoryStore.getState();
+  const repoId = selectedRepository?.id;
 
-    const { setAllFiles } = useFileStore.getState();
-    const { selectedRepository } = useRepositoryStore.getState();
-    const repoId = selectedRepository?.id;
-
-    try {
-      if (!repoId) {
-        console.warn("No repository selected.");
-        setAllFiles([]);
-        return;
-      }
-      console.log("Loading files from repository:", repoId);
-      const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
-        repoId: repoId,
-      });
-      console.log("Files returned from backend:", newFiles);
-      setAllFiles(newFiles);
-    } catch (error) {
-      console.error("Failed to load files:", error);
+  try {
+    if (!repoId) {
+      console.warn("No repository selected.");
+      setAllFiles([]);
+      setSelectedFiles([]); // Also clear selected files if needed.
+      return;
     }
-  };
+    console.log("Loading files from repository:", repoId);
+    const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
+      repoId: repoId,
+    });
+    console.log("Files returned from backend:", newFiles);
+
+    // Capture the currently selected file IDs.
+    const selectedFileIds = new Set(selectedFiles.map((f) => f.id));
+
+    // Update the full file list.
+    setAllFiles(newFiles);
+
+    // Reapply the selection state: retain only the files that still exist in the new file list.
+    const preservedSelection = newFiles.filter((file) => selectedFileIds.has(file.id));
+    setSelectedFiles(preservedSelection);
+    console.warn("LOAD FILES SCRIPT FINISHED");
+  } catch (error) {
+    console.error("Failed to load files:", error);
+  }
+};
+
 
 /// Add a file to the selected repository.
 export const fileAddScript = async (
@@ -43,6 +54,8 @@ export const fileAddScript = async (
         filePath: fileToAdd,
       });
       console.log("File added:", fileToAdd);
+      console.warn("FILE ADD SCRIPT FINISHED: CALLING HANDLE REMOVE DUPLICATES");
+      
       await handleRemoveDuplicates();
     } catch (error) {
       console.error("Failed to add file:", error);
@@ -59,7 +72,8 @@ export const handleRemoveDuplicates = async (
         return;
     }
     await invoke("remove_duplicate_files_command", { repoId: repoId });
-    console.log("Duplicate files removed successfully.");
+    console.warn("HANDLE REMOVE DUPLICATES SCRIPT FINISHED");
+
     } catch (error) {
     console.error("Error removing duplicates:", error);
     }

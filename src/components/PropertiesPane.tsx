@@ -1,17 +1,54 @@
-import React from 'react';
-import { Link2Icon, LinkBreak2Icon } from '@radix-ui/react-icons';
+// PropertiesPane.tsx (excerpt)
+import React, { useEffect } from 'react';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';
-import { useFileStore } from './store';
+import { useFileStore, useFingerprintStore, useFingerprintQueueStore, useRepositoryStore } from './store';
+import { invoke } from '@tauri-apps/api/core';
 
 const PropertiesPane: React.FC = () => {
-  // Use the updated file store with multiple selection.
   const { selectedFiles } = useFileStore();
-
-  // If only one file is selected, use that file for detailed view.
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
 
-  // If none or a single file is selected, render the standard properties pane.
+  // Get necessary fingerprinting state and actions.
+  const { current, total, increment, clear, updateTotal } = useFingerprintStore();
+  const { fingerprintQueue, setQueue } = useFingerprintQueueStore();
+  const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
+
+  // This effect monitors the fingerprint queue and processes it.
+  useEffect(() => {
+    if (fingerprintQueue.length > 0 && selectedRepository) {
+      // Update total for progress display.
+      updateTotal(fingerprintQueue.length);
+      Promise.all(
+        fingerprintQueue.map((file) =>
+          invoke("compute_fingerprint_command", {
+            repoId: selectedRepository.id,
+            fileId: file.id,
+          }).then(() => {
+            console.log(`Fingerprint computed for file ${file.id}`);
+            increment();
+            // Update the file store to mark fingerprint as completed.
+            useFileStore.setState((state) => ({
+              ...state,
+              allFiles: state.allFiles.map((f) =>
+                f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f
+              ),
+            }));
+          })
+        )
+      )
+        .then(() => {
+          clear();
+          setQueue([]);
+        })
+        .catch((error) => {
+          console.error("Error processing fingerprint queue", error);
+          setQueue([]);
+        });
+    }
+  }, [fingerprintQueue, selectedRepository, updateTotal, increment, clear, setQueue]);
+
+  // Render the properties view based on selection.
   if (selectedFiles.length <= 1) {
     return (
       <div className="properties-pane">
@@ -42,7 +79,8 @@ const PropertiesPane: React.FC = () => {
                   width: '100%',
                   backgroundColor: '#1a1a1a',
                 }}>
-
+                  {/* You might display fingerprint progress here */}
+                  {total > 0 && <p>Fingerprinting {current}/{total}</p>}
                 </div>
                 <div className="file-info" style={{ padding: '0.5rem' }}>
                   <p><strong>ID:</strong> {singleSelected.id}</p>
@@ -52,26 +90,13 @@ const PropertiesPane: React.FC = () => {
                   <p><strong>Date Created:</strong> {singleSelected.date_created}</p>
                   <p><strong>Date Modified:</strong> {singleSelected.date_modified}</p>
                   <p><strong>Bitrate:</strong> {singleSelected.quality} kbps</p>
-                  {/* <p><strong>Fingerprint:</strong> {singleSelected.audio_fingerprint}</p> */}
+                  <p><strong>Fingerprint:</strong> {singleSelected.audio_fingerprint ? 'true' : 'false'}</p>
                 </div>
               </>
             ) : (
               <div className="prop-detail">
                 <h5>
-                  Warning: This file is not currently accessible. It may have been moved, deleted, or stored on an external drive that isn't connected right now.
-                  <br /><br />
-                  There may be cached information available for this file, but we can't help you update it! To preview or update this file, tell us where to find it, or stop tracking changes.
-                  <br /><br />
-                  <div className="warning-btns">
-                    <button className="warning-btn">
-                      <Link2Icon />
-                      Locate
-                    </button>
-                    <button className="warning-btn">
-                      <LinkBreak2Icon />
-                      Stop Tracking
-                    </button>
-                  </div>
+                  Warning: This file is not currently accessible...
                 </h5>
               </div>
             )}
@@ -86,7 +111,7 @@ const PropertiesPane: React.FC = () => {
     );
   }
 
-  // If multiple files are selected, render an alternate view.
+  // Render alternate view if multiple files are selected.
   return (
     <div className="properties-pane">
       <div className="properties-header">

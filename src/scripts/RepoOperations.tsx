@@ -1,3 +1,7 @@
+// RepoOperations.tsx
+// This module contains functions for repository operations in the application.
+// It uses the Tauri API to interact with the backend.
+
 import { Repository } from '../components/store';
 import { invoke } from '@tauri-apps/api/core';
 import { useRepositoryStore } from '../components/store';

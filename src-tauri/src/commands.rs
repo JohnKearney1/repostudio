@@ -1,3 +1,7 @@
+// commands.rs
+// This module contains the command handlers for the Tauri application and some helper functions.
+// The command handlers are invoked by the Tauri application when the corresponding command is called from the front-end.
+
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]

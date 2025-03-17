@@ -1,3 +1,7 @@
+// lib.rs
+// This rust module is the entry point for the Tauri application. 
+// It is responsible for setting up the Tauri application and invoking the commands that are defined in the commands module.
+
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]

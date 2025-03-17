@@ -1,3 +1,6 @@
+// db.rs
+// This module contains the lower level database functions that interact directly with the SQLite database.
+
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]

@@ -1,3 +1,8 @@
+// App.tsx
+// This is the main component of the application.
+// It contains the layout structure and the state management context providers.
+// It also loads the repositories when the app starts.
+
 import "./App.css";
 import FilePane from "./components/FilePane";
 import WindowBar from "./components/WindowBar";
@@ -6,7 +11,7 @@ import Popup from "./components/Popup";
 import { useEffect } from "react";
 import { usePopupStore } from "./components/store";
 import RepositorySelector from "./components/RepositorySelector";
-import { useFileStore } from "./components/store";
+// import { useFileStore } from "./components/store";
 import AudioPlayer from "./components/AudioPlayer";
 
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
@@ -65,7 +70,7 @@ function App() {
             {/* Right Content*/}
             <div className="right-content">
               <PropertiesPane />
-              {/* <AudioPlayer /> */}
+              <AudioPlayer />
 
             </div>
 

@@ -1,4 +1,7 @@
-// PropertiesPane.tsx (excerpt)
+// PropertiesPane.tsx
+// This component displays the properties of a selected file or files.
+// It also handles the fingerprinting of files.
+
 import React, { useEffect, useRef } from 'react';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';

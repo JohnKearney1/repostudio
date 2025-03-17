@@ -1,6 +1,6 @@
 # ProGit
 
-ProGit is a first of its kind version control software build specifically for audio professionals. It is built using Tauri, React and Typescript.
+ProGit is a first of its kind version control software built specifically with audio professionals in mind. It is built using Tauri, React and Typescript.
 
 ## Setup
 

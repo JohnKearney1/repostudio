@@ -1,3 +1,8 @@
+// WindowBar.tsx
+// This component displays the title bar of the application window.
+// It also contains the minimize, maximize, and close buttons.
+// It uses the Tauri API to interact with the window, and is draggable by the title bar.
+
 import React from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BorderSolidIcon, SizeIcon, Cross2Icon } from '@radix-ui/react-icons';

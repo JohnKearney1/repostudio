@@ -1,3 +1,8 @@
+// RepositorySelector.tsx
+// This component is responsible for managing the list of repositories and the currently selected repository.
+// It displays a list of repositories and allows the user to create, delete, and select repositories.
+// The user can also edit the name and description of the selected repository.
+
 import React, { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import './RepositorySelector.css';

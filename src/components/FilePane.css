@@ -28,6 +28,7 @@
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
+    user-select: none;
 }
 
 .searchbar {
@@ -41,6 +42,7 @@
     border-radius: 0;
     border-top: black solid 1px;
     border-bottom: black solid 1px;
+    user-select: none;
 }
 
 .searchbar:focus {
@@ -100,7 +102,7 @@
 .list-item.inaccessible.selected {
     background-color: #3a3a3a;
 }
-  
+
 .progress-item {
     background-color: #202020;
     display: flex;
@@ -139,6 +141,7 @@
     appearance: none; /* Remove default browser styling */
     width: 100%;
     border: none;
+    user-select: none;
   }
   
   /* When focused, darken the background slightly */

@@ -63,6 +63,7 @@ h4 {
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0;
+  user-select: none;
 }
 
 h5 {
@@ -70,6 +71,7 @@ h5 {
   color: #808080;
   font-weight: 500;
   margin: 0;
+  user-select: none;
 }
 
 h6 {
@@ -77,6 +79,7 @@ h6 {
   color: white;
   font-weight:500;
   margin: 0;
+  user-select: none;
 }
 
 .app {

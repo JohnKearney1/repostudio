@@ -1,3 +1,7 @@
+// FileOperations.tsx
+// This module contains functions for file operations in the application.
+// It uses the Tauri API to interact with the backend.
+
 import { invoke } from "@tauri-apps/api/core";
 import { Repository, useFileStore, useRepositoryStore } from "../components/store";
 import { FileMetadata } from "../components/store";

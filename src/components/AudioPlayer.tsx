@@ -1,3 +1,7 @@
+// AudioPlayer.tsx
+// This component displays an audio player for the selected audio file.
+// It also preserves the audio URL in localStorage for seamless playback, even when other components re-mount.
+
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
 import { useFileStore } from './store';
@@ -155,7 +159,7 @@ const AudioPlayer: React.FC = () => {
             <h5 className="audio-path">{singleSelected.encoding}</h5>
           </>
         ) : (
-          <div className="no-audio-selected">No audio file selected</div>
+          <h5 className="no-audio-selected">No audio file selected</h5>
         )}
       </div>
     </div>

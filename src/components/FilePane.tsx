@@ -1,3 +1,7 @@
+// FilePane.tsx
+// This component displays the files in a repository, and some menus & filtering components.
+// It also handles file selection and adding files to the fingerprint queue.
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import './FilePane.css';
@@ -326,7 +330,7 @@ const FilePane: React.FC = () => {
                 >
                   <PieChartIcon />
                 </motion.div>
-                Fingerprinting {currentFingerprintQueueProgress}/{totalFingerprintQueuedItems}
+                Fingerprinting Audio Files... 
               </div>
             )}
             {sortedFiles.map((file, index) => (

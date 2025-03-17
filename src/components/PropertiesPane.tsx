@@ -18,7 +18,7 @@ const PropertiesPane: React.FC = () => {
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
 
   // Fingerprinting state and actions.
-  const { current, total, increment, clear, updateTotal, initProgress } = useFingerprintStore();
+  const { increment, clear, updateTotal, initProgress } = useFingerprintStore();
   const { fingerprintQueue, setQueue } = useFingerprintQueueStore();
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
 
@@ -103,21 +103,6 @@ const PropertiesPane: React.FC = () => {
         {singleSelected ? (
           <div className="properties-details">
             { singleSelected.accessible ? (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    borderBottom: '1px solid black',
-                    width: '100%',
-                    backgroundColor: '#1a1a1a',
-                  }}
-                >
-                  {/* Display fingerprint progress */}
-                  {total > 0 && <p>Fingerprinting {current}/{total}</p>}
-                </div>
                 <div className="file-info" style={{ padding: '0.5rem' }}>
                   <p><strong>ID:</strong> {singleSelected.id}</p>
                   <p><strong>Name:</strong> {singleSelected.name}</p>
@@ -131,7 +116,6 @@ const PropertiesPane: React.FC = () => {
                     {singleSelected.audio_fingerprint ? 'true' : 'false'}
                   </p>
                 </div>
-              </>
             ) : (
               <div className="prop-detail">
                 <h5>Warning: This file is not currently accessible...</h5>

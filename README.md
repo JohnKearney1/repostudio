@@ -1,5 +1,6 @@
 # ProGit
 
+![ProGit 0.1.0a](./src/assets/img/0.1.0a.png)
 ProGit is a first of its kind version control software built specifically with audio professionals in mind. It is built using Tauri, React and Typescript.
 
 ## TODO

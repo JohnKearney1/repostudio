@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import './FilePane.css';
-import { fileAddScript } from '../scripts/FileOperations';
+import { fileAddScript } from '../../scripts/fileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';
@@ -16,16 +16,22 @@ import {
   PieChartIcon, 
   DoubleArrowDownIcon, 
   DoubleArrowUpIcon, 
-  RocketIcon 
+  RocketIcon, 
+  InfoCircledIcon
 } from '@radix-ui/react-icons';
 import { 
   useFileStore, 
-  FileMetadata, 
   usePopupStore, 
   useRepositoryStore, 
   useFingerprintStore,
   useFingerprintQueueStore 
-} from './store';
+} from '../../scripts/store';
+import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
+import { usePopupContentStore, useRightPanelContentStore } from '../../scripts/store';
+
+import { FileMetadata } from '../../types/ObjectTypes';
+import PropertiesPane from '../RightPanelContent/PropertiesPane/PropertiesPane';
+import ActionsPane from '../RightPanelContent/ActionsPane/ActionsPane';
 
 const FilePane: React.FC = () => {
   /* State / Store Declarations */
@@ -33,7 +39,6 @@ const FilePane: React.FC = () => {
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
   const allFiles = useFileStore((state) => state.allFiles);
-  const currentFingerprintQueueProgress = useFingerprintStore((state) => state.current);
   const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total);
   const { addToQueue } = useFingerprintQueueStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,22 +46,25 @@ const FilePane: React.FC = () => {
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [sortOption, setSortOption] = useState<'alphabetical' | 'dateCreated' | 'dateModified' | 'encoding'>('alphabetical');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const { setVisible } = usePopupStore();
+  const { setContent } = usePopupContentStore();
+  const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
+
+  const handleOpenRepositorySelector = () => {
+    setContent(<RepositorySelector />);
+    setVisible(true);
+  }
 
   // useRef to store the previous repository value.
   const prevRepositoryRef = useRef(selectedRepository);
+
   // Ref to record if the control key was held when the mouse was pressed.
   const ctrlKeyRef = useRef(false);
 
-  /* Component Mount */
-  useEffect(() => {
-    console.log("Repositories: ", selectedRepository);
-    console.log("Files: ", useFileStore.getState().allFiles);
-  }, []);
 
   // When the repository changes, load files (while preserving the current selection)
   useEffect(() => {
     if (prevRepositoryRef.current?.id !== selectedRepository?.id) {
-      console.log("Repository changed:", selectedRepository);
       prevRepositoryRef.current = selectedRepository;
       const preservedSelection = [...selectedFiles];
       loadFiles(preservedSelection);
@@ -76,14 +84,11 @@ const FilePane: React.FC = () => {
 
     try {
       if (!repoId) {
-        console.warn("No repository selected.");
         setAllFiles([]);
         setSelectedFiles([]);
         return;
       }
-      console.log("Loading files from repository:", repoId);
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
-      console.log("Files returned from backend:", newFiles);
       setAllFiles(newFiles);
       const preserved = preservedSelection.filter((file) =>
         newFiles.some((newFile) => newFile.id === file.id)
@@ -127,7 +132,6 @@ const FilePane: React.FC = () => {
         filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'] }],
       });
       if (!selected) {
-        console.log("No file selected");
         return;
       }
       // Further logic for file adding...
@@ -139,12 +143,10 @@ const FilePane: React.FC = () => {
   const handleFolderAdd = async () => {
     try {
       if (!selectedRepository) {
-        console.warn("No repository selected!");
         return;
       }
       const selectedDir = await open({ directory: true, multiple: false });
       if (!selectedDir) {
-        console.log("No folder selected");
         return;
       }
       const entries = await readDir(selectedDir);
@@ -159,14 +161,12 @@ const FilePane: React.FC = () => {
           ...file,
           path: `${selectedDir}/${file.name}`,
         }));
-      console.log(`Found ${audioFiles.length} audio files`);
       await Promise.all(
         audioFiles.map((file) => {
           const filePath = (file as any).path;
           return fileAddScript(selectedRepository, filePath, () => {});
         })
       );
-      console.log("Files should now be loaded");
       const preservedSelection = [...selectedFiles];
       await loadFiles(preservedSelection);
     } catch (error) {
@@ -175,13 +175,15 @@ const FilePane: React.FC = () => {
   };
 
   const handleOpenSettings = () => {
-    console.log("Opening settings...");
+    if(rightPanelContent && rightPanelContent.type === PropertiesPane) {
+      console.log("set to actions pane");
+      setRightPanelContent(<ActionsPane />);
+    }
+    else {
+      console.log("set to properties pane");
+      setRightPanelContent(<PropertiesPane />);
+    }
   };
-
-  useEffect(() => {
-    console.log("Fingerprint progress updated:", currentFingerprintQueueProgress, totalFingerprintQueuedItems);
-  }, [currentFingerprintQueueProgress, totalFingerprintQueuedItems]);
-  
 
   // On mouse down, record whether ctrl/meta is being held.
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -277,7 +279,7 @@ const FilePane: React.FC = () => {
     <div className="file-pane">
       <div className="toolbar">
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%', borderBottom: '1px solid black' }}>
-          <button className="toolbar-button" onClick={() => usePopupStore.getState().setVisible(true)}>
+          <button className="toolbar-button" onClick={handleOpenRepositorySelector}>
             <CubeIcon style={{ paddingRight: '0.75rem', width: '20px', height: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', textAlign: 'left' }}>
               <h4>{selectedRepository?.name || '(untitled)'}</h4>
@@ -295,8 +297,17 @@ const FilePane: React.FC = () => {
             <h6>Track Folder</h6>
           </button>
           <button onClick={handleOpenSettings} className="toolbar-button">
-            <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-            <h6>Actions</h6>
+            
+            { rightPanelContent && rightPanelContent.type === PropertiesPane ? 
+              (<>
+                <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+                <h6>Actions</h6>
+              </>) 
+              : 
+              (<>
+                <InfoCircledIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+                <h6>Properties</h6>
+              </>)}
           </button>
         </div>
       </div>
@@ -312,7 +323,7 @@ const FilePane: React.FC = () => {
           {sortOrder === 'asc' ? <DoubleArrowDownIcon /> : <DoubleArrowUpIcon />}
         </button>
         <select className="dropdown-menu" value={sortOption} onChange={(e) => setSortOption(e.target.value as any)}>
-          <option value="alphabetical">Alphabetic</option>
+          <option value="alphabetical">Alphabetical</option>
           <option value="dateCreated">Date Created</option>
           <option value="dateModified">Date Modified</option>
           <option value="encoding">By Encoding</option>

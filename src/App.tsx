@@ -4,64 +4,59 @@
 // It also loads the repositories when the app starts.
 
 import "./App.css";
-import FilePane from "./components/FilePane";
-import WindowBar from "./components/WindowBar";
-import PropertiesPane from "./components/PropertiesPane";
-import Popup from "./components/Popup";
+import FilePane from "./components/FileBrowser/FilePane";
+import WindowBar from "./components/Layout/WindowBar";
+import PropertiesPane from "./components/RightPanelContent/PropertiesPane/PropertiesPane";
+import Popup from "./components/Layout/Popup";
 import { useEffect } from "react";
-import { usePopupStore } from "./components/store";
-import RepositorySelector from "./components/RepositorySelector";
-// import { useFileStore } from "./components/store";
-import AudioPlayer from "./components/AudioPlayer";
+import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store";
+import AudioPlayer from "./components/AudioPlayer/AudioPlayer";
 
-import { loadRepositoriesScript } from "./scripts/RepoOperations";
-// import { loadFilesScript } from "./scripts/FileOperations";
+import { loadRepositoriesScript } from "./scripts/repoOperations";
 
 function App() {
+  const { isVisible: isRepoSelectorVisible} = usePopupStore();
+  const { content: popupContent } = usePopupContentStore();
+  const { content: rightPanelContent, setContent } = useRightPanelContentStore();
 
   // Load repositories and set the first repository as selected.
   useEffect(() => {
-    console.warn("LOADING REPOSITORIES SCRIPT - APP.tsx - USE EFFECT");
+    // If the rightPanelContent does not contain a value, set it to the PropertiesPane.
+    if (!rightPanelContent) {
+      setContent(<PropertiesPane />);
+    }
+    
+    // Load the repositories from the backend.
     loadRepositoriesScript();
   }, []);
 
-  // If there is one or more selected files, show the audio player component.
-  // const { selectedFiles } = useFileStore();
-  // const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-
+  // Effect to set the CSS variable for viewport height.
   useEffect(() => {
     const setVh = () => {
-      // 1vh is the value of 1% of the viewport height
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
-  
     setVh();
     window.addEventListener('resize', setVh);
-  
     return () => {
       window.removeEventListener('resize', setVh);
     };
   }, []);  
 
-  const { isVisible: isRepoSelectorVisible} = usePopupStore();
-
-
   return (
     <div className="app">
-        {/* Top of the App (Column) */}
+        {/* Window Bar of the App */}
         <WindowBar />
         
-        {/* Main Content (Row) */}
-        <div className="main-content">
-          {/* Popup for Repositories */}
+        {/* Main Content */}
+        <div className="main-content"> 
 
           <div className="panel-container">
-             
-          
+            {/* Displays the popup, and whatever element is inside it (as supplied by the store) */}
             <Popup isVisible={isRepoSelectorVisible} setVisible={usePopupStore.getState().setVisible}>
-              <RepositorySelector />
+              {popupContent}
             </Popup>
+
             {/* Left Content*/}
             <div className="left-content">
               <FilePane />
@@ -69,17 +64,12 @@ function App() {
 
             {/* Right Content*/}
             <div className="right-content">
-              <PropertiesPane />
-              <AudioPlayer />
-
-            </div>
-
+              {rightPanelContent}
+            </div> 
           </div>
-
-
+          <AudioPlayer />
 
         </div>
-
     </div>
   );
 }

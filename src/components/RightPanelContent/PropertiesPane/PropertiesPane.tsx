@@ -10,7 +10,7 @@ import {
   useFingerprintStore,
   useFingerprintQueueStore,
   useRepositoryStore,
-} from './store';
+} from '../../../scripts/store';
 import { invoke } from '@tauri-apps/api/core';
 
 const PropertiesPane: React.FC = () => {
@@ -91,12 +91,12 @@ const PropertiesPane: React.FC = () => {
             <InfoCircledIcon width={'20px'} height={'20px'} />
             <div className="properties-header-icon-bg">
               <h4>Properties</h4>
-              <h5 style={{ overflow: 'hidden' }}>
+              <h5 style={{textOverflow: 'ellipsis' }}>
                 {singleSelected?.name ? singleSelected.name : 'No file selected'}
               </h5>
             </div>
           </div>
-          <h5 style={{ overflow: 'hidden' }}>
+          <h5 style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
             {singleSelected?.encoding}
           </h5>
         </div>

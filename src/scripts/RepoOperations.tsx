@@ -2,10 +2,9 @@
 // This module contains functions for repository operations in the application.
 // It uses the Tauri API to interact with the backend.
 
-import { Repository } from '../components/store';
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore } from '../components/store';
-
+import { useRepositoryStore } from './store';
+import { Repository } from '../types/ObjectTypes';
 
 // Load repositories from backend and set the first repository as selected.
 // If no repositories are found, create a default repository.
@@ -26,7 +25,6 @@ export const loadRepositoriesScript = async () => {
         repos = await invoke("get_repositories_command");
       }
   
-      console.warn("LOAD REPOSITORIES SCRIPT FINISHED: SETTING REPOSITORIES AND SELECTED REPOSITORY");
       setRepositories(repos);
       setSelectedRepository(repos[0]);
     } catch (error) {

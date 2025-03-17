@@ -1,11 +1,11 @@
 .file-pane {
     background-color: #1a1a1a;
     border: black solid 1px;
-    min-width: 300px;
+    min-width: 320px;
     max-width: 25vw;
     display: flex;
     flex-direction: column;
-    height: calc(var(--vh, 1vh) * 97);
+    height: calc((var(--vh, 1vh) * 100) - 107px);
 }
 
 .toolbar {
@@ -83,6 +83,12 @@
     text-overflow: ellipsis;
 
 }
+
+/* Ensure first list-item in a list has no top border */
+.list-item:first-child {
+    border-top: none;
+}
+
 
 .list-item:hover {
     background-color: #2a2a2a;

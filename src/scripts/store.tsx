@@ -1,27 +1,15 @@
+// store.tsx
+// This file contains the store definitions for the application.
+// It uses Zustand for state management and Zustand Persist for persistence.
+
+// Import Store Frameworks
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Import FileMetadata from your store definitions if in a separate file
-export interface FileMetadata {
-  id: string;
-  name: string;
-  encoding: string;
-  path: string;
-  precedence: number | null;
-  related_files: string | null;
-  spectrogram: string | null;
-  quality: string | null;
-  samplerate: number | null;
-  tags: string | null;
-  date_created: string;
-  date_modified: string;
-  audio_fingerprint: string | null;
-  accessible: boolean;
-}
+// Import Types
+import { FileMetadata, Repository } from '../types/ObjectTypes';
 
-// -------------------------------------------------------------------
-// Fingerprint Queue Store
-
+// ------------------------------------------------------------------- // 
 export interface FingerprintQueueStore {
   fingerprintQueue: FileMetadata[];
   addToQueue: (file: FileMetadata) => void;
@@ -46,8 +34,7 @@ export const useFingerprintQueueStore = create<FingerprintQueueStore, [["zustand
   )
 );
 
-// -------------------------------------------------------------------
-// Fingerprint Progress Store
+// ------------------------------------------------------------------- // 
 
 interface FingerprintProgressState {
   current: number;
@@ -67,19 +54,13 @@ export const useFingerprintStore = create<FingerprintProgressState>((set) => ({
   clear: () => set({ current: 0, total: 0 }),
 }));
 
-// -------------------------------------------------------------------
-// File Store
+// ------------------------------------------------------------------- // 
 
 interface FileStore {
   selectedFiles: FileMetadata[];
-  // Allow functional updates by accepting either a new array or a function updater.
-  setSelectedFiles: (
-    files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])
-  ) => void;
+  setSelectedFiles: (files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])) => void;
   allFiles: FileMetadata[];
-  setAllFiles: (
-    files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])
-  ) => void;
+  setAllFiles: (files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])) => void;
 }
 
 export const useFileStore = create<FileStore>((set) => ({
@@ -96,8 +77,7 @@ export const useFileStore = create<FileStore>((set) => ({
     })),
 }));
 
-// -------------------------------------------------------------------
-// Popup Store
+// ------------------------------------------------------------------- // 
 
 interface PopupStore {
   isVisible: boolean;
@@ -109,14 +89,28 @@ export const usePopupStore = create<PopupStore>((set) => ({
   setVisible: (visible: boolean) => set({ isVisible: visible }),
 }));
 
-// -------------------------------------------------------------------
-// Repository Store
-
-export interface Repository {
-  id: string;
-  name: string;
-  description: string;
+interface PopupContentStore {
+  content: JSX.Element | null;
+  setContent: (content: JSX.Element | null) => void;
 }
+
+export const usePopupContentStore = create<PopupContentStore>((set) => ({
+  content: null,
+  setContent: (content: JSX.Element | null) => set({ content }),
+}));
+
+// ------------------------------------------------------------------- // 
+interface RightPanelContentStore {
+  content: JSX.Element | null;
+  setContent: (content: JSX.Element | null) => void;
+}
+
+export const useRightPanelContentStore = create<RightPanelContentStore>((set) => ({
+  content: null,
+  setContent: (content: JSX.Element | null) => set({ content }),
+}));
+
+// ------------------------------------------------------------------- // 
 
 interface RepositoryStore {
   repositories: Repository[];

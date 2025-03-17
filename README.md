@@ -12,7 +12,7 @@ ProGit is a first of its kind version control software built specifically with a
 - [x] Implement audio fingerprinting
 - [x] Implement audio player
 - [x] Implement Repository Management
-- [1/2] Implement File Selection & Management (add removal functionality)
+- [] Implement File Selection & Management (add removal functionality)
 - [ ] Clean up & Refactor CSS 
 - [ ] Clean up & Refactor Typescript
 
@@ -23,7 +23,7 @@ ProGit is a first of its kind version control software built specifically with a
 - [ ] Implement audio file conversion (user selected conversion action)
 - [ ] Implement metadata extraction & changes to audio files on user's system
 - [ ] Implement spectrogram generation for audio files
-- [ ] Implement support for 
+- [ ] Implement Settings Table in Local Database
 
 
 **Frontend**
@@ -32,6 +32,10 @@ ProGit is a first of its kind version control software built specifically with a
 - [ ] Add audio comparison functionality to `PropertiesPane.tsx` (When exactly two files are selected) : This should be a visual representation of the comparison between the two files. Show both spectrograms side by side, and highlight the differences between the two files. 
 
 - [ ] Add audio similarity functionality to `PropertiesPane.tsx` (When > 2 files are selected) : This should be a visual representation of the comparison between the selected files. Show a 2d axis with the selected files plotted on it. The distance between the files should be proportional to the similarity between the files.
+
+- [ ] Add Settings Page to the UI
+
+- [x] Add Action Button to the UI (to switch between properties and actions on the right panel, change the element in the rightPaneElement store)
 
 ## Setup
 

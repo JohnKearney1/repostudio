@@ -3,9 +3,8 @@
 // It uses the Tauri API to interact with the backend.
 
 import { invoke } from "@tauri-apps/api/core";
-import { Repository, useFileStore, useRepositoryStore } from "../components/store";
-import { FileMetadata } from "../components/store";
-
+import { useFileStore, useRepositoryStore } from "./store";
+import { FileMetadata, Repository } from "../types/ObjectTypes";
 
 /// Loads the all the files for a given repository.
 export const loadFilesScript = async () => {

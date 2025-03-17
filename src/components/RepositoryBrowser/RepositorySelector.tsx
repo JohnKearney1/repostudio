@@ -7,13 +7,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import './RepositorySelector.css';
 import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react-icons';
-import { useRepositoryStore } from './store';
-
-interface Repository {
-  id: string;
-  name: string;
-  description: string;
-}
+import { useRepositoryStore } from '../../scripts/store';
+import { Repository } from '../../types/ObjectTypes';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);

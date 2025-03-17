@@ -4,7 +4,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
-import { useFileStore } from './store';
+import { useFileStore } from '../../scripts/store';
 import { readFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import './AudioPlayer.css';
 
@@ -14,6 +14,7 @@ interface StoredAudio {
 }
 
 const LOCAL_AUDIO_KEY = 'audioPlayerUrl';
+const LOCAL_PLAYING_KEY = 'audioPlayerIsPlaying';
 
 const AudioPlayer: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -85,6 +86,14 @@ const AudioPlayer: React.FC = () => {
     
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
+
+      // Check stored playback state and auto play if needed.
+      const storedPlayingState = localStorage.getItem(LOCAL_PLAYING_KEY);
+      if (storedPlayingState && JSON.parse(storedPlayingState) === true) {
+        audio.play();
+        setIsPlaying(true);
+      }
+
     };
     
     const handleTimeUpdate = () => {
@@ -106,10 +115,14 @@ const AudioPlayer: React.FC = () => {
     
     if (isPlaying) {
       audio.pause();
+      // update local storage to reflect pause state
+      localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(false));
     } else {
       audio.play();
     }
-    setIsPlaying(!isPlaying);
+    const newPlayingState = !isPlaying;
+    setIsPlaying(newPlayingState);
+    localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(newPlayingState));
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {

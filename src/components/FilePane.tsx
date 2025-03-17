@@ -29,32 +29,31 @@ const FilePane: React.FC = () => {
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
   const allFiles = useFileStore((state) => state.allFiles);
-  const currentFingerprintQueueProgress = useFingerprintStore((state) => state.current); // Fingerprint progress state
-  const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total); // Fingerprint progress state
-  const { addToQueue } = useFingerprintQueueStore(); // Fingerprint queue state
+  const currentFingerprintQueueProgress = useFingerprintStore((state) => state.current);
+  const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total);
+  const { addToQueue } = useFingerprintQueueStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
   const [sortOption, setSortOption] = useState<'alphabetical' | 'dateCreated' | 'dateModified' | 'encoding'>('alphabetical');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // useRef to store the previous repository value
+  // useRef to store the previous repository value.
   const prevRepositoryRef = useRef(selectedRepository);
+  // Ref to record if the control key was held when the mouse was pressed.
+  const ctrlKeyRef = useRef(false);
 
   /* Component Mount */
   useEffect(() => {
-    console.log("Repositories: " + selectedRepository);
-    console.log("Files: " + useFileStore.getState().allFiles);
+    console.log("Repositories: ", selectedRepository);
+    console.log("Files: ", useFileStore.getState().allFiles);
   }, []);
 
   // When the repository changes, load files (while preserving the current selection)
   useEffect(() => {
-    // Check if repository changed
     if (prevRepositoryRef.current?.id !== selectedRepository?.id) {
       console.log("Repository changed:", selectedRepository);
-      // Update ref to the new repository.
       prevRepositoryRef.current = selectedRepository;
-      // Capture the current selection and load files.
       const preservedSelection = [...selectedFiles];
       loadFiles(preservedSelection);
     }
@@ -79,13 +78,9 @@ const FilePane: React.FC = () => {
         return;
       }
       console.log("Loading files from repository:", repoId);
-      const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
-        repoId,
-      });
+      const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       console.log("Files returned from backend:", newFiles);
-      // Update full file list.
       setAllFiles(newFiles);
-      // Reapply the selection state.
       const preserved = preservedSelection.filter((file) =>
         newFiles.some((newFile) => newFile.id === file.id)
       );
@@ -120,17 +115,12 @@ const FilePane: React.FC = () => {
     return sorted;
   }, [filteredFiles, sortOption, sortOrder]);
 
-  // File add and folder add functions (unchanged)
+  // File add and folder add functions remain unchanged.
   const handleFileAdd = async () => {
     try {
       const selected = await open({
         multiple: false,
-        filters: [
-          {
-            name: 'Audio',
-            extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'],
-          },
-        ],
+        filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'] }],
       });
       if (!selected) {
         console.log("No file selected");
@@ -148,10 +138,7 @@ const FilePane: React.FC = () => {
         console.warn("No repository selected!");
         return;
       }
-      const selectedDir = await open({
-        directory: true,
-        multiple: false,
-      });
+      const selectedDir = await open({ directory: true, multiple: false });
       if (!selectedDir) {
         console.log("No folder selected");
         return;
@@ -169,7 +156,6 @@ const FilePane: React.FC = () => {
           path: `${selectedDir}/${file.name}`,
         }));
       console.log(`Found ${audioFiles.length} audio files`);
-
       await Promise.all(
         audioFiles.map((file) => {
           const filePath = (file as any).path;
@@ -188,68 +174,73 @@ const FilePane: React.FC = () => {
     console.log("Opening settings...");
   };
 
-  // Updated handleFileSelect using a functional update
-  const handleFileSelect = useCallback(
+  useEffect(() => {
+    console.log("Fingerprint progress updated:", currentFingerprintQueueProgress, totalFingerprintQueuedItems);
+  }, [currentFingerprintQueueProgress, totalFingerprintQueuedItems]);
+  
+
+  // On mouse down, record whether ctrl/meta is being held.
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    ctrlKeyRef.current = e.ctrlKey || e.metaKey;
+  }, []);
+
+  const handleMouseUp = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => {
-      // Only process genuine click events.
-      if (e.detail === 0) return;
-  
-      // Always read the most recent selected files.
-      const latestSelected = useFileStore.getState().selectedFiles;
-      let newSelection: FileMetadata[] = [];
-  
-      if (e.shiftKey) {
-        // Range selection: use the existing anchor (or fallback to current click)
-        const currentAnchor = anchorIndex !== null ? anchorIndex : index;
-        setAnchorIndex(currentAnchor);
-        setLastSelectedIndex(index);
-        newSelection = sortedFiles.slice(
-          Math.min(currentAnchor, index),
-          Math.max(currentAnchor, index) + 1
-        );
-      } else if (e.ctrlKey || e.metaKey) {
-        // When ctrl/meta is held down, toggle the clicked file without clearing others.
-        console.log("latestSelected:", latestSelected);
-        if (latestSelected.some((f) => f.id === sortedFiles[index].id)) {
-          newSelection = latestSelected.filter((f) => f.id !== sortedFiles[index].id);
-        } else {
-          console.log("latestSelected:", latestSelected);
-          newSelection = [...latestSelected, sortedFiles[index]];
-          console.log("New selection:", newSelection);
-          if (latestSelected.length === 0) {
-            setAnchorIndex(index);
-          }
+      setSelectedFiles((prevSelected) => {
+        let newSelection: FileMetadata[] = [];
+        if (e.shiftKey) {
+          const currentAnchor = anchorIndex !== null ? anchorIndex : index;
+          setAnchorIndex(currentAnchor);
+          setLastSelectedIndex(index);
+          newSelection = sortedFiles.slice(
+            Math.min(currentAnchor, index),
+            Math.max(currentAnchor, index) + 1
+          );
         }
-        setLastSelectedIndex(index);
-      } else {
-        // No modifier keys: select only the clicked file.
-        setAnchorIndex(index);
-        setLastSelectedIndex(index);
-        newSelection = [sortedFiles[index]];
-      }
-  
-      // Only update if the selection has actually changed.
-      if (JSON.stringify(newSelection) !== JSON.stringify(latestSelected)) {
-        setSelectedFiles(newSelection);
-      }
-  
-      // Always add the file to the fingerprint queue if needed.
+        else if (ctrlKeyRef.current) {
+          if (prevSelected.some((f) => f.id === file.id)) {
+            newSelection = prevSelected.filter((f) => f.id !== file.id);
+          } else {
+            newSelection = [...prevSelected, file];
+            if (prevSelected.length === 0) {
+              setAnchorIndex(index);
+            }
+          }
+          setLastSelectedIndex(index);
+        } else {
+          // Normal click (no modifier)
+          setAnchorIndex(index);
+          setLastSelectedIndex(index);
+          newSelection = [file];
+        }
+        return newSelection;
+      });
+      ctrlKeyRef.current = false;
+
       if (!file.audio_fingerprint && selectedRepository) {
         addToQueue(file);
       }
     },
     [sortedFiles, anchorIndex, selectedRepository, addToQueue, setSelectedFiles]
   );
-  
-  
-
 
   // Keyboard navigation remains unchanged.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      // Only process navigation keys.
+      if (
+        e.key === 'Control' ||
+        e.key === 'Meta' ||
+        (e.key === 'Shift')
+      ) {
+        return;
+      }
       if (!sortedFiles.length) return;
+      // Only process arrow keys for navigation
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') {
+        return;
+      }
       e.preventDefault();
-      // Get the most recent selection from our ref
       let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
       let newIndex = currentIndex;
       if (e.key === 'ArrowDown') {
@@ -277,7 +268,7 @@ const FilePane: React.FC = () => {
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
   
-  
+
   return (
     <div className="file-pane">
       <div className="toolbar">
@@ -344,7 +335,8 @@ const FilePane: React.FC = () => {
                 className={`list-item ${!file.accessible ? 'inaccessible' : ''} ${
                   selectedFiles.some((f) => f.id === file.id) ? 'selected' : ''
                 }`}
-                onClick={(e) => handleFileSelect(e, file, index)}
+                onMouseDown={handleMouseDown}
+                onMouseUp={(e) => handleMouseUp(e, file, index)}
               >
                 {file.name}
               </div>

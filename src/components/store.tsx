@@ -72,16 +72,28 @@ export const useFingerprintStore = create<FingerprintProgressState>((set) => ({
 
 interface FileStore {
   selectedFiles: FileMetadata[];
-  setSelectedFiles: (files: FileMetadata[]) => void;
+  // Allow functional updates by accepting either a new array or a function updater.
+  setSelectedFiles: (
+    files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])
+  ) => void;
   allFiles: FileMetadata[];
-  setAllFiles: (files: FileMetadata[]) => void;
+  setAllFiles: (
+    files: FileMetadata[] | ((prev: FileMetadata[]) => FileMetadata[])
+  ) => void;
 }
 
 export const useFileStore = create<FileStore>((set) => ({
   selectedFiles: [],
-  setSelectedFiles: (files: FileMetadata[]) => set({ selectedFiles: files }),
+  setSelectedFiles: (files) =>
+    set((state) => ({
+      selectedFiles:
+        typeof files === 'function' ? files(state.selectedFiles) : files,
+    })),
   allFiles: [],
-  setAllFiles: (files: FileMetadata[]) => set({ allFiles: files }),
+  setAllFiles: (files) =>
+    set((state) => ({
+      allFiles: typeof files === 'function' ? files(state.allFiles) : files,
+    })),
 }));
 
 // -------------------------------------------------------------------

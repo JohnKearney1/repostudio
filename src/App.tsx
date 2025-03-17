@@ -21,8 +21,8 @@ function App() {
   }, []);
 
   // If there is one or more selected files, show the audio player component.
-  const { selectedFiles } = useFileStore();
-  const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
+  // const { selectedFiles } = useFileStore();
+  // const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
 
   useEffect(() => {
     const setVh = () => {
@@ -65,7 +65,7 @@ function App() {
             {/* Right Content*/}
             <div className="right-content">
               <PropertiesPane />
-              {singleSelected && <AudioPlayer />}
+              {/* <AudioPlayer /> */}
 
             </div>
 

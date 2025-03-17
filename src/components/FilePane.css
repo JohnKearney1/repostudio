@@ -50,6 +50,11 @@
 .file-view {
     flex: 1;
     overflow-y: auto;
+    user-select: none;
+}
+
+.file-view:focus {
+    outline: none;
 }
 
 .file-list {

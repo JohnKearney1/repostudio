@@ -2,6 +2,36 @@
 
 ProGit is a first of its kind version control software built specifically with audio professionals in mind. It is built using Tauri, React and Typescript.
 
+## TODO
+
+### v0.1.0a (Current)
+- [x] Implement Basic UI
+- [x] Implement Local Database & CRUD Operations
+- [x] Implement Git Integration
+- [x] Implement audio fingerprinting
+- [x] Implement audio player
+- [x] Implement Repository Management
+- [1/2] Implement File Selection & Management (add removal functionality)
+- [ ] Clean up & Refactor CSS 
+- [ ] Clean up & Refactor Typescript
+
+### v0.2.0a (Next)
+**Backend**
+- [ ] Implement audio comparison algorithm (user selected comparison action)
+- [ ] Implement audio similarity algorithm (repo-wide comparison action)
+- [ ] Implement audio file conversion (user selected conversion action)
+- [ ] Implement metadata extraction & changes to audio files on user's system
+- [ ] Implement spectrogram generation for audio files
+- [ ] Implement support for 
+
+
+**Frontend**
+- [ ] Add metadata editing functionality to `PropertiesPane.tsx` (When exactly one file is selected)
+
+- [ ] Add audio comparison functionality to `PropertiesPane.tsx` (When exactly two files are selected) : This should be a visual representation of the comparison between the two files. Show both spectrograms side by side, and highlight the differences between the two files. 
+
+- [ ] Add audio similarity functionality to `PropertiesPane.tsx` (When > 2 files are selected) : This should be a visual representation of the comparison between the selected files. Show a 2d axis with the selected files plotted on it. The distance between the files should be proportional to the similarity between the files.
+
 ## Setup
 
 This project requires:

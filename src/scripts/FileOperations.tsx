@@ -34,7 +34,6 @@ export const loadFilesScript = async () => {
     // Reapply the selection state: retain only the files that still exist in the new file list.
     const preservedSelection = newFiles.filter((file) => selectedFileIds.has(file.id));
     setSelectedFiles(preservedSelection);
-    console.warn("LOAD FILES SCRIPT FINISHED");
   } catch (error) {
     console.error("Failed to load files:", error);
   }
@@ -56,9 +55,6 @@ export const fileAddScript = async (
         repoId: selectedRepository.id,
         filePath: fileToAdd,
       });
-      console.log("File added:", fileToAdd);
-      console.warn("FILE ADD SCRIPT FINISHED: CALLING HANDLE REMOVE DUPLICATES");
-      
       await handleRemoveDuplicates();
     } catch (error) {
       console.error("Failed to add file:", error);
@@ -75,8 +71,6 @@ export const handleRemoveDuplicates = async (
         return;
     }
     await invoke("remove_duplicate_files_command", { repoId: repoId });
-    console.warn("HANDLE REMOVE DUPLICATES SCRIPT FINISHED");
-
     } catch (error) {
     console.error("Error removing duplicates:", error);
     }

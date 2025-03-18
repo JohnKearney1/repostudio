@@ -31,3 +31,4 @@ regex = "1"
 anyhow = "1.0"
 symphonia = { version = "0.5", features = ["default", "mp3", "wav", "flac", "ogg"] }
 rusty-chromaprint = "0.3"
+lofty = "0.22.2" 

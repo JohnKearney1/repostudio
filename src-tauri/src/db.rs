@@ -14,7 +14,7 @@ fn get_db_path() -> String {
 }
 
 //  Data model for file metadata
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileMetadata {
     pub id: String,
     pub name: String,
@@ -30,7 +30,25 @@ pub struct FileMetadata {
     pub date_modified: String,
     pub audio_fingerprint: Option<String>,
     pub accessible: bool,
+    
+    // Additional metadata fields
+    pub meta_title: Option<String>,
+    pub meta_comment: Option<String>,
+    pub meta_contributing_artists: Option<Vec<String>>,
+    pub meta_album_artist: Option<String>,
+    pub meta_album: Option<String>,
+    pub meta_year: Option<String>,
+    pub meta_track_number: Option<String>,
+    pub meta_genre: Option<String>,
+    pub meta_bit_rate: Option<String>,
+    pub meta_channels: Option<String>,
+    pub meta_sample_rate: Option<String>,
+    pub meta_publisher: Option<String>,
+    pub meta_encoded_by: Option<String>,
+    pub meta_bpm: Option<String>,
+    pub meta_size_on_disk: Option<String>,
 }
+
 
 // Data model for a repository
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,25 +92,40 @@ pub fn establish_connection() -> Result<Connection> {
                 ],
             )?;
 
-            // Create the table for the default repository
+            // Create the table for the default repository with the complete schema.
             let safe_id = sanitize_identifier(&default_id)?;
             conn.execute(
                 &format!(
                     "CREATE TABLE IF NOT EXISTS \"{}\" (
-                        id              TEXT PRIMARY KEY,
-                        name            TEXT NOT NULL,
-                        encoding        TEXT NOT NULL,
-                        path            TEXT NOT NULL,
-                        precedence      INTEGER,
-                        related_files   TEXT,
-                        spectrogram     TEXT,
-                        quality         TEXT,
-                        samplerate      INTEGER,
-                        tags            TEXT,
-                        date_created    TEXT NOT NULL,
-                        date_modified   TEXT NOT NULL,
-                        audio_fingerprint TEXT,
-                        accessible      BOOLEAN
+                        id                      TEXT PRIMARY KEY,
+                        name                    TEXT NOT NULL,
+                        encoding                TEXT NOT NULL,
+                        path                    TEXT NOT NULL,
+                        precedence              INTEGER,
+                        related_files           TEXT,
+                        spectrogram             TEXT,
+                        quality                 TEXT,
+                        samplerate              INTEGER,
+                        tags                    TEXT,
+                        date_created            TEXT NOT NULL,
+                        date_modified           TEXT NOT NULL,
+                        audio_fingerprint       TEXT,
+                        accessible              BOOLEAN,
+                        meta_title              TEXT,
+                        meta_comment            TEXT,
+                        meta_contributing_artists TEXT,
+                        meta_album_artist       TEXT,
+                        meta_album              TEXT,
+                        meta_year               TEXT,
+                        meta_track_number       TEXT,
+                        meta_genre              TEXT,
+                        meta_bit_rate           TEXT,
+                        meta_channels           TEXT,
+                        meta_sample_rate        TEXT,
+                        meta_publisher          TEXT,
+                        meta_encoded_by         TEXT,
+                        meta_bpm                 TEXT,
+                        meta_size_on_disk       TEXT
                     )",
                     safe_id
                 ),
@@ -103,7 +136,7 @@ pub fn establish_connection() -> Result<Connection> {
         }
     }
 
-    // Ensure every repository has its corresponding table
+    // Ensure every repository has its corresponding table with the complete schema.
     {
         let mut stmt = conn.prepare("SELECT id FROM Repositories")?;
         let repo_ids = stmt
@@ -116,32 +149,46 @@ pub fn establish_connection() -> Result<Connection> {
             conn.execute(
                 &format!(
                     "CREATE TABLE IF NOT EXISTS \"{}\" (
-                        id              TEXT PRIMARY KEY,
-                        name            TEXT NOT NULL,
-                        encoding        TEXT NOT NULL,
-                        path            TEXT NOT NULL,
-                        precedence      INTEGER,
-                        related_files   TEXT,
-                        spectrogram     TEXT,
-                        quality         TEXT,
-                        samplerate      INTEGER,
-                        tags            TEXT,
-                        date_created    TEXT NOT NULL,
-                        date_modified   TEXT NOT NULL,
-                        audio_fingerprint TEXT,
-                        accessible      BOOLEAN
+                        id                      TEXT PRIMARY KEY,
+                        name                    TEXT NOT NULL,
+                        encoding                TEXT NOT NULL,
+                        path                    TEXT NOT NULL,
+                        precedence              INTEGER,
+                        related_files           TEXT,
+                        spectrogram             TEXT,
+                        quality                 TEXT,
+                        samplerate              INTEGER,
+                        tags                    TEXT,
+                        date_created            TEXT NOT NULL,
+                        date_modified           TEXT NOT NULL,
+                        audio_fingerprint       TEXT,
+                        accessible              BOOLEAN,
+                        meta_title              TEXT,
+                        meta_comment            TEXT,
+                        meta_contributing_artists TEXT,
+                        meta_album_artist       TEXT,
+                        meta_album              TEXT,
+                        meta_year               TEXT,
+                        meta_track_number       TEXT,
+                        meta_genre              TEXT,
+                        meta_bit_rate           TEXT,
+                        meta_channels           TEXT,
+                        meta_sample_rate        TEXT,
+                        meta_publisher          TEXT,
+                        meta_encoded_by         TEXT,
+                        meta_bpm                 TEXT,
+                        meta_size_on_disk       TEXT
                     )",
                     safe_id
                 ),
                 [],
             )?;
-
-            println!("Ensured repository table '{}' exists", safe_id);
         }
     }
 
     Ok(conn)
 }
+
 
 
 
@@ -159,20 +206,35 @@ pub fn create_repository_with_id(id: &str, name: &str, description: &str) -> Res
     conn.execute(
         &format!(
             "CREATE TABLE IF NOT EXISTS \"{}\" (
-                id              TEXT PRIMARY KEY,
-                name            TEXT NOT NULL,
-                encoding        TEXT NOT NULL,
-                path            TEXT NOT NULL,
-                precedence      INTEGER,
-                related_files   TEXT,
-                spectrogram     TEXT,
-                quality         TEXT,
-                samplerate      INTEGER,
-                tags            TEXT,
-                date_created    TEXT NOT NULL,
-                date_modified   TEXT NOT NULL,
-                audio_fingerprint TEXT,
-                accessible      BOOLEAN
+                id                      TEXT PRIMARY KEY,
+                name                    TEXT NOT NULL,
+                encoding                TEXT NOT NULL,
+                path                    TEXT NOT NULL,
+                precedence              INTEGER,
+                related_files           TEXT,
+                spectrogram             TEXT,
+                quality                 TEXT,
+                samplerate              INTEGER,
+                tags                    TEXT,
+                date_created            TEXT NOT NULL,
+                date_modified           TEXT NOT NULL,
+                audio_fingerprint       TEXT,
+                accessible              BOOLEAN,
+                meta_title              TEXT,
+                meta_comment            TEXT,
+                meta_contributing_artists TEXT,
+                meta_album_artist       TEXT,
+                meta_album              TEXT,
+                meta_year               TEXT,
+                meta_track_number       TEXT,
+                meta_genre              TEXT,
+                meta_bit_rate           TEXT,
+                meta_channels           TEXT,
+                meta_sample_rate        TEXT,
+                meta_publisher          TEXT,
+                meta_encoded_by         TEXT,
+                meta_bpm                 TEXT,
+                meta_size_on_disk       TEXT
             )",
             safe_id
         ),
@@ -181,6 +243,7 @@ pub fn create_repository_with_id(id: &str, name: &str, description: &str) -> Res
 
     Ok(())
 }
+
 
 
 // Function to delete a repository
@@ -240,32 +303,43 @@ pub fn update_repository(id: &str, name: &str, description: &str) -> Result<()> 
 // Function to get all files in a repository
 pub fn get_files_in_repository(repo_id: &str) -> Result<Vec<FileMetadata>> {
     let conn = establish_connection()?;
-    
-    // Prepare the SQL query
     let safe_repo_id = sanitize_identifier(repo_id)?;
 
     let mut stmt = conn.prepare(&format!(
         "SELECT
-            id,
-            name,
-            encoding,
-            path,
-            precedence,
-            related_files,
-            spectrogram,
-            quality,
-            samplerate,
-            tags,
-            date_created,
-            date_modified,
-            audio_fingerprint,
-            accessible
+            id,                -- 0
+            name,              -- 1
+            encoding,          -- 2
+            path,              -- 3
+            precedence,        -- 4
+            related_files,     -- 5
+            spectrogram,       -- 6
+            quality,           -- 7
+            samplerate,        -- 8
+            tags,              -- 9
+            date_created,      -- 10
+            date_modified,     -- 11
+            audio_fingerprint, -- 12
+            accessible,        -- 13
+            meta_title,        -- 14
+            meta_comment,      -- 15
+            meta_contributing_artists, -- 16
+            meta_album_artist,          -- 17
+            meta_album,                 -- 18
+            meta_year,                  -- 19
+            meta_track_number,          -- 20
+            meta_genre,                 -- 21
+            meta_bit_rate,              -- 22
+            meta_channels,              -- 23
+            meta_sample_rate,           -- 24
+            meta_publisher,             -- 25
+            meta_encoded_by,            -- 26
+            meta_bpm,                   -- 27
+            meta_size_on_disk           -- 28
         FROM \"{}\"",
         safe_repo_id
     ))?;
 
-
-    // Execute the query and map each row to FileMetadata
     let files = stmt
         .query_map([], |row| {
             Ok(FileMetadata {
@@ -283,13 +357,42 @@ pub fn get_files_in_repository(repo_id: &str) -> Result<Vec<FileMetadata>> {
                 date_modified: row.get(11)?,
                 audio_fingerprint: row.get(12)?,
                 accessible: row.get(13)?,
+                meta_title: row.get(14)?,
+                meta_comment: row.get(15)?,
+                meta_contributing_artists: {
+                    let s: Option<String> = row.get(16)?;
+                    if let Some(ref json_str) = s {
+                        if json_str.trim().is_empty() {
+                            None
+                        } else {
+                            Some(serde_json::from_str(json_str).map_err(|e| {
+                                rusqlite::Error::FromSqlConversionFailure(16, rusqlite::types::Type::Text, Box::new(e))
+                            })?)
+                        }
+                    } else {
+                        None
+                    }
+                },
+                meta_album_artist: row.get(17)?,
+                meta_album: row.get(18)?,
+                meta_year: row.get(19)?,
+                meta_track_number: row.get(20)?,
+                meta_genre: row.get(21)?,
+                meta_bit_rate: row.get(22)?,
+                meta_channels: row.get(23)?,
+                meta_sample_rate: row.get(24)?,
+                meta_publisher: row.get(25)?,
+                meta_encoded_by: row.get(26)?,
+                meta_bpm: row.get(27)?,
+                meta_size_on_disk: row.get(28)?,
             })
         })?
         .collect::<Result<Vec<FileMetadata>>>()?;
 
-
     Ok(files)
 }
+
+
 
 // Function to sanitize an ID for use in SQL queries
 fn sanitize_identifier(identifier: &str) -> Result<String> {
@@ -311,38 +414,69 @@ pub fn create_file(repo_id: &str, file: &FileMetadata) -> Result<()> {
     
     println!("Sanitized repo id: {}", safe_repo_id);
 
-    // Check if a file with the same path already exists
+    // Check if a file with the same path already exists.
     let mut stmt = conn.prepare(&format!(
         "SELECT COUNT(*) FROM \"{}\" WHERE path = ?",
         safe_repo_id
     ))?;
     let count: i32 = stmt.query_row(params![file.path], |row| row.get(0))?;
     if count > 0 {
-        println!("File with path {} already exists in repository {}, skipping insert.", file.path, repo_id);
+        println!(
+            "File with path {} already exists in repository {}, skipping insert.",
+            file.path, repo_id
+        );
         return Ok(());
     }
 
+    // Note: There are 29 columns to insert.
     let result = conn.execute(
         &format!(
             "INSERT INTO \"{}\" (
                 id, name, encoding, path, precedence, related_files, spectrogram, quality,
-                samplerate, tags, date_created, date_modified, audio_fingerprint, accessible
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                samplerate, tags, date_created, date_modified, audio_fingerprint, accessible,
+                meta_title, meta_comment, meta_contributing_artists, meta_album_artist,
+                meta_album, meta_year, meta_track_number, meta_genre, meta_bit_rate, meta_channels,
+                meta_sample_rate, meta_publisher, meta_encoded_by, meta_bpm, meta_size_on_disk
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)",
             safe_repo_id
         ),
         params![
-            file.id, file.name, file.encoding, file.path, file.precedence, file.related_files,
-            file.spectrogram, file.quality, file.samplerate, file.tags,
-            file.date_created, file.date_modified, file.audio_fingerprint, file.accessible,
+            file.id,
+            file.name,
+            file.encoding,
+            file.path,
+            file.precedence,
+            file.related_files,
+            file.spectrogram,
+            file.quality,
+            file.samplerate,
+            file.tags,
+            file.date_created,
+            file.date_modified,
+            file.audio_fingerprint,
+            file.accessible,
+            file.meta_title,
+            file.meta_comment,
+            // Serialize meta_contributing_artists to JSON if present.
+            file.meta_contributing_artists.as_ref().map(|v| serde_json::to_string(v).unwrap()),
+            file.meta_album_artist,
+            file.meta_album,
+            file.meta_year,
+            file.meta_track_number,
+            file.meta_genre,
+            file.meta_bit_rate,
+            file.meta_channels,
+            file.meta_sample_rate,
+            file.meta_publisher,
+            file.meta_encoded_by,
+            file.meta_bpm,
+            file.meta_size_on_disk,
         ],
     );
 
     println!("Insert result: {:?}", result);
-
     result.map(|_| ())
 }
-
-
 
 
 // Update a file in a repository
@@ -366,20 +500,62 @@ pub fn update_file(repo_id: &str, file: &FileMetadata) -> Result<()> {
                 date_created = ?10,
                 date_modified = ?11,
                 audio_fingerprint = ?12,
-                accessible = ?13
-            WHERE id = ?14",
+                accessible = ?13,
+                meta_title = ?14,
+                meta_comment = ?15,
+                meta_contributing_artists = ?16,
+                meta_album_artist = ?17,
+                meta_album = ?18,
+                meta_year = ?19,
+                meta_track_number = ?20,
+                meta_genre = ?21,
+                meta_bit_rate = ?22,
+                meta_channels = ?23,
+                meta_sample_rate = ?24,
+                meta_publisher = ?25,
+                meta_encoded_by = ?26,
+                meta_bpm = ?27,
+                meta_size_on_disk = ?28
+            WHERE id = ?29",
             safe_repo_id
         ),
         params![
-            file.name, file.encoding, file.path, file.precedence, file.related_files,
-            file.spectrogram, file.quality, file.samplerate, file.tags,
-            file.date_created, file.date_modified, file.audio_fingerprint, file.accessible,
+            file.name,
+            file.encoding,
+            file.path,
+            file.precedence,
+            file.related_files,
+            file.spectrogram,
+            file.quality,
+            file.samplerate,
+            file.tags,
+            file.date_created,
+            file.date_modified,
+            file.audio_fingerprint,
+            file.accessible,
+            file.meta_title,
+            file.meta_comment,
+            // Serialize meta_contributing_artists as a JSON string if it exists.
+            file.meta_contributing_artists.as_ref().map(|v| serde_json::to_string(v).unwrap()),
+            file.meta_album_artist,
+            file.meta_album,
+            file.meta_year,
+            file.meta_track_number,
+            file.meta_genre,
+            file.meta_bit_rate,
+            file.meta_channels,
+            file.meta_sample_rate,
+            file.meta_publisher,
+            file.meta_encoded_by,
+            file.meta_bpm,
+            file.meta_size_on_disk,
             file.id,
         ],
     )?;
 
     Ok(())
 }
+
 
 
 // Delete a file from a repository
@@ -396,27 +572,41 @@ pub fn delete_file(repo_id: &str, file_id: &str) -> Result<()> {
 }
 
 
-// Get a File by ID
 pub fn get_file(repo_id: &str, file_id: &str) -> Result<FileMetadata> {
     let conn = establish_connection()?;
     let safe_repo_id = sanitize_identifier(repo_id)?;
 
     let mut stmt = conn.prepare(&format!(
         "SELECT
-            id,
-            name,
-            encoding,
-            path,
-            precedence,
-            related_files,
-            spectrogram,
-            quality,
-            samplerate,
-            tags,
-            date_created,
-            date_modified,
-            audio_fingerprint,
-            accessible
+            id,                      -- 0
+            name,                    -- 1
+            encoding,                -- 2
+            path,                    -- 3
+            precedence,              -- 4
+            related_files,           -- 5
+            spectrogram,             -- 6
+            quality,                 -- 7
+            samplerate,              -- 8
+            tags,                    -- 9
+            date_created,            -- 10
+            date_modified,           -- 11
+            audio_fingerprint,       -- 12
+            accessible,              -- 13
+            meta_title,              -- 14
+            meta_comment,            -- 15
+            meta_contributing_artists, -- 16
+            meta_album_artist,       -- 17
+            meta_album,              -- 18
+            meta_year,               -- 19
+            meta_track_number,       -- 20
+            meta_genre,              -- 21
+            meta_bit_rate,           -- 22
+            meta_channels,           -- 23
+            meta_sample_rate,        -- 24
+            meta_publisher,          -- 25
+            meta_encoded_by,         -- 26
+            meta_bpm,                -- 27
+            meta_size_on_disk         -- 28
         FROM \"{}\" WHERE id = ?",
         safe_repo_id
     ))?;
@@ -437,12 +627,43 @@ pub fn get_file(repo_id: &str, file_id: &str) -> Result<FileMetadata> {
             date_modified: row.get(11)?,
             audio_fingerprint: row.get(12)?,
             accessible: row.get(13)?,
+            meta_title: row.get(14)?,
+            meta_comment: row.get(15)?,
+            meta_contributing_artists: {
+                let s: Option<String> = row.get(16)?;
+                if let Some(ref json_str) = s {
+                    if json_str.trim().is_empty() {
+                        None
+                    } else {
+                        Some(serde_json::from_str(json_str).map_err(|e| {
+                            rusqlite::Error::FromSqlConversionFailure(
+                                16,
+                                rusqlite::types::Type::Text,
+                                Box::new(e),
+                            )
+                        })?)
+                    }
+                } else {
+                    None
+                }
+            },
+            meta_album_artist: row.get(17)?,
+            meta_album: row.get(18)?,
+            meta_year: row.get(19)?,
+            meta_track_number: row.get(20)?,
+            meta_genre: row.get(21)?,
+            meta_bit_rate: row.get(22)?,
+            meta_channels: row.get(23)?,
+            meta_sample_rate: row.get(24)?,
+            meta_publisher: row.get(25)?,
+            meta_encoded_by: row.get(26)?,
+            meta_bpm: row.get(27)?,
+            meta_size_on_disk: row.get(28)?,
         })
     })?;
 
     Ok(file)
 }
-
 
 
 // Validate file metadata
@@ -496,56 +717,87 @@ pub fn remove_duplicate_files_in_repository(repo_id: &str) -> Result<()> {
     let conn = establish_connection()?;
     let safe_repo_id = sanitize_identifier(repo_id)?;
 
-    // Query for all paths
-    let mut stmt = conn.prepare(&format!(
-        "SELECT path FROM \"{}\"",
-        safe_repo_id
-    ))?;
-    
-    let all_paths = stmt.query_map([], |row| row.get::<_, String>(0))?;
-    let mut path_counts = std::collections::HashMap::new();
-    
-    for path_result in all_paths {
-        let path = path_result?;
-        let normalized = normalize_path(&path);
-        *path_counts.entry(normalized).or_insert(0) += 1;
+    // Load all files in the repository.
+    let files = get_files_in_repository(repo_id)?;
+
+    // Group files by their normalized path.
+    let mut groups: std::collections::HashMap<String, Vec<FileMetadata>> = std::collections::HashMap::new();
+    for file in files {
+        let normalized = normalize_path(&file.path);
+        groups.entry(normalized).or_default().push(file);
     }
-    
-    // Now iterate through normalized paths that appear more than once.
-    for (normalized_path, count) in path_counts {
-        if count > 1 {
-            // For each duplicate path, select all ids ordering by date_created
-            let mut ids_stmt = conn.prepare(&format!(
-                "SELECT id, path FROM \"{}\"",
-                safe_repo_id
-            ))?;
-            let ids: Vec<(String, String)> = ids_stmt
-                .query_map([], |row| {
-                    // Use index 1 for the path
-                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-                })?
-                .filter_map(|res| res.ok())
-                .filter(|(_, path)| normalize_path(path) == normalized_path)
-                .collect();
-            
-            if ids.len() > 1 {
-                // Skip the first entry (the one we want to keep)
-                for (duplicate_id, _) in ids.iter().skip(1) {
-                    conn.execute(
-                        &format!("DELETE FROM \"{}\" WHERE id = ?", safe_repo_id),
-                        params![duplicate_id],
-                    )?;
-                    println!("Deleted duplicate file with id: {} for normalized path: {}", duplicate_id, normalized_path);
+
+    // For each group of duplicates (more than one file with the same normalized path)
+    for (normalized_path, group) in groups {
+        if group.len() > 1 {
+            // Choose the best record: the one with the highest completeness score.
+            // In case of a tie, choose the one with the most recent date_created.
+            let best = group.iter().max_by(|a, b| {
+                let score_a = completeness_score(a);
+                let score_b = completeness_score(b);
+                if score_a == score_b {
+                    // Parse the date strings; if parsing fails, fall back to a minimal date.
+                    let date_a = chrono::DateTime::parse_from_rfc3339(&a.date_created)
+                                            .unwrap_or_else(|_| chrono::DateTime::<chrono::Utc>::from(std::time::UNIX_EPOCH).with_timezone(&chrono::FixedOffset::east_opt(0).unwrap()));
+                    let date_b = chrono::DateTime::parse_from_rfc3339(&b.date_created)
+                                            .unwrap_or_else(|_| chrono::DateTime::<chrono::Utc>::from(std::time::UNIX_EPOCH).with_timezone(&chrono::FixedOffset::east_opt(0).unwrap()));
+                    // Compare so that the later (more recent) date wins.
+                    date_a.cmp(&date_b)
+                } else {
+                    score_a.cmp(&score_b)
+                }
+            });
+
+            // For each file in the duplicate group that is not the best, delete it.
+            if let Some(best_file) = best {
+                for file in &group {
+                    if file.id != best_file.id {
+                        conn.execute(
+                            &format!("DELETE FROM \"{}\" WHERE id = ?", safe_repo_id),
+                            params![file.id],
+                        )?;
+                        println!(
+                            "Deleted duplicate file with id: {} for normalized path: {}",
+                            file.id, normalized_path
+                        );
+                    }
                 }
             }
         }
     }
-    
+
     Ok(())
 }
 
+/// Compute a completeness score based on how many optional metadata fields are populated.
+fn completeness_score(file: &FileMetadata) -> u32 {
+    let mut score = 0;
+    if file.precedence.is_some() { score += 1; }
+    if file.related_files.is_some() { score += 1; }
+    if file.spectrogram.is_some() { score += 1; }
+    if file.quality.is_some() { score += 1; }
+    if file.samplerate.is_some() { score += 1; }
+    if file.tags.is_some() { score += 1; }
+    if file.audio_fingerprint.is_some() { score += 1; }
+    if file.meta_title.is_some() { score += 1; }
+    if file.meta_comment.is_some() { score += 1; }
+    if file.meta_contributing_artists.is_some() { score += 1; }
+    if file.meta_album_artist.is_some() { score += 1; }
+    if file.meta_album.is_some() { score += 1; }
+    if file.meta_year.is_some() { score += 1; }
+    if file.meta_track_number.is_some() { score += 1; }
+    if file.meta_genre.is_some() { score += 1; }
+    if file.meta_bit_rate.is_some() { score += 1; }
+    if file.meta_channels.is_some() { score += 1; }
+    if file.meta_sample_rate.is_some() { score += 1; }
+    if file.meta_publisher.is_some() { score += 1; }
+    if file.meta_encoded_by.is_some() { score += 1; }
+    if file.meta_bpm.is_some() { score += 1; }
+    if file.meta_size_on_disk.is_some() { score += 1; }
+    score
+}
 
-// Example helper to normalize path strings
+/// Example helper to normalize path strings.
 fn normalize_path(path: &str) -> String {
     path.replace("\\", "/")
 }

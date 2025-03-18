@@ -5,6 +5,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+use lofty::tag::TagExt;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -12,6 +13,15 @@ use uuid::Uuid;
 use chrono::Utc;
 use tauri::Manager;
 use tauri::Emitter;
+use lofty::file::TaggedFileExt;
+use lofty::tag::Accessor;
+use lofty::file::AudioFile;
+use lofty::config::WriteOptions;
+use lofty::tag::Tag;
+use lofty::tag::TagType;
+use chrono::Datelike;
+
+use lofty::prelude::ItemKey;
 
 // For fingerprinting:
 use anyhow::Context;
@@ -22,6 +32,126 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use rusty_chromaprint::{Configuration, Fingerprinter};
+
+
+#[tauri::command]
+pub async fn update_file_and_disk_metadata_command(
+    window: tauri::Window,
+    repoId: String,
+    fileMetadata: FileMetadata,
+) -> Result<(), ApiError> {
+    // First: update the file metadata in the database.
+    tauri::async_runtime::spawn_blocking({
+        let repo_id = repoId.clone();
+        let file_metadata = fileMetadata.clone();
+        move || -> Result<(), ApiError> {
+            update_file(&repo_id, &file_metadata)?;
+            Ok(())
+        }
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Task join error: {:?}", e),
+    })??;
+
+    // Second: update the metadata on the actual file.
+    tauri::async_runtime::spawn_blocking({
+        let file_metadata = fileMetadata.clone();
+        move || -> Result<(), ApiError> {
+            let file_path = file_metadata.path.clone();
+            // Open the file for reading and writing using Lofty.
+            let mut tagged_file = lofty::probe::Probe::open(&file_path)
+                .map_err(|e| ApiError {
+                    message: format!("Failed to open file for metadata update: {:?}", e),
+                })?
+                .read()
+                .map_err(|e| ApiError {
+                    message: format!("Failed to read file metadata: {:?}", e),
+                })?;
+
+                let primary_tag = match tagged_file.primary_tag_mut() {
+                    Some(primary_tag) => primary_tag,
+                    None => {
+                        if let Some(first_tag) = tagged_file.first_tag_mut() {
+                            first_tag
+                        } else {
+                            let tag_type = tagged_file.primary_tag_type();
+                            eprintln!("WARN: No tags found, creating a new tag of type `{tag_type:?}`");
+                            tagged_file.insert_tag(Tag::new(tag_type));
+                            tagged_file.primary_tag_mut().unwrap()
+                        }
+                    },
+                };
+                        
+
+            // Update Title
+            match file_metadata.meta_title {
+                Some(ref title) if !title.is_empty() => primary_tag.set_title(title.clone()),
+                _ => { primary_tag.remove_title(); },
+            }
+
+            // Update Comment
+            match file_metadata.meta_comment {
+                Some(ref comment) if !comment.is_empty() => primary_tag.set_comment(comment.clone()),
+                _ => { primary_tag.remove_comment(); },
+            }
+
+            // Update Album Artist (Artist in the tag)
+            match file_metadata.meta_album_artist {
+                Some(ref artist) if !artist.is_empty() => primary_tag.set_artist(artist.clone()),
+                _ => { primary_tag.remove_artist(); },
+            }
+
+            // Update Album
+            match file_metadata.meta_album {
+                Some(ref album) if !album.is_empty() => primary_tag.set_album(album.clone()),
+                _ => { primary_tag.remove_album(); },
+            }
+
+
+
+
+
+            // Update Track Number
+            match file_metadata.meta_track_number {
+                Some(ref track_str) if !track_str.is_empty() => {
+                    let track = track_str.parse::<u32>().unwrap_or(0);
+                    primary_tag.set_track(track);
+                },
+                _ => { primary_tag.remove_track(); },
+            }
+
+            // Update Genre
+            match file_metadata.meta_genre {
+                Some(ref genre) if !genre.is_empty() => primary_tag.set_genre(genre.clone()),
+                _ => { primary_tag.remove_genre(); },
+            }
+
+            // Save the updated metadata back to the file.
+            tagged_file.save_to_path(&file_path, WriteOptions::default()).map_err(|e| ApiError {
+                message: format!("Failed to write metadata to file: {:?}", e),
+            })?;
+
+            Ok(())
+        }
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Task join error: {:?}", e),
+    })??;
+
+    // Third: Emit an event to signal that the update is complete.
+    window
+        .emit("file-metadata-updated", fileMetadata.id)
+        .map_err(|e| ApiError {
+            message: format!("Failed to emit update event: {:?}", e),
+        })?;
+
+    Ok(())
+}
+
+
+
 
 /// Fingerprint a file while emitting progress events via a callback.
 /// The progress_callback is called periodically (with values 0–100).
@@ -137,6 +267,102 @@ where
     Ok(fp_string)
 }
 
+
+#[tauri::command]
+pub async fn refresh_files(repo_id: String) -> Result<(), ApiError> {
+    use std::time::SystemTime;
+    use lofty::probe::Probe;
+    use lofty::prelude::{ItemKey, AudioFile};
+    use lofty::file::TaggedFileExt;
+
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), ApiError> {
+        // Load all files in the given repository.
+        let mut files = get_files_in_repository(&repo_id)?;
+        
+        // Iterate over each file record.
+        for file in files.iter_mut() {
+            let file_path = &file.path;
+            let path = std::path::Path::new(file_path);
+            
+            if path.exists() && path.is_file() {
+                // File exists: refresh metadata.
+                let metadata = std::fs::metadata(&path)?;
+                let created_time = metadata
+                    .created()
+                    .or_else(|_| metadata.modified())
+                    .unwrap_or(SystemTime::now());
+                let modified_time = metadata.modified().unwrap_or(SystemTime::now());
+                file.date_created = chrono::DateTime::<chrono::Utc>::from(created_time).to_rfc3339();
+                file.date_modified = chrono::DateTime::<chrono::Utc>::from(modified_time).to_rfc3339();
+                
+                // Update file name and encoding based on the file path.
+                file.name = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                file.encoding = path
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_lowercase())
+                    .unwrap_or_else(|| "unknown".to_string());
+                
+                // Try to update audio metadata using Lofty.
+                if let Ok(probe) = Probe::open(file_path.clone()) {
+                    if let Ok(tagged_file) = probe.read() {
+                        let properties = tagged_file.properties();
+                        file.meta_bit_rate = properties.audio_bitrate().map(|b| b.to_string());
+                        file.meta_sample_rate = properties.sample_rate().map(|sr| sr.to_string());
+                        file.meta_channels = properties.channels().map(|ch| ch.to_string());
+                        
+                        if let Some(tag) = tagged_file.primary_tag() {
+                            file.meta_title = tag.get_string(&ItemKey::TrackTitle).map(|s| s.to_string());
+                            file.meta_comment = tag.get_string(&ItemKey::Comment).map(|s| s.to_string());
+                            file.meta_contributing_artists = tag.get_string(&ItemKey::TrackArtist).map(|s| {
+                                s.split('/').map(|a| a.trim().to_string()).collect()
+                            });
+                            file.meta_album_artist = tag.get_string(&ItemKey::AlbumArtist).map(|s| s.to_string());
+                            file.meta_album = tag.get_string(&ItemKey::AlbumTitle).map(|s| s.to_string());
+                            file.meta_track_number = tag.get_string(&ItemKey::TrackNumber).map(|s| s.to_string());
+                            file.meta_genre = tag.get_string(&ItemKey::Genre).map(|s| s.to_string());
+                            file.meta_publisher = tag.get_string(&ItemKey::Publisher).map(|s| s.to_string());
+                            file.meta_encoded_by = tag.get_string(&ItemKey::EncodedBy).map(|s| s.to_string());
+                            // For BPM, we use a key that returns a string representation.
+                            file.meta_bpm = tag.get_string(&ItemKey::IntegerBpm).map(|s| s.to_string());
+                        }
+                        // Update file size on disk.
+                        file.meta_size_on_disk = Some(metadata.len().to_string());
+                        // Mark the file as accessible.
+                        file.accessible = true;
+                    } else {
+                        // Could not read metadata via Lofty—mark as not accessible.
+                        file.accessible = false;
+                    }
+                } else {
+                    // If probing the file fails, mark it as not accessible.
+                    file.accessible = false;
+                }
+            } else {
+                // File does not exist: only update accessible flag and modified date.
+                file.accessible = false;
+                file.date_modified = chrono::DateTime::<chrono::Utc>::from(SystemTime::now()).to_rfc3339();
+            }
+            
+            // Update the file record in the database.
+            update_file(&repo_id, file)?;
+        }
+        
+        Ok(())
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Task join error: {:?}", e),
+    })??;
+    
+    Ok(())
+}
+
+
 //----------------------------------------------------------------
 // Database-related functions and types:
 use crate::db::{
@@ -197,77 +423,172 @@ pub fn update_repository_command(repo_id: String, name: String, description: Str
     Ok(())
 }
 
-/// Updated create_file_command: fingerprinting is removed. The file record is created with an empty fingerprint.
 #[tauri::command]
-pub fn create_file_command(repo_id: String, file_path: String) -> Result<(), ApiError> {
-    use std::time::SystemTime;
-    
-    let path = std::path::Path::new(&file_path);
+pub async fn create_file_command(repo_id: String, file_path: String) -> Result<(), ApiError> {
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), ApiError> {
+        use std::time::SystemTime;
+        use lofty::probe::Probe;
+        use lofty::prelude::ItemKey;
+        use lofty::file::TaggedFileExt;
+        use lofty::prelude::AudioFile;
 
-    if !path.exists() {
-        return Err(ApiError {
-            message: format!("File does not exist: {}", file_path),
-        });
-    }
+        let path = std::path::Path::new(&file_path);
 
-    if !path.is_file() {
-        return Err(ApiError {
-            message: format!("Path is not a valid file: {}", file_path),
-        });
-    }
+        if !path.exists() {
+            return Err(ApiError {
+                message: format!("File does not exist: {}", file_path),
+            });
+        }
 
-    // Retrieve the system metadata.
-    let metadata = std::fs::metadata(&path)?;
+        if !path.is_file() {
+            return Err(ApiError {
+                message: format!("Path is not a valid file: {}", file_path),
+            });
+        }
 
-    // Try to get the created time. If unavailable, fallback to modified time.
-    let created_time = metadata
-        .created()
-        .or_else(|_| metadata.modified())
-        .unwrap_or(SystemTime::now());
-    let modified_time = metadata
-        .modified()
-        .unwrap_or(SystemTime::now());
+        // Retrieve the system metadata.
+        let metadata = std::fs::metadata(&path)?;
 
-    // Convert system times to RFC3339 strings.
-    let date_created = chrono::DateTime::<chrono::Utc>::from(created_time).to_rfc3339();
-    let date_modified = chrono::DateTime::<chrono::Utc>::from(modified_time).to_rfc3339();
+        // Try to get the created time. If unavailable, fallback to modified time.
+        let created_time = metadata
+            .created()
+            .or_else(|_| metadata.modified())
+            .unwrap_or(SystemTime::now());
+        let modified_time = metadata.modified().unwrap_or(SystemTime::now());
 
-    // Generate a unique identifier.
-    let id = uuid::Uuid::new_v4().to_string();
+        // Convert system times to RFC3339 strings.
+        let date_created = chrono::DateTime::<chrono::Utc>::from(created_time).to_rfc3339();
+        let date_modified = chrono::DateTime::<chrono::Utc>::from(modified_time).to_rfc3339();
 
-    // Extract file name (without extension) and encoding (extension in lowercase).
-    let file_name = match path.file_stem().and_then(|s| s.to_str()) {
-        Some(name) => name.to_string(),
-        None => "unknown".to_string(),
-    };
-    let encoding = match path.extension().and_then(|ext| ext.to_str()) {
-        Some(ext) => ext.to_lowercase(),
-        None => "unknown".to_string(),
-    };
+        // Generate a unique identifier.
+        let id = uuid::Uuid::new_v4().to_string();
 
-    // Create the file metadata with an empty fingerprint.
-    let file_metadata = FileMetadata {
-        id,
-        name: file_name,
-        encoding,
-        path: file_path.clone(),
-        precedence: None,
-        related_files: None,
-        spectrogram: None,
-        quality: None,
-        samplerate: None,
-        tags: None,
-        date_created,
-        date_modified,
-        audio_fingerprint: None,
-        accessible: true,
-    };
+        // Extract file name (without extension) and encoding (extension in lowercase).
+        let file_name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let encoding = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|s| s.to_lowercase())
+            .unwrap_or_else(|| "unknown".to_string());
 
-    println!("Adding file: {:?}", file_metadata);
+        // Initialize metadata variables.
+        let mut artist_meta: Option<Vec<String>> = None;
+        let mut album_meta: Option<String> = None;
+        let mut title_meta: Option<String> = None;
+        let mut genre_meta: Option<String> = None;
+        let mut track_meta: Option<String> = None;
+        let mut comment_meta: Option<String> = None;
+        let mut album_artist_meta: Option<String> = None;
+        let mut publisher_meta: Option<String> = None;
+        let mut encoded_by_meta: Option<String> = None;
+        let mut bpm_meta: Option<String> = None;
+        let mut bit_rate_meta: Option<String> = None;
+        let mut sample_rate_meta: Option<String> = None;
+        let mut channels_meta: Option<String> = None;
 
-    create_file(&repo_id, &file_metadata)
-        .map_err(|e| ApiError { message: format!("Failed to insert file: {:?}", e) })
+        // Attempt to read audio metadata using lofty.
+        if let Ok(probe) = Probe::open(file_path.clone()) {
+            if let Ok(tagged_file) = probe.read() {
+                // Get audio properties (bit rate, sample rate, channels)
+                let properties = tagged_file.properties();
+                bit_rate_meta = properties.audio_bitrate().map(|b| b.to_string());
+                sample_rate_meta = properties.sample_rate().map(|sr| sr.to_string());
+                channels_meta = properties.channels().map(|ch| ch.to_string());
+
+                if let Some(tag) = tagged_file.primary_tag() {
+                    if let Some(artist) = tag.get_string(&ItemKey::TrackArtist) {
+                        let artists: Vec<String> = artist.split('/').map(|a| a.trim().to_string()).collect();
+                        artist_meta = Some(artists);
+                    }
+                    if let Some(album) = tag.get_string(&ItemKey::AlbumTitle) {
+                        album_meta = Some(album.to_string());
+                    }
+                    if let Some(title) = tag.get_string(&ItemKey::TrackTitle) {
+                        title_meta = Some(title.to_string());
+                    }
+                    if let Some(genre) = tag.get_string(&ItemKey::Genre) {
+                        genre_meta = Some(genre.to_string());
+                    }
+                    if let Some(track) = tag.get_string(&ItemKey::TrackNumber) {
+                        track_meta = Some(track.to_string());
+                    }
+                    // New fields extracted from the tag:
+                    if let Some(comment) = tag.get_string(&ItemKey::Comment) {
+                        comment_meta = Some(comment.to_string());
+                    }
+                    if let Some(album_artist) = tag.get_string(&ItemKey::AlbumArtist) {
+                        album_artist_meta = Some(album_artist.to_string());
+                    }
+                    if let Some(publisher) = tag.get_string(&ItemKey::Publisher) {
+                        publisher_meta = Some(publisher.to_string());
+                    }
+                    if let Some(encoded_by) = tag.get_string(&ItemKey::EncodedBy) {
+                        encoded_by_meta = Some(encoded_by.to_string());
+                    }
+                    if let Some(bpm) = tag.get_string(&ItemKey::IntegerBpm) {
+                        bpm_meta = Some(bpm.to_string());
+                    }
+                }
+            }
+        }
+
+        // Create the file metadata using the extracted values.
+        let file_metadata = FileMetadata {
+            id,
+            name: file_name,
+            encoding,
+            path: file_path.clone(),
+            precedence: None,
+            related_files: None,
+            spectrogram: None,
+            quality: None,
+            samplerate: None,
+            tags: None,
+            date_created,
+            date_modified,
+            audio_fingerprint: None,
+            accessible: true,
+            meta_title: title_meta,
+            meta_comment: comment_meta,
+            meta_contributing_artists: artist_meta,
+            meta_album_artist: album_artist_meta,
+            meta_album: album_meta,
+            meta_year: None,
+            meta_track_number: track_meta,
+            meta_genre: genre_meta,
+            meta_bit_rate: bit_rate_meta,
+            meta_channels: channels_meta,
+            meta_sample_rate: sample_rate_meta,
+            meta_publisher: publisher_meta,
+            meta_encoded_by: encoded_by_meta,
+            meta_bpm: bpm_meta,
+            meta_size_on_disk: Some(metadata.len().to_string()),
+        };
+
+        println!("Adding file: {:?}", file_metadata);
+
+        // Perform the database insertion in the background.
+        create_file(&repo_id, &file_metadata)
+            .map_err(|e| ApiError {
+                message: format!("Failed to insert file: {:?}", e),
+            })?;
+
+        Ok(())
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Task join error: {:?}", e),
+    })?
 }
+
+
+
+
+
 
 /// New command: Compute a fingerprint for an existing file record.
 /// Given a repository id and a file id, this command looks up the file's path,
@@ -282,7 +603,7 @@ pub async fn compute_fingerprint_command(
     let mut file_metadata = get_file(&repo_id, &file_id)?;
     let file_path = file_metadata.path.clone();
 
-    // Run the fingerprinting in a background thread and emit progress events.
+    // Offload the fingerprinting computation to a background thread.
     let window_clone = window.clone();
     let fingerprint_result = tauri::async_runtime::spawn_blocking(move || {
         fingerprint_file_with_progress(&file_path, |progress: u8| {
@@ -293,14 +614,21 @@ pub async fn compute_fingerprint_command(
     .await
     .map_err(|e| ApiError { message: format!("Failed to fingerprint file: {:?}", e) })?
     .map_err(|e| ApiError { message: e })?;
-
+    
     // Update the file metadata with the computed fingerprint.
     file_metadata.audio_fingerprint = Some(fingerprint_result);
-    update_file(&repo_id, &file_metadata)
-        .map_err(|e| ApiError { message: format!("Failed to update file: {:?}", e) })?;
+    
+    // Offload the database update to a background thread.
+    tauri::async_runtime::spawn_blocking(move || {
+        update_file(&repo_id, &file_metadata)
+            .map_err(|e| ApiError { message: format!("Failed to update file: {:?}", e) })
+    })
+    .await
+    .map_err(|e| ApiError { message: format!("Task join error: {:?}", e) })??;
     
     Ok(())
 }
+
 
 #[tauri::command]
 pub fn update_file_command(repo_id: String, file_metadata: FileMetadata) -> Result<(), ApiError> {

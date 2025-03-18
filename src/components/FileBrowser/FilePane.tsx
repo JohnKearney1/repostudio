@@ -17,7 +17,8 @@ import {
   DoubleArrowDownIcon, 
   DoubleArrowUpIcon, 
   RocketIcon, 
-  InfoCircledIcon
+  InfoCircledIcon,
+  CheckCircledIcon
 } from '@radix-ui/react-icons';
 import { 
   useFileStore, 
@@ -39,6 +40,7 @@ const FilePane: React.FC = () => {
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
   const allFiles = useFileStore((state) => state.allFiles);
+  const setAllFiles = useFileStore((state) => state.setAllFiles);
   const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total);
   const { addToQueue } = useFingerprintQueueStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,6 +51,7 @@ const FilePane: React.FC = () => {
   const { setVisible } = usePopupStore();
   const { setContent } = usePopupContentStore();
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
+  const [progressItemMessage, setProgressItemMessage] = useState<string>('');
 
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
@@ -78,16 +81,13 @@ const FilePane: React.FC = () => {
 
   /// File loading function that preserves selection.
   const loadFiles = async (preservedSelection: FileMetadata[]) => {
-    const { setAllFiles, setSelectedFiles } = useFileStore.getState();
-    const { selectedRepository } = useRepositoryStore.getState();
     const repoId = selectedRepository?.id;
-
+    if (!repoId) {
+      setAllFiles([]);
+      setSelectedFiles([]);
+      return;
+    }
     try {
-      if (!repoId) {
-        setAllFiles([]);
-        setSelectedFiles([]);
-        return;
-      }
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       setAllFiles(newFiles);
       const preserved = preservedSelection.filter((file) =>
@@ -134,7 +134,18 @@ const FilePane: React.FC = () => {
       if (!selected) {
         return;
       }
-      // Further logic for file adding...
+      const filePath = selected;
+      setProgressItemMessage('Adding 1 File...');
+      await fileAddScript(selectedRepository, filePath, () => {});
+      const preservedSelection = [...selectedFiles];
+      await loadFiles(preservedSelection);
+      // Update the store to reflect the new file
+
+
+      // set a timeout to remove the progress message after 2 seconds.
+      setProgressItemMessage('Done!');
+
+      setTimeout(() => setProgressItemMessage(''), 2000);
     } catch (error) {
       console.error(error);
     }
@@ -145,7 +156,7 @@ const FilePane: React.FC = () => {
       if (!selectedRepository) {
         return;
       }
-      const selectedDir = await open({ directory: true, multiple: false });
+      const selectedDir = await open({ directory: true, multiple: false, recursive: true });
       if (!selectedDir) {
         return;
       }
@@ -161,6 +172,7 @@ const FilePane: React.FC = () => {
           ...file,
           path: `${selectedDir}/${file.name}`,
         }));
+        setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
       await Promise.all(
         audioFiles.map((file) => {
           const filePath = (file as any).path;
@@ -169,6 +181,9 @@ const FilePane: React.FC = () => {
       );
       const preservedSelection = [...selectedFiles];
       await loadFiles(preservedSelection);
+      // set a timeout to remove the progress message after 2 seconds.
+      setProgressItemMessage('Done!');
+      setTimeout(() => setProgressItemMessage(''), 2000);
     } catch (error) {
       console.error("Failed to add folder:", error);
     }
@@ -225,7 +240,17 @@ const FilePane: React.FC = () => {
 
       if (!file.audio_fingerprint && selectedRepository) {
         addToQueue(file);
+        setProgressItemMessage(`Fingerprinting ${totalFingerprintQueuedItems + 1} files...`);
+        // wait for the fingerprint queue to clear before removing the progress message.
+        setTimeout(() => {
+          if (totalFingerprintQueuedItems === 0) {
+            setProgressItemMessage('Done!');
+            setTimeout(() => setProgressItemMessage(''), 2000);
+          }
+        }, 1000);
       }
+
+      setProgressItemMessage('')
     },
     [sortedFiles, anchorIndex, selectedRepository, addToQueue, setSelectedFiles]
   );
@@ -332,16 +357,23 @@ const FilePane: React.FC = () => {
       <div className="file-view" tabIndex={0} onKeyDown={handleKeyDown}>
         {sortedFiles.length > 0 ? (
           <div className="file-list">
-            {totalFingerprintQueuedItems > 0 && (
+            {progressItemMessage && (
               <div className="list-item progress-item" style={{ position: 'sticky', top: 0, backgroundColor: '#1a1a1a', borderBottom: '1px solid black' }}>
-                <motion.div
+                { progressItemMessage !== 'Done!' ?
+                (<motion.div
                   style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                  animate={{ rotate: [0, 360] }}
+                  // If the progress item message is 'Done!', do no animation
+                  animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <PieChartIcon />
-                </motion.div>
-                Fingerprinting Audio Files... 
+                </motion.div>)
+                :
+                (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <CheckCircledIcon />
+                </div>)
+            }
+                {progressItemMessage}
               </div>
             )}
             {sortedFiles.map((file, index) => (

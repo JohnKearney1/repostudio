@@ -27,6 +27,8 @@ pub fn run() {
             commands::get_files_in_repository_command,
             commands::remove_duplicate_files_command,
             commands::compute_fingerprint_command,
+            commands::refresh_files,
+            commands::update_file_and_disk_metadata_command,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

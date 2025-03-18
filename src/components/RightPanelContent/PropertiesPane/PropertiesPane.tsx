@@ -12,10 +12,12 @@ import {
   useRepositoryStore,
 } from '../../../scripts/store';
 import { invoke } from '@tauri-apps/api/core';
+import MetadataEditor from './MetadataEditor';
 
 const PropertiesPane: React.FC = () => {
   const { selectedFiles } = useFileStore();
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
+  console.log("file: ", singleSelected);
 
   // Fingerprinting state and actions.
   const { increment, clear, updateTotal, initProgress } = useFingerprintStore();
@@ -50,18 +52,29 @@ const PropertiesPane: React.FC = () => {
             // Increment progress counter.
             increment();
             // Update file store to mark as fingerprinted.
-            useFileStore.setState((state) => ({
-              ...state,
-              allFiles: state.allFiles.map((f) =>
+            useFileStore.setState((state) => {
+              // Update the file in allFiles.
+              const updatedAllFiles = state.allFiles.map((f) =>
                 f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f
-              ),
-            }));
+              );
+              // Update the file in selectedFiles as well.
+              const updatedSelectedFiles = state.selectedFiles.map((f) =>
+                f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f
+              );
+            
+              return {
+                allFiles: updatedAllFiles,
+                selectedFiles: updatedSelectedFiles,
+              };
+            });
+            
           })
         )
       )
         .then(() => {
           clear();
           setQueue([]);
+          // Refresh the file list to show the updated fingerprint status.
         })
         .catch((error) => {
           console.error("Error processing fingerprint queue", error);
@@ -104,17 +117,11 @@ const PropertiesPane: React.FC = () => {
           <div className="properties-details">
             { singleSelected.accessible ? (
                 <div className="file-info" style={{ padding: '0.5rem' }}>
-                  <p><strong>ID:</strong> {singleSelected.id}</p>
-                  <p><strong>Name:</strong> {singleSelected.name}</p>
-                  <p><strong>Encoding:</strong> {singleSelected.encoding}</p>
-                  <p><strong>Path:</strong> {singleSelected.path}</p>
-                  <p><strong>Date Created:</strong> {singleSelected.date_created}</p>
-                  <p><strong>Date Modified:</strong> {singleSelected.date_modified}</p>
-                  <p><strong>Bitrate:</strong> {singleSelected.quality} kbps</p>
-                  <p>
-                    <strong>Fingerprint:</strong>{' '}
-                    {singleSelected.audio_fingerprint ? 'true' : 'false'}
-                  </p>
+                  <MetadataEditor file={singleSelected} onSave={() => {
+                    // Refresh the file list to show the updated metadata.
+                    console.log("Metadata updated successfully.");
+                  }
+                  }/>
                 </div>
             ) : (
               <div className="prop-detail">

@@ -1,4 +1,4 @@
-import React, { useState, KeyboardEvent, ChangeEvent } from 'react';
+import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import './MultiInput.css';
 import { Cross2Icon } from '@radix-ui/react-icons';
 
@@ -7,7 +7,7 @@ interface MultiInputProps {
   onChange?: (value: string) => void;
 }
 
-const MultiInput: React.FC<MultiInputProps> = ({ value }) => {
+const MultiInput: React.FC<MultiInputProps> = ({ value, onChange }) => {
   // Initialize the items from the provided value prop, if any.
   const [items, setItems] = useState<string[]>(() => {
     return value
@@ -15,6 +15,21 @@ const MultiInput: React.FC<MultiInputProps> = ({ value }) => {
       : [];
   });
   const [inputValue, setInputValue] = useState('');
+
+  // Update internal items when the value prop changes.
+  useEffect(() => {
+    const newItems = value
+      ? value.split(',').map(item => item.trim()).filter(item => item.length > 0)
+      : [];
+    setItems(newItems);
+  }, [value]);
+
+  // Whenever items change, propagate the updated value to the parent.
+  useEffect(() => {
+    if (onChange) {
+      onChange(items.join(', '));
+    }
+  }, [items, onChange]);
 
   const addItemsFromInput = (value: string) => {
     // Split the input on comma
@@ -58,18 +73,15 @@ const MultiInput: React.FC<MultiInputProps> = ({ value }) => {
   };
 
   return (
-    <div
-      className="multi-input-container"
-    >
+    <div className="multi-input-container">
       {items.map((item, index) => (
         <div
           key={index}
           className="multi-input-item"
           onClick={() => handleRemoveItem(index)}
-
         >
           <h5>{item}</h5>
-          <Cross2Icon height='12px' width='12px' color='white'/>
+          <Cross2Icon height="12px" width="12px" color="white" />
         </div>
       ))}
       <input
@@ -77,7 +89,7 @@ const MultiInput: React.FC<MultiInputProps> = ({ value }) => {
         value={inputValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        className='multi-input-input'
+        className="multi-input-input"
         placeholder="Add an item..."
       />
     </div>

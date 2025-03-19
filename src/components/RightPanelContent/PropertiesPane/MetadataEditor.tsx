@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import MultiInput from '../../Layout/MultiInput';
 import './MetadataEditor.css';
@@ -11,7 +11,7 @@ interface MetadataEditorProps {
   onSave: (updated: Partial<FileMetadata>) => void;
 }
 
-const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
+const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
   const [metaTitle, setMetaTitle] = useState(file.meta_title || '');
   const [metaComment, setMetaComment] = useState(file.meta_comment || '');
   const [metaAlbumArtist, setMetaAlbumArtist] = useState(file.meta_album_artist || '');
@@ -20,6 +20,17 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
   const [metaGenre, setMetaGenre] = useState(file.meta_genre || '');
   const [customTags, setCustomTags] = useState(file.tags || '');
   const repoId = useRepositoryStore((state) => state.selectedRepository?.id);
+
+  // Update state when file prop changes
+  useEffect(() => {
+    setMetaTitle(file.meta_title || '');
+    setMetaComment(file.meta_comment || '');
+    setMetaAlbumArtist(file.meta_album_artist || '');
+    setMetaAlbum(file.meta_album || '');
+    setMetaTrackNumber(file.meta_track_number || '');
+    setMetaGenre(file.meta_genre || '');
+    setCustomTags(file.tags || '');
+  }, [file]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,16 +43,24 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
       meta_genre: metaGenre.trim() || null,
       tags: customTags.trim() || null,
     };
-
+  
     const updatedFile: FileMetadata = { ...file, ...formData };
-
+  
     try {
-      await invoke('update_file_and_disk_metadata_command', { repoId, fileMetadata: updatedFile });
-      console.log("Metadata updated successfully.");
+      // Update the file record in the database.
+      await invoke('update_file_command', { repoId, file: updatedFile });
+      console.log("Metadata updated successfully in database.");
+  
+      // Write the new metadata into the file itself.
+      await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });
+      console.log("Metadata written to file successfully.");
+  
+      onSave(formData);
     } catch (error) {
       console.error("Failed to update metadata:", error);
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit} className="metadata-editor">
@@ -53,6 +72,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
           type="text"
           value={metaTitle}
           onChange={(e) => setMetaTitle(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="metadata-item">
@@ -63,6 +83,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
           id="metaComment"
           value={metaComment}
           onChange={(e) => setMetaComment(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="metadata-item">
@@ -73,6 +94,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
           type="text"
           value={metaAlbumArtist}
           onChange={(e) => setMetaAlbumArtist(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="metadata-item">
@@ -83,6 +105,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
           type="text"
           value={metaAlbum}
           onChange={(e) => setMetaAlbum(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="metadata-item">
@@ -93,6 +116,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file }) => {
           type="text"
           value={metaTrackNumber}
           onChange={(e) => setMetaTrackNumber(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="metadata-item">

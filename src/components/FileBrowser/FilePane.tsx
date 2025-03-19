@@ -24,7 +24,7 @@ import {
   useRightPanelContentStore 
 } from '../../scripts/store';
 import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
-import { FileMetadata, Repository } from '../../types/ObjectTypes';
+import { FileMetadata } from '../../types/ObjectTypes';
 import PropertiesPane from '../RightPanelContent/PropertiesPane/PropertiesPane';
 import ActionsPane from '../RightPanelContent/ActionsPane/ActionsPane';
 
@@ -288,10 +288,21 @@ const FilePane: React.FC = () => {
   // Keyboard navigation remains unchanged.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      // If ctrl/meta + A is pressed, select all files.
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setSelectedFiles(sortedFiles);
+        setAnchorIndex(0);
+        setLastSelectedIndex(sortedFiles.length - 1);
+        return;
+      }
+      
+      // Existing keys to ignore.
       if (e.key === 'Control' || e.key === 'Meta' || e.key === 'Shift') return;
       if (!sortedFiles.length) return;
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();
+  
       let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
       let newIndex = currentIndex;
       if (e.key === 'ArrowDown') {
@@ -318,6 +329,7 @@ const FilePane: React.FC = () => {
     },
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
+  
 
   return (
     <div className="file-pane">
@@ -388,7 +400,7 @@ const FilePane: React.FC = () => {
                   </motion.div>
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <CheckCircledIcon />
+                    <CheckCircledIcon style={{color: '00ff00'}}/>
                   </div>
                 )}
                 {progressItemMessage}

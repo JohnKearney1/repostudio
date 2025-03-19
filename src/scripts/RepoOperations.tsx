@@ -30,10 +30,23 @@ export const loadRepositoriesScript = async () => {
 
 // Create a new repository
 export const createRepository = async (id: string, name: string, description: string) => {
+  const { setRepositories, setSelectedRepository } = useRepositoryStore.getState();
   try {
     await invoke("create_repository_command", { id, name, description });
+    // Reload repositories from backend
+    let repos: Repository[] = await invoke("get_repositories_command");
+    setRepositories(repos);
+
     console.log(`Repository '${name}' created successfully!`);
-    await loadRepositoriesScript(); // Reload to update state
+
+    const newRepo = repos.find((repo) => repo.id === id);
+    if (newRepo) {
+      setSelectedRepository(newRepo);
+    } else {
+      console.warn(`New repository with id ${id} not found in the list.`);
+      // fallback: select the first one, if needed
+      setSelectedRepository(repos[0] || null);
+    }
   } catch (error) {
     console.error("Failed to create repository:", error);
   }

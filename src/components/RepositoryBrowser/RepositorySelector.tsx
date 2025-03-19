@@ -76,7 +76,6 @@ const RepositorySelector: React.FC = () => {
     }
 
     await createRepository(newId, 'New Repository' , '');
-    // No need to manually call fetchRepositories()—handled by event listener
   };
 
   const handleRemoveRepository = async () => {

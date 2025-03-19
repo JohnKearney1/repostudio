@@ -28,11 +28,14 @@ const PropertiesPane: React.FC = () => {
         </div>
         {singleSelected ? (
           <div className="properties-details">
+            {/* Acessible: {String(singleSelected.accessible)} */}
+
             {singleSelected.accessible ? (
               <div className="file-info" style={{ padding: '0.5rem' }}>
+
                 <MetadataEditor
                   file={singleSelected}
-                  onSave={() => console.log("Metadata updated successfully.")}
+                  onSave={() => console.log("Metadata saved.")}
                 />
               </div>
             ) : (

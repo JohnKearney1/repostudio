@@ -1,9 +1,8 @@
 # Commands Module Reference
 
-All functions in should be wrapped in Tauri commands using `spawn_blocking`. This design ensures that blocking operations do not affect the responsiveness of the main thread.
+All functions are wrapped in Tauri commands using `spawn_blocking` to ensure that blocking operations do not affect the responsiveness of the main thread.
 
 ---
-
 
 ## Repository CRUD
 
@@ -103,3 +102,69 @@ All functions in should be wrapped in Tauri commands using `spawn_blocking`. Thi
   - `setting_name` (String): The name/key of the setting to retrieve.
 - **Description:**  
   Fetches a setting from the database. Returns an optional `Settings` record (with `id`, `setting`, and `value`). If the setting does not exist, it returns `None`.
+
+---
+
+## Audio Metadata Commands
+
+### get_audio_metadata_from_file_command
+- **Parameters:**  
+  - `file_path` (String): The full path to the audio file.
+- **Description:**  
+  Reads audio metadata from the specified file using Lofty’s `Probe`.  
+  - Extracts both editable tag fields (such as title, comment, album artist, album, track number, genre) and file system properties (creation time, modification time, file size).  
+  - Returns a `FileMetadata` object populated with the extracted data.
+
+### clear_audio_metadata_from_file_command
+- **Parameters:**  
+  - `file_path` (String): The full path to the audio file.
+- **Description:**  
+  Clears all metadata from the file by iterating over each unique tag type and invoking its built-in removal function.  
+  - This effectively strips the file of any embedded tags.
+
+### write_audio_metadata_to_file_command
+- **Parameters:**  
+  - `file_metadata` (FileMetadata): A structure containing new metadata values.
+- **Description:**  
+  Writes new audio metadata to the specified file.  
+  - **Process:**  
+    1. Clears all existing metadata from the file.  
+    2. Re-opens the file and either obtains a mutable reference to an existing tag or creates a new tag if none exists.  
+    3. Populates the tag with new editable fields from the provided `FileMetadata` (e.g. title, comment, album artist, album, track number, genre).  
+    4. Saves the updated tag back to the file using Lofty’s default write options.
+
+---
+
+## Audio Fingerprint Commands
+
+### generate_audio_fingerprint_for_file_command
+- **Parameters:**  
+  - `repo_id` (String): The repository identifier where the file is stored.  
+  - `file` (FileMetadata): The file metadata object for the file to be fingerprinted.
+- **Description:**  
+  Generates an audio fingerprint for the provided file using Symphonia for audio decoding and a fingerprinting library (e.g., rusty_chromaprint) with a preset configuration.  
+  - **Process:**  
+    1. Opens and decodes the audio file, processing packets from the first supported audio track.  
+    2. Feeds the decoded samples to the fingerprinter to compute a fingerprint.  
+    3. Converts the resulting fingerprint (a vector of `u32` values) into a hexadecimal string.  
+    4. Updates the file's database entry with its original metadata plus the newly generated fingerprint using the existing update function.
+
+---
+
+## Actions Commands
+
+### refresh_files_in_repository_command
+- **Parameters:**  
+  - `repo_id` (String): The repository identifier.
+- **Description:**  
+  Refreshes the file records for a single repository by:
+  - Checking that each file still exists at its stored path.
+  - If a file no longer exists, marking it as inaccessible.
+  - If a file exists, comparing the file’s last modified timestamp on the system with the stored value.  
+    If they differ, re-reading the file’s metadata from disk and updating the database entry accordingly.
+
+### refresh_files_in_all_repositories_command
+- **Parameters:**  
+  - _None_
+- **Description:**  
+  Iterates over all repositories in the database and refreshes each repository’s file records by calling `refresh_files_in_repository_command` for each one.

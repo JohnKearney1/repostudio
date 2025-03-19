@@ -1,65 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';
-import {
-  useFileStore,
-  useFingerprintStore,
-  useFingerprintQueueStore,
-  useRepositoryStore,
-} from '../../../scripts/store';
-import { invoke } from '@tauri-apps/api/core';
+import { useFileStore } from '../../../scripts/store';
 import MetadataEditor from './MetadataEditor';
 
 const PropertiesPane: React.FC = () => {
-  const { selectedFiles } = useFileStore();
+  const selectedFiles = useFileStore((state) => state.selectedFiles);
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
   console.log("file:", singleSelected);
-
-  const { increment, clear, updateTotal, initProgress } = useFingerprintStore();
-  const { fingerprintQueue, setQueue } = useFingerprintQueueStore();
-  const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
-  const isProcessing = useRef(false);
-
-  useEffect(() => {
-    if (!selectedRepository || isProcessing.current || !fingerprintQueue.length) return;
-
-    isProcessing.current = true;
-    const uniqueQueue = Array.from(new Map(fingerprintQueue.map(file => [file.id, file])).values());
-    const filesToProcess = uniqueQueue.filter(file => file.audio_fingerprint !== 'true');
-    initProgress(filesToProcess.length);
-    updateTotal(filesToProcess.length);
-
-    Promise.all(
-      filesToProcess.map(file =>
-        invoke("compute_fingerprint_command", {
-          repoId: selectedRepository.id,
-          fileId: file.id,
-        }).then(() => {
-          console.log(`Fingerprint computed for file ${file.id}`);
-          increment();
-          useFileStore.setState((state) => ({
-            allFiles: state.allFiles.map(f =>
-              f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f
-            ),
-            selectedFiles: state.selectedFiles.map(f =>
-              f.id === file.id ? { ...f, audio_fingerprint: 'true' } : f
-            ),
-          }));
-        })
-      )
-    )
-      .then(() => {
-        clear();
-        setQueue([]);
-      })
-      .catch(error => {
-        console.error("Error processing fingerprint queue", error);
-        setQueue([]);
-      })
-      .finally(() => {
-        isProcessing.current = false;
-      });
-  }, [fingerprintQueue, selectedRepository, initProgress, updateTotal, increment, clear, setQueue]);
 
   if (selectedFiles.length <= 1) {
     return (

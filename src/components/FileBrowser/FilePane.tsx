@@ -1,11 +1,7 @@
-// FilePane.tsx
-// This component displays the files in a repository, and some menus & filtering components.
-// It also handles file selection and adding files to the fingerprint queue.
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import './FilePane.css';
-import { fileAddScript } from '../../scripts/fileOperations';
+import { fileAddScript, fingerprintFileScript } from '../../scripts/fileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';
@@ -24,13 +20,11 @@ import {
   useFileStore, 
   usePopupStore, 
   useRepositoryStore, 
-  useFingerprintStore,
-  useFingerprintQueueStore 
+  usePopupContentStore, 
+  useRightPanelContentStore 
 } from '../../scripts/store';
 import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
-import { usePopupContentStore, useRightPanelContentStore } from '../../scripts/store';
-
-import { FileMetadata } from '../../types/ObjectTypes';
+import { FileMetadata, Repository } from '../../types/ObjectTypes';
 import PropertiesPane from '../RightPanelContent/PropertiesPane/PropertiesPane';
 import ActionsPane from '../RightPanelContent/ActionsPane/ActionsPane';
 
@@ -41,8 +35,6 @@ const FilePane: React.FC = () => {
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
   const allFiles = useFileStore((state) => state.allFiles);
   const setAllFiles = useFileStore((state) => state.setAllFiles);
-  const totalFingerprintQueuedItems = useFingerprintStore((state) => state.total);
-  const { addToQueue } = useFingerprintQueueStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
@@ -53,33 +45,61 @@ const FilePane: React.FC = () => {
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
 
+  // New state to track fingerprinting progress.
+  const [fingerprintingTotal, setFingerprintingTotal] = useState<number>(0);
+  const [fingerprintingCompleted, setFingerprintingCompleted] = useState<number>(0);
+  const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
+
+  // Ref to track file IDs that are currently being fingerprinted.
+  const fingerprintingInProgress = useRef<Set<string>>(new Set());
+
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
-  }
+  };
 
-  // useRef to store the previous repository value.
+  // Store previous repository for detecting changes.
   const prevRepositoryRef = useRef(selectedRepository);
-
-  // Ref to record if the control key was held when the mouse was pressed.
+  // Ref to record whether the ctrl/meta key is held.
   const ctrlKeyRef = useRef(false);
 
-
-  // When the repository changes, load files (while preserving the current selection)
+  // Reload files only if not fingerprinting.
   useEffect(() => {
-    if (prevRepositoryRef.current?.id !== selectedRepository?.id) {
+    if (!isFingerprinting && prevRepositoryRef.current?.id !== selectedRepository?.id) {
       prevRepositoryRef.current = selectedRepository;
       const preservedSelection = [...selectedFiles];
       loadFiles(preservedSelection);
     }
-  }, [selectedRepository, selectedFiles]);
+  }, [selectedRepository, selectedFiles, isFingerprinting]);
 
-  /// Filter files by search query.
+  // Update fingerprinting progress message.
+  useEffect(() => {
+    if (fingerprintingTotal > 0) {
+      if (fingerprintingCompleted < fingerprintingTotal) {
+        // Always show the total count while tasks remain.
+        setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} Files...`);
+      } else if (fingerprintingCompleted === fingerprintingTotal) {
+        setProgressItemMessage('Done!');
+        // Keep the "Done!" message for 2 seconds before clearing and triggering a refresh.
+        const timeout = setTimeout(() => {
+          setProgressItemMessage('');
+          setFingerprintingTotal(0);
+          setFingerprintingCompleted(0);
+          setIsFingerprinting(false);
+          // After all fingerprinting tasks finish, reload files.
+          loadFiles(selectedFiles);
+        }, 2000);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [fingerprintingTotal, fingerprintingCompleted, selectedFiles]);
+
+  // Filter files by search query.
   const filteredFiles = allFiles.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  /// File loading function that preserves selection.
+  // Load files while preserving selection.
   const loadFiles = async (preservedSelection: FileMetadata[]) => {
     const repoId = selectedRepository?.id;
     if (!repoId) {
@@ -99,7 +119,7 @@ const FilePane: React.FC = () => {
     }
   };
 
-  // Sorting logic for the files.
+  // Sorting logic.
   const sortedFiles = useMemo(() => {
     const sorted = [...filteredFiles].sort((a, b) => {
       let comp = 0;
@@ -107,12 +127,22 @@ const FilePane: React.FC = () => {
         case 'alphabetical':
           comp = a.name.localeCompare(b.name);
           break;
-        case 'dateCreated':
-          comp = new Date(a.date_created).getTime() - new Date(b.date_created).getTime();
+        case 'dateCreated': {
+          const matchA = a.date_created.match(/intervals:\s*(\d+)/);
+          const matchB = b.date_created.match(/intervals:\s*(\d+)/);
+          const numA = matchA ? parseInt(matchA[1], 10) : 0;
+          const numB = matchB ? parseInt(matchB[1], 10) : 0;
+          comp = numA - numB;
           break;
-        case 'dateModified':
-          comp = new Date(a.date_modified).getTime() - new Date(b.date_modified).getTime();
+        }
+        case 'dateModified': {
+          const matchA = a.date_modified.match(/intervals:\s*(\d+)/);
+          const matchB = b.date_modified.match(/intervals:\s*(\d+)/);
+          const numA = matchA ? parseInt(matchA[1], 10) : 0;
+          const numB = matchB ? parseInt(matchB[1], 10) : 0;
+          comp = numA - numB;
           break;
+        }
         case 'encoding':
           comp = a.encoding.localeCompare(b.encoding);
           break;
@@ -124,42 +154,42 @@ const FilePane: React.FC = () => {
     return sorted;
   }, [filteredFiles, sortOption, sortOrder]);
 
-  // File add and folder add functions remain unchanged.
+  // Handles adding a single file.
   const handleFileAdd = async () => {
     try {
+      if (!selectedRepository) {
+        console.warn("No repository selected!");
+        return;
+      }
       const selected = await open({
         multiple: false,
         filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'] }],
       });
-      if (!selected) {
-        return;
-      }
+      if (!selected) return;
       const filePath = selected;
-      setProgressItemMessage('Adding 1 File...');
-      await fileAddScript(selectedRepository, filePath, () => {});
-      const preservedSelection = [...selectedFiles];
-      await loadFiles(preservedSelection);
-      // Update the store to reflect the new file
-
-
-      // set a timeout to remove the progress message after 2 seconds.
+      setProgressItemMessage('Adding File...');
+      await fileAddScript(selectedRepository, filePath);
       setProgressItemMessage('Done!');
-
       setTimeout(() => setProgressItemMessage(''), 2000);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to add file:", error);
+      setProgressItemMessage('');
     }
   };
 
+  // Handles adding a folder of files.
   const handleFolderAdd = async () => {
     try {
       if (!selectedRepository) {
+        console.warn("No repository selected!");
         return;
       }
-      const selectedDir = await open({ directory: true, multiple: false, recursive: true });
-      if (!selectedDir) {
-        return;
-      }
+      const selectedDir = await open({
+        directory: true,
+        multiple: false,
+        recursive: true,
+      });
+      if (!selectedDir) return;
       const entries = await readDir(selectedDir);
       const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
       const audioFiles = entries
@@ -168,43 +198,39 @@ const FilePane: React.FC = () => {
           const ext = entry.name?.split('.').pop()?.toLowerCase();
           return ext && audioExtensions.includes(ext);
         })
-        .map((file) => ({
-          ...file,
-          path: `${selectedDir}/${file.name}`,
-        }));
-        setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
-      await Promise.all(
-        audioFiles.map((file) => {
-          const filePath = (file as any).path;
-          return fileAddScript(selectedRepository, filePath, () => {});
-        })
-      );
-      const preservedSelection = [...selectedFiles];
-      await loadFiles(preservedSelection);
-      // set a timeout to remove the progress message after 2 seconds.
+        .map((file) => `${selectedDir}/${file.name}`);
+      if (audioFiles.length === 0) {
+        console.log("No audio files found in folder.");
+        return;
+      }
+      setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
+      for (const filePath of audioFiles) {
+        await fileAddScript(selectedRepository, filePath);
+      }
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
     } catch (error) {
       console.error("Failed to add folder:", error);
+      setProgressItemMessage('');
     }
   };
 
   const handleOpenSettings = () => {
-    if(rightPanelContent && rightPanelContent.type === PropertiesPane) {
-      console.log("set to actions pane");
+    if (rightPanelContent && rightPanelContent.type === PropertiesPane) {
+      console.log("Switching to actions pane");
       setRightPanelContent(<ActionsPane />);
-    }
-    else {
-      console.log("set to properties pane");
+    } else {
+      console.log("Switching to properties pane");
       setRightPanelContent(<PropertiesPane />);
     }
   };
 
-  // On mouse down, record whether ctrl/meta is being held.
+  // Record ctrl/meta on mouse down.
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     ctrlKeyRef.current = e.ctrlKey || e.metaKey;
   }, []);
 
+  // On mouse up, update file selection and trigger fingerprinting if needed.
   const handleMouseUp = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => {
       setSelectedFiles((prevSelected) => {
@@ -217,8 +243,7 @@ const FilePane: React.FC = () => {
             Math.min(currentAnchor, index),
             Math.max(currentAnchor, index) + 1
           );
-        }
-        else if (ctrlKeyRef.current) {
+        } else if (ctrlKeyRef.current) {
           if (prevSelected.some((f) => f.id === file.id)) {
             newSelection = prevSelected.filter((f) => f.id !== file.id);
           } else {
@@ -229,7 +254,6 @@ const FilePane: React.FC = () => {
           }
           setLastSelectedIndex(index);
         } else {
-          // Normal click (no modifier)
           setAnchorIndex(index);
           setLastSelectedIndex(index);
           newSelection = [file];
@@ -238,39 +262,35 @@ const FilePane: React.FC = () => {
       });
       ctrlKeyRef.current = false;
 
+      // If the file lacks a fingerprint and is not already being fingerprinted, trigger the fingerprint script.
       if (!file.audio_fingerprint && selectedRepository) {
-        addToQueue(file);
-        setProgressItemMessage(`Fingerprinting ${totalFingerprintQueuedItems + 1} files...`);
-        // wait for the fingerprint queue to clear before removing the progress message.
-        setTimeout(() => {
-          if (totalFingerprintQueuedItems === 0) {
-            setProgressItemMessage('Done!');
-            setTimeout(() => setProgressItemMessage(''), 2000);
-          }
-        }, 1000);
+        if (fingerprintingInProgress.current.has(file.id)) {
+          return;
+        }
+        fingerprintingInProgress.current.add(file.id);
+        setIsFingerprinting(true);
+        setFingerprintingTotal((prev) => prev + 1);
+        fingerprintFileScript(selectedRepository, file)
+          .then(() => {
+            setFingerprintingCompleted((prev) => prev + 1);
+            fingerprintingInProgress.current.delete(file.id);
+          })
+          .catch((error) => {
+            console.error("Failed to generate fingerprint", error);
+            setFingerprintingCompleted((prev) => prev + 1);
+            fingerprintingInProgress.current.delete(file.id);
+          });
       }
-
-      setProgressItemMessage('')
     },
-    [sortedFiles, anchorIndex, selectedRepository, addToQueue, setSelectedFiles]
+    [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]
   );
 
   // Keyboard navigation remains unchanged.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      // Only process navigation keys.
-      if (
-        e.key === 'Control' ||
-        e.key === 'Meta' ||
-        (e.key === 'Shift')
-      ) {
-        return;
-      }
+      if (e.key === 'Control' || e.key === 'Meta' || e.key === 'Shift') return;
       if (!sortedFiles.length) return;
-      // Only process arrow keys for navigation
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') {
-        return;
-      }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();
       let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
       let newIndex = currentIndex;
@@ -298,7 +318,6 @@ const FilePane: React.FC = () => {
     },
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
-  
 
   return (
     <div className="file-pane">
@@ -322,17 +341,17 @@ const FilePane: React.FC = () => {
             <h6>Track Folder</h6>
           </button>
           <button onClick={handleOpenSettings} className="toolbar-button">
-            
-            { rightPanelContent && rightPanelContent.type === PropertiesPane ? 
-              (<>
+            {rightPanelContent && rightPanelContent.type === PropertiesPane ? (
+              <>
                 <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
                 <h6>Actions</h6>
-              </>) 
-              : 
-              (<>
+              </>
+            ) : (
+              <>
                 <InfoCircledIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
                 <h6>Properties</h6>
-              </>)}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -359,29 +378,26 @@ const FilePane: React.FC = () => {
           <div className="file-list">
             {progressItemMessage && (
               <div className="list-item progress-item" style={{ position: 'sticky', top: 0, backgroundColor: '#1a1a1a', borderBottom: '1px solid black' }}>
-                { progressItemMessage !== 'Done!' ?
-                (<motion.div
-                  style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                  // If the progress item message is 'Done!', do no animation
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <PieChartIcon />
-                </motion.div>)
-                :
-                (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <CheckCircledIcon />
-                </div>)
-            }
+                {progressItemMessage !== 'Done!' ? (
+                  <motion.div
+                    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <PieChartIcon />
+                  </motion.div>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <CheckCircledIcon />
+                  </div>
+                )}
                 {progressItemMessage}
               </div>
             )}
             {sortedFiles.map((file, index) => (
               <div
                 key={file.id}
-                className={`list-item ${!file.accessible ? 'inaccessible' : ''} ${
-                  selectedFiles.some((f) => f.id === file.id) ? 'selected' : ''
-                }`}
+                className={`list-item ${!file.accessible ? 'inaccessible' : ''} ${selectedFiles.some((f) => f.id === file.id) ? 'selected' : ''}`}
                 onMouseDown={handleMouseDown}
                 onMouseUp={(e) => handleMouseUp(e, file, index)}
               >

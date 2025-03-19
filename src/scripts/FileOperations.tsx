@@ -1,12 +1,12 @@
 // FileOperations.tsx
-// This module contains functions for file operations in the application.
-// It uses the Tauri API to interact with the backend.
-
 import { invoke } from "@tauri-apps/api/core";
+import { v4 as uuidv4 } from "uuid";
 import { useFileStore, useRepositoryStore } from "./store";
 import { FileMetadata, Repository } from "../types/ObjectTypes";
 
-/// Loads the all the files for a given repository.
+/**
+ * Loads all files for a given repository.
+ */
 export const loadFilesScript = async () => {
   const { setAllFiles, selectedFiles, setSelectedFiles } = useFileStore.getState();
   const { selectedRepository } = useRepositoryStore.getState();
@@ -16,22 +16,21 @@ export const loadFilesScript = async () => {
     if (!repoId) {
       console.warn("No repository selected.");
       setAllFiles([]);
-      setSelectedFiles([]); // Also clear selected files if needed.
+      setSelectedFiles([]);
       return;
     }
+
     console.log("Loading files from repository:", repoId);
+
     const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
       repoId: repoId,
     });
+
     console.log("Files returned from backend:", newFiles);
 
-    // Capture the currently selected file IDs.
     const selectedFileIds = new Set(selectedFiles.map((f) => f.id));
-
-    // Update the full file list.
     setAllFiles(newFiles);
 
-    // Reapply the selection state: retain only the files that still exist in the new file list.
     const preservedSelection = newFiles.filter((file) => selectedFileIds.has(file.id));
     setSelectedFiles(preservedSelection);
   } catch (error) {
@@ -39,39 +38,124 @@ export const loadFilesScript = async () => {
   }
 };
 
-
-/// Add a file to the selected repository.
+/**
+ * Adds a file to the selected repository.
+ */
 export const fileAddScript = async (
-    selectedRepository: Repository | null,
-    fileToAdd: string,
-    handleRemoveDuplicates: () => void
+  selectedRepository: Repository | null,
+  file_path: string
 ) => {
-    try {
-      if (!selectedRepository) {
-        console.warn("No repository selected!");
-        return;
-      }
-      await invoke("create_file_command", {
-        repoId: selectedRepository.id,
-        filePath: fileToAdd,
-      });
-      await handleRemoveDuplicates();
-    } catch (error) {
-      console.error("Failed to add file:", error);
-    }
-  };
+  if (!selectedRepository) {
+    console.warn("No repository selected!");
+    return;
+  }
 
-/// Searches for duplicate files in the selected repository and removes them.
-export const handleRemoveDuplicates = async (
-    repoId: string
-) => {
-    try {
+  try {
+    console.log("Getting metadata for:", file_path);
+
+    // Step 1: Get the audio metadata from backend
+    const fileMetadata: FileMetadata = await invoke("get_audio_metadata_from_file_command", {
+      filePath: file_path,
+    });
+
+    console.log("Metadata fetched:", fileMetadata);
+
+    // Step 2: Add additional required fields to FileMetadata
+    const newFile: FileMetadata = {
+      ...fileMetadata,
+      id: uuidv4(), // generate a unique ID here
+      accessible: true,
+      related_files: null,
+      tags: null,
+      audio_fingerprint: null,
+    };
+
+    // Step 3: Create the file in the backend repository
+    await invoke("create_file_command", {
+      repoId: selectedRepository.id,
+      file: newFile,
+    });
+
+    console.log("File added successfully!");
+
+    // Optional: Refresh repository files
+    await loadFilesScript();
+  } catch (error) {
+    console.error("Failed to add file:", error);
+  }
+};
+
+/**
+ * Searches for duplicate files in the selected repository and removes them.
+ */
+export const handleRemoveDuplicates = async (repoId: string) => {
+  try {
     if (!repoId) {
-        console.warn("No repository selected!");
-        return;
+      console.warn("No repository selected!");
+      return;
     }
+
     await invoke("remove_duplicate_files_command", { repoId: repoId });
-    } catch (error) {
+    console.log(`Duplicates removed from repository: ${repoId}`);
+
+    // Optional: Reload files after removing duplicates
+    await loadFilesScript();
+  } catch (error) {
     console.error("Error removing duplicates:", error);
-    }
+  }
+};
+
+/**
+ * Refreshes files in the selected repository (syncs files on disk with DB)
+ */
+export const refreshFilesScript = async () => {
+  const { selectedRepository } = useRepositoryStore.getState();
+
+  if (!selectedRepository) {
+    console.warn("No repository selected!");
+    return;
+  }
+
+  try {
+    console.log("Refreshing files for repository:", selectedRepository.id);
+
+    await invoke("refresh_files_in_repository_command", {
+      repoId: selectedRepository.id,
+    });
+
+    console.log("Files refreshed!");
+    await loadFilesScript();
+  } catch (error) {
+    console.error("Failed to refresh repository files:", error);
+  }
+};
+
+/**
+ * Generates a fingerprint for a given file and updates its record in the backend database.
+ * Responds when the fingerprint generation and update have completed.
+ */
+export const fingerprintFileScript = async (
+  selectedRepository: Repository | null,
+  file: FileMetadata
+) => {
+  if (!selectedRepository) {
+    console.warn("No repository selected!");
+    return;
+  }
+
+  try {
+    console.log("Starting fingerprint generation for file:", file.name);
+
+    await invoke("generate_audio_fingerprint_for_file_command", {
+      repoId: selectedRepository.id,
+      file: file,
+    });
+
+    console.log("Fingerprint generated successfully for file:", file.name);
+
+    // Optional: Refresh the files list to get the updated fingerprint
+    await loadFilesScript();
+  } catch (error) {
+    console.error("Failed to generate fingerprint for file:", error);
+  }
 };

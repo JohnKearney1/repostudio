@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc, FixedOffset};
 use std::time::UNIX_EPOCH;
 
+use tauri::{Window, Emitter};
+
 use crate::commands::structures::{FileMetadata, Repository, Settings};
 
 /// Returns the path to the SQLite database file.
@@ -505,128 +507,295 @@ pub fn create_setting(setting_name: &str, value: &str) -> Result<()> {
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
-pub async fn create_repository_command(id: String, name: String, description: String) -> Result<(), String> {
+pub async fn create_repository_command(
+    window: Window,
+    id: String,
+    name: String,
+    description: String
+) -> Result<(), String> {
+    let emit_window = window.clone();
+
     tauri::async_runtime::spawn_blocking(move || {
-        create_repository_with_id(&id, &name, &description).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+        let result = create_repository_with_id(&id, &name, &description);
+
+        let payload = match &result {
+            Ok(_) => format!("Repository '{}' created successfully.", name),
+            Err(e) => format!("Failed to create repository '{}': {}", name, e),
+        };
+
+        emit_window.emit("create_repository_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit create_repository_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn delete_repository_command(id: String) -> Result<(), String> {
+pub async fn delete_repository_command(window: Window, id: String) -> Result<(), String> {
+    let emit_window = window.clone();
+
     tauri::async_runtime::spawn_blocking(move || {
-        delete_repository(&id).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+        let result = delete_repository(&id);
+
+        let payload = match &result {
+            Ok(_) => format!("Repository '{}' deleted successfully.", id),
+            Err(e) => format!("Failed to delete repository '{}': {}", id, e),
+        };
+
+        emit_window.emit("delete_repository_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit delete_repository_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn get_repositories_command() -> Result<Vec<Repository>, String> {
+pub async fn update_repository_command(
+    window: Window,
+    id: String,
+    name: String,
+    description: String
+) -> Result<(), String> {
+    let emit_window = window.clone();
+
     tauri::async_runtime::spawn_blocking(move || {
+        let result = update_repository(&id, &name, &description);
+
+        let payload = match &result {
+            Ok(_) => format!("Repository '{}' updated successfully.", id),
+            Err(e) => format!("Failed to update repository '{}': {}", id, e),
+        };
+
+        emit_window.emit("update_repository_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit update_repository_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn create_file_command(window: Window, repo_id: String, file: FileMetadata) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = create_file(&repo_id, &file);
+
+        let payload = match &result {
+            Ok(_) => format!("File '{}' created successfully in repo '{}'.", file.name, repo_id),
+            Err(e) => format!("Failed to create file '{}' in repo '{}': {}", file.name, repo_id, e),
+        };
+
+        emit_window.emit("create_file_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit create_file_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn update_file_command(window: Window, repo_id: String, file: FileMetadata) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = update_file(&repo_id, &file);
+
+        let payload = match &result {
+            Ok(_) => format!("File '{}' updated successfully in repo '{}'.", file.name, repo_id),
+            Err(e) => format!("Failed to update file '{}' in repo '{}': {}", file.name, repo_id, e),
+        };
+
+        emit_window.emit("update_file_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit update_file_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn delete_file_command(window: Window, repo_id: String, file_id: String) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = delete_file(&repo_id, &file_id);
+
+        let payload = match &result {
+            Ok(_) => format!("File '{}' deleted successfully from repo '{}'.", file_id, repo_id),
+            Err(e) => format!("Failed to delete file '{}' from repo '{}': {}", file_id, repo_id, e),
+        };
+
+        emit_window.emit("delete_file_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit delete_file_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn update_setting_command(window: Window, setting_name: String, new_value: String) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = update_setting(&setting_name, &new_value);
+
+        let payload = match &result {
+            Ok(_) => format!("Setting '{}' updated to '{}'.", setting_name, new_value),
+            Err(e) => format!("Failed to update setting '{}': {}", setting_name, e),
+        };
+
+        emit_window.emit("update_setting_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit update_setting_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn create_setting_command(window: Window, setting_name: String, value: String) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = create_setting(&setting_name, &value);
+
+        let payload = match &result {
+            Ok(_) => format!("Setting '{}' created with value '{}'.", setting_name, value),
+            Err(e) => format!("Failed to create setting '{}': {}", setting_name, e),
+        };
+
+        emit_window.emit("create_setting_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit create_setting_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn remove_duplicate_files_command(window: Window, repo_id: String) -> Result<(), String> {
+    let emit_window = window.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = remove_duplicate_files_in_repository(&repo_id);
+
+        let payload = match &result {
+            Ok(_) => format!("Duplicate files removed from repository '{}'.", repo_id),
+            Err(e) => format!("Failed to remove duplicates from repository '{}': {}", repo_id, e),
+        };
+
+        emit_window.emit("remove_duplicate_files_completed", payload).unwrap_or_else(|e| {
+            println!("Failed to emit remove_duplicate_files_completed event: {}", e);
+        });
+
+        result.map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn get_repositories_command(window: Window) -> Result<Vec<Repository>, String> {
+    let emit_window = window.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
         get_repositories().map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await;
+
+    if let Ok(Ok(_)) = &result {
+        emit_window
+            .emit("get_repositories_completed", "Repositories loaded successfully.")
+            .unwrap_or_else(|e| println!("Failed to emit get_repositories_completed event: {}", e));
+    }
+
+    result.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn get_repository_command(id: String) -> Result<Repository, String> {
-    tauri::async_runtime::spawn_blocking(move || {
+pub async fn get_repository_command(window: Window, id: String) -> Result<Repository, String> {
+    let emit_window = window.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
         get_repository(&id).map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await;
+
+    if let Ok(Ok(repo)) = &result {
+        emit_window
+            .emit(
+                "get_repository_completed",
+                format!("Repository '{}' loaded successfully.", repo.id),
+            )
+            .unwrap_or_else(|e| println!("Failed to emit get_repository_completed event: {}", e));
+    }
+
+    result.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn update_repository_command(id: String, name: String, description: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        update_repository(&id, &name, &description).map_err(|e| e.to_string())
+pub async fn get_files_in_repository_command(window: Window, repo_id: String) -> Result<Vec<FileMetadata>, String> {
+    let emit_window = window.clone();
+    let repo_id_for_db = repo_id.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        get_files_in_repository(&repo_id_for_db).map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await;
+
+    if let Ok(Ok(files)) = &result {
+        emit_window
+            .emit(
+                "get_files_in_repository_completed",
+                format!("Loaded {} files for repository '{}'.", files.len(), repo_id),
+            )
+            .unwrap_or_else(|e| println!("Failed to emit get_files_in_repository_completed event: {}", e));
+    }
+
+    result.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn get_files_in_repository_command(repo_id: String) -> Result<Vec<FileMetadata>, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        get_files_in_repository(&repo_id).map_err(|e| e.to_string())
+pub async fn get_file_command(window: Window, repo_id: String, file_id: String) -> Result<FileMetadata, String> {
+    let emit_window = window.clone();
+    let repo_id_for_db = repo_id.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        get_file(&repo_id_for_db, &file_id).map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await;
+
+    if let Ok(Ok(file)) = &result {
+        emit_window
+            .emit(
+                "get_file_completed",
+                format!("File '{}' loaded successfully from repository '{}'.", file.id, repo_id),
+            )
+            .unwrap_or_else(|e| println!("Failed to emit get_file_completed event: {}", e));
+    }
+
+    result.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn get_file_command(repo_id: String, file_id: String) -> Result<FileMetadata, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        get_file(&repo_id, &file_id).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
+pub async fn get_setting_command(window: Window, setting_name: String) -> Result<Option<Settings>, String> {
+    let emit_window = window.clone();
 
-#[tauri::command]
-pub async fn create_file_command(repo_id: String, file: FileMetadata) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        create_file(&repo_id, &file).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-pub async fn update_file_command(repo_id: String, file: FileMetadata) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        update_file(&repo_id, &file).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-pub async fn delete_file_command(repo_id: String, file_id: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        delete_file(&repo_id, &file_id).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-pub async fn get_setting_command(setting_name: String) -> Result<Option<Settings>, String> {
-    tauri::async_runtime::spawn_blocking(move || {
+    let result = tauri::async_runtime::spawn_blocking(move || {
         get_setting(&setting_name).map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
-}
+    .await;
 
-#[tauri::command]
-pub async fn update_setting_command(setting_name: String, new_value: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        update_setting(&setting_name, &new_value).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
+    if let Ok(Ok(Some(setting))) = &result {
+        emit_window
+            .emit(
+                "get_setting_completed",
+                format!("Setting '{}' loaded successfully.", setting.setting),
+            )
+            .unwrap_or_else(|e| println!("Failed to emit get_setting_completed event: {}", e));
+    }
 
-#[tauri::command]
-pub async fn create_setting_command(setting_name: String, value: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        create_setting(&setting_name, &value).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-/// Exposes duplicate removal as a Tauri command.
-#[tauri::command]
-pub async fn remove_duplicate_files_command(repo_id: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        remove_duplicate_files_in_repository(&repo_id).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    result.map_err(|e| e.to_string())?
 }

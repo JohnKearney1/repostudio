@@ -19,7 +19,7 @@ ProGit is a first of its kind version control software built specifically with a
 
 
 ### BUGS 
-- [ ] Audio Player doesn't get audio first time audio is selected
+- [x] Audio Player doesn't get audio first time audio is selected
 - [ ] Metadata doesn't get updated when audio is selected
 - [ ] Metadata doesn't get updated properly on FS 
 

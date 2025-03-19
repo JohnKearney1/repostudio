@@ -37,13 +37,13 @@ use rusty_chromaprint::{Configuration, Fingerprinter};
 #[tauri::command]
 pub async fn update_file_and_disk_metadata_command(
     window: tauri::Window,
-    repoId: String,
-    fileMetadata: FileMetadata,
+    repo_id: String,
+    file_metadata: FileMetadata,
 ) -> Result<(), ApiError> {
     // First: update the file metadata in the database.
     tauri::async_runtime::spawn_blocking({
-        let repo_id = repoId.clone();
-        let file_metadata = fileMetadata.clone();
+        let repo_id = repo_id.clone();
+        let file_metadata = file_metadata.clone();
         move || -> Result<(), ApiError> {
             update_file(&repo_id, &file_metadata)?;
             Ok(())
@@ -56,7 +56,7 @@ pub async fn update_file_and_disk_metadata_command(
 
     // Second: update the metadata on the actual file.
     tauri::async_runtime::spawn_blocking({
-        let file_metadata = fileMetadata.clone();
+        let file_metadata = file_metadata.clone();
         move || -> Result<(), ApiError> {
             let file_path = file_metadata.path.clone();
             // Open the file for reading and writing using Lofty.
@@ -108,10 +108,6 @@ pub async fn update_file_and_disk_metadata_command(
                 _ => { primary_tag.remove_album(); },
             }
 
-
-
-
-
             // Update Track Number
             match file_metadata.meta_track_number {
                 Some(ref track_str) if !track_str.is_empty() => {
@@ -142,7 +138,7 @@ pub async fn update_file_and_disk_metadata_command(
 
     // Third: Emit an event to signal that the update is complete.
     window
-        .emit("file-metadata-updated", fileMetadata.id)
+        .emit("file-metadata-updated", file_metadata.id)
         .map_err(|e| ApiError {
             message: format!("Failed to emit update event: {:?}", e),
         })?;

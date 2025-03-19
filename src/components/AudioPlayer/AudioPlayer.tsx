@@ -1,19 +1,9 @@
-// AudioPlayer.tsx
-// This component displays an audio player for the selected audio file.
-// It also preserves the audio URL in localStorage for seamless playback, even when other components re-mount.
-
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
 import { useFileStore } from '../../scripts/store';
-import { readFile, BaseDirectory } from '@tauri-apps/plugin-fs';
+import { readFile } from '@tauri-apps/plugin-fs';
 import './AudioPlayer.css';
 
-interface StoredAudio {
-  fileId: string;
-  url: string;
-}
-
-const LOCAL_AUDIO_KEY = 'audioPlayerUrl';
 const LOCAL_PLAYING_KEY = 'audioPlayerIsPlaying';
 
 const AudioPlayer: React.FC = () => {
@@ -21,137 +11,88 @@ const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-
-  // If multiple files are selected, use the first one.
   const { selectedFiles } = useFileStore();
   const singleSelected = selectedFiles[0] || null;
-
-  // State to hold the generated audio URL.
-  const [audioUrl, setAudioUrl] = useState<string>('');
-
-  // Helper: save audio URL info to localStorage.
-  const saveAudioInfo = (fileId: string, url: string) => {
-    const data: StoredAudio = { fileId, url };
-    localStorage.setItem(LOCAL_AUDIO_KEY, JSON.stringify(data));
-  };
-
-  // Helper: retrieve stored audio info.
-  const getStoredAudioInfo = (): StoredAudio | null => {
-    const stored = localStorage.getItem(LOCAL_AUDIO_KEY);
-    if (stored) {
-      try {
-        return JSON.parse(stored) as StoredAudio;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
+  const [audioUrl, setAudioUrl] = useState('');
 
   useEffect(() => {
-    setAudioUrl('');
-    if (singleSelected) {
-      const storedInfo = getStoredAudioInfo();
-      if (storedInfo && storedInfo.fileId === singleSelected.id) {
-        setAudioUrl(storedInfo.url);
-      } else {
-        readFile(singleSelected.path, { baseDir: BaseDirectory.Audio })
-          .then((file) => {
-            const url = URL.createObjectURL(new Blob([file]));
-            setAudioUrl(url);
-            console.log('Generated new audio url:', url);
-            saveAudioInfo(singleSelected.id, url);
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      }
-    }
+    if (!singleSelected) return setAudioUrl('');
+    readFile(singleSelected.path)
+      .then(file => {
+        const url = URL.createObjectURL(new Blob([file]));
+        setAudioUrl(url);
+        console.log('Generated new audio url:', url);
+      })
+      .catch(console.error);
   }, [singleSelected?.id]);
-  
 
-  // Reset playback state when audioUrl changes.
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-    }
+    if (audioRef.current) audioRef.current.currentTime = 0;
   }, [audioUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    
+
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
-
-      // Check stored playback state and auto play if needed.
-      const storedPlayingState = localStorage.getItem(LOCAL_PLAYING_KEY);
-      if (storedPlayingState && JSON.parse(storedPlayingState) === true) {
+      const storedState = localStorage.getItem(LOCAL_PLAYING_KEY);
+      if (storedState && JSON.parse(storedState)) {
         audio.play();
         setIsPlaying(true);
       }
+    };
 
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+
+    const handleEnded = () => {
+      audio.pause();
+      audio.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentTime(0);
+      localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(false));
     };
-    
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-    
+
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
-    
+    audio.addEventListener('ended', handleEnded);
+
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
     };
   }, [audioUrl]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    
-    if (isPlaying) {
-      audio.pause();
-      // update local storage to reflect pause state
-      localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(false));
-    } else {
-      audio.play();
-    }
-    const newPlayingState = !isPlaying;
-    setIsPlaying(newPlayingState);
-    localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(newPlayingState));
+    isPlaying ? audio.pause() : audio.play();
+    const newState = !isPlaying;
+    setIsPlaying(newState);
+    localStorage.setItem(LOCAL_PLAYING_KEY, JSON.stringify(newState));
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
-    
     const newTime = parseFloat(e.target.value);
     audio.currentTime = newTime;
     setCurrentTime(newTime);
   };
 
-  const formatTime = (time: number): string => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
-  };
+  const formatTime = (time: number) =>
+    `${Math.floor(time / 60)}:${Math.floor(time % 60) < 10 ? '0' : ''}${Math.floor(time % 60)}`;
 
   return (
     <div className="audio-player">
       <div className="audio-controls">
-        {audioUrl && (
-          <audio ref={audioRef} src={audioUrl} preload="metadata" />
-        )}
+        {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
         <button onClick={togglePlayPause} className="play-pause-button">
-          {isPlaying ? (
-            <PauseIcon height="20px" width="20px" />
-          ) : (
-            <PlayIcon height="20px" width="20px" />
-          )}
+          {isPlaying ? <PauseIcon height="20px" width="20px" /> : <PlayIcon height="20px" width="20px" />}
         </button>
         <input
           type="range"

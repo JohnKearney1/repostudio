@@ -75,7 +75,7 @@ export const useFileStore = create<FileStore>((set) => ({
     set((state) => ({
       allFiles: typeof files === 'function' ? files(state.allFiles) : files,
     })),
-}));
+  }));
 
 // ------------------------------------------------------------------- // 
 

@@ -1,7 +1,7 @@
 .file-pane {
     background-color: #1a1a1a;
     border: black solid 1px;
-    min-width: 320px;
+    min-width: 350px;
     max-width: 25vw;
     display: flex;
     flex-direction: column;
@@ -53,6 +53,7 @@
     flex: 1;
     overflow-y: auto;
     user-select: none;
+    overflow-x: hidden;
 }
 
 .file-view:focus {
@@ -102,7 +103,7 @@
 
 .inaccessible {
     background-color: #202020;
-    border-left: 3px solid #ff0000;
+    border-left: 3px solid #fbff00;
 }
 
 .list-item.inaccessible.selected {

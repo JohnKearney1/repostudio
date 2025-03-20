@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
 import './FilePane.css';
 import { fileAddScript, fingerprintFileScript } from '../../scripts/fileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';
+import { AnimatePresence, motion } from 'framer-motion';
 import { 
   FilePlusIcon, 
   ArchiveIcon, 
@@ -52,52 +52,111 @@ const FilePane: React.FC = () => {
 
   // Ref to track file IDs that are currently being fingerprinted.
   const fingerprintingInProgress = useRef<Set<string>>(new Set());
-
+  
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
+
+  // Every 30 seconds, refresh the files in the selected repository.
+  useEffect(() => {
+    if (!selectedRepository) return;
+    const interval = setInterval(async () => {
+      console.log("Starting interval for repository:", selectedRepository);
+
+      try {
+        await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+        const preservedSelection = [...selectedFiles];
+        await loadFiles(preservedSelection);
+      } catch (error) {
+        console.error("Failed to refresh files for repository:", error);
+      }
+    }
+    , 30000);
+    return () => clearInterval(interval);
+  }
+  , []);
 
   // Store previous repository for detecting changes.
   const prevRepositoryRef = useRef(selectedRepository);
   // Ref to record whether the ctrl/meta key is held.
   const ctrlKeyRef = useRef(false);
 
-  // Reload files only if not fingerprinting.
   useEffect(() => {
+    const refreshAndLoadFiles = async () => {
+      if (!selectedRepository) return;
+      try {
+        // Refresh file accessibility status first
+        await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+        // Then reload the files into state
+        const preservedSelection = [...selectedFiles];
+        loadFiles(preservedSelection);
+      } catch (error) {
+        console.error("Failed to refresh and load files:", error);
+      }
+    };
+  
     if (!isFingerprinting && prevRepositoryRef.current?.id !== selectedRepository?.id) {
       prevRepositoryRef.current = selectedRepository;
-      const preservedSelection = [...selectedFiles];
-      loadFiles(preservedSelection);
+      refreshAndLoadFiles();
     }
   }, [selectedRepository, selectedFiles, isFingerprinting]);
 
   // Update fingerprinting progress message.
-  useEffect(() => {
-    if (fingerprintingTotal > 0) {
-      if (fingerprintingCompleted < fingerprintingTotal) {
-        // Always show the total count while tasks remain.
-        setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} Files...`);
-      } else if (fingerprintingCompleted === fingerprintingTotal) {
-        setProgressItemMessage('Done!');
-        // Keep the "Done!" message for 2 seconds before clearing and triggering a refresh.
-        const timeout = setTimeout(() => {
-          setProgressItemMessage('');
-          setFingerprintingTotal(0);
-          setFingerprintingCompleted(0);
-          setIsFingerprinting(false);
-          // After all fingerprinting tasks finish, reload files.
-          loadFiles(selectedFiles);
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
+// Update fingerprinting progress message.
+useEffect(() => {
+  if (fingerprintingTotal > 0) {
+    if (fingerprintingCompleted < fingerprintingTotal) {
+      // Always show the progress message while tasks remain.
+      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} Files...`);
+    } else if (fingerprintingCompleted === fingerprintingTotal) {
+      setProgressItemMessage('Done!');
+      // Keep the "Done!" message for 2 seconds before clearing.
+      const timeout = setTimeout(() => {
+        setProgressItemMessage('');
+        setFingerprintingTotal(0);
+        setFingerprintingCompleted(0);
+        setIsFingerprinting(false);
+        // After all fingerprinting tasks finish, reload files.
+        loadFiles(selectedFiles);
+      }, 2000);
+      return () => clearTimeout(timeout);
     }
-  }, [fingerprintingTotal, fingerprintingCompleted, selectedFiles]);
+  }
+}, [fingerprintingTotal, fingerprintingCompleted]); // removed selectedFiles from dependencies
+
+
+
+useEffect(() => {
+  const handleRepositoryChange = async () => {
+    if (!selectedRepository) return;
+
+    try {
+      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+      const preservedSelection = [...selectedFiles];
+      await loadFiles(preservedSelection);
+    } catch (error) {
+      console.error("Failed to refresh files for repository:", error);
+    } finally {
+      console.log("Finished refreshing files.");
+    }
+  };
+
+  handleRepositoryChange();
+}, [selectedRepository]);
+
 
   // Filter files by search query.
-  const filteredFiles = allFiles.filter((file) =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFiles = useMemo(() => {
+    const lowerQuery = searchQuery.toLowerCase();
+  
+    return allFiles.filter((file) => {
+      const nameMatch = file.name.toLowerCase().includes(lowerQuery);
+      const tagMatch = (file.tags || '').toLowerCase().includes(lowerQuery);
+      return nameMatch || tagMatch;
+    });
+  }, [allFiles, searchQuery]);
+  
 
   // Load files while preserving selection.
   const loadFiles = async (preservedSelection: FileMetadata[]) => {
@@ -108,6 +167,7 @@ const FilePane: React.FC = () => {
       return;
     }
     try {
+      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       setAllFiles(newFiles);
       const preserved = preservedSelection.filter((file) =>
@@ -343,37 +403,51 @@ const FilePane: React.FC = () => {
             </div>
           </button>
         </div>
+  
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
           <button onClick={handleFileAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
             <FilePlusIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
             <h6>Track File</h6>
           </button>
+  
           <button onClick={handleFolderAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
             <ArchiveIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
             <h6>Track Folder</h6>
           </button>
+  
           <button onClick={handleOpenSettings} className="toolbar-button">
-            {rightPanelContent && rightPanelContent.type === PropertiesPane ? (
-              <>
-                <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-                <h6>Actions</h6>
-              </>
-            ) : (
-              <>
-                <InfoCircledIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-                <h6>Properties</h6>
-              </>
-            )}
+            <motion.div
+              key={rightPanelContent && rightPanelContent.type === PropertiesPane ? 'actions' : 'properties'}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              {rightPanelContent && rightPanelContent.type === PropertiesPane ? (
+                <>
+                  <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+                  <h6>Actions</h6>
+                </>
+              ) : (
+                <>
+                  <InfoCircledIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+                  <h6>Properties</h6>
+                </>
+              )}
+            </motion.div>
           </button>
         </div>
       </div>
+  
       <input
         type="text"
-        placeholder="Search..."
+        placeholder="Search for files or tags..."
         className="searchbar"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
+  
       <div className="sort-options">
         <button className="sort-toggle-button" onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
           {sortOrder === 'asc' ? <DoubleArrowDownIcon /> : <DoubleArrowUpIcon />}
@@ -385,48 +459,81 @@ const FilePane: React.FC = () => {
           <option value="encoding">By Encoding</option>
         </select>
       </div>
+  
       <div className="file-view" tabIndex={0} onKeyDown={handleKeyDown}>
         {sortedFiles.length > 0 ? (
           <div className="file-list">
-            {progressItemMessage && (
-              <div className="list-item progress-item" style={{ position: 'sticky', top: 0, backgroundColor: '#1a1a1a', borderBottom: '1px solid black' }}>
-                {progressItemMessage !== 'Done!' ? (
-                  <motion.div
-                    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-                  >
-                    <PieChartIcon />
-                  </motion.div>
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <CheckCircledIcon style={{color: '00ff00'}}/>
-                  </div>
-                )}
-                {progressItemMessage}
-              </div>
-            )}
-            {sortedFiles.map((file, index) => (
-              <div
-                key={file.id}
-                className={`list-item ${!file.accessible ? 'inaccessible' : ''} ${selectedFiles.some((f) => f.id === file.id) ? 'selected' : ''}`}
-                onMouseDown={handleMouseDown}
-                onMouseUp={(e) => handleMouseUp(e, file, index)}
-              >
-                {file.name}
-              </div>
-            ))}
+            <AnimatePresence>
+              {progressItemMessage && (
+                <motion.div
+                  key="progress"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="list-item progress-item"
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    backgroundColor: '#1a1a1a',
+                    borderBottom: '1px solid black',
+                  }}
+                >
+                  {progressItemMessage !== 'Done!' ? (
+                    <motion.div
+                      style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginRight: '0.5rem' }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <PieChartIcon />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginRight: '0.5rem' }}
+                    >
+                      <CheckCircledIcon style={{ color: '#00ff00' }} />
+                    </motion.div>
+                  )}
+                  {progressItemMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
+  
+            <AnimatePresence>
+              {sortedFiles.map((file, index) => (
+                <motion.div
+                  key={file.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className={`list-item ${!file.accessible ? 'inaccessible' : ''} ${selectedFiles.some((f) => f.id === file.id) ? 'selected' : ''}`}
+                  onMouseDown={handleMouseDown}
+                  onMouseUp={(e) => handleMouseUp(e, file, index)}
+                >
+                  {file.name}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', flexDirection: 'column' }}
+          >
             <h4>Nothing's Here!</h4>
             <br />
             <h5>Try adding a file or folder</h5>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
   );
-};
-
+}
 export default FilePane;

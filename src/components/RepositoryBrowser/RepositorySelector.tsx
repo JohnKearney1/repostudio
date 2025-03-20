@@ -6,6 +6,7 @@ import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react
 import { useRepositoryStore } from '../../scripts/store';
 import { Repository } from '../../types/ObjectTypes';
 import { deleteRepository, createRepository } from '../../scripts/repoOperations';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -15,6 +16,10 @@ const RepositorySelector: React.FC = () => {
 
   const [showSavedAlert, setShowSavedAlert] = useState(false);
   const alertTimeoutRef = useRef<number | null>(null);
+
+  // New state and ref for delete confirmation
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const confirmTimeoutRef = useRef<number | null>(null);
 
   // Fetch repositories from backend and sync state/store.
   const fetchRepositories = async () => {
@@ -75,9 +80,10 @@ const RepositorySelector: React.FC = () => {
       newId = crypto.randomUUID();
     }
 
-    await createRepository(newId, 'New Repository' , '');
+    await createRepository(newId, 'New Repository', '');
   };
 
+  // Original deletion function
   const handleRemoveRepository = async () => {
     if (repositories.length <= 1) {
       alert('Whoops! Make a new repository before you delete this one.');
@@ -88,9 +94,39 @@ const RepositorySelector: React.FC = () => {
     // No need to manually call fetchRepositories()—handled by event listener
   };
 
+  // New handler for the delete button confirmation logic.
+  const handleDeleteButtonClick = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      // Set a 2-second timer to reset the button
+      confirmTimeoutRef.current = window.setTimeout(() => {
+        setConfirmDelete(false);
+      }, 2000);
+    } else {
+      // User confirmed deletion by clicking again within 2 seconds
+      if (confirmTimeoutRef.current) {
+        clearTimeout(confirmTimeoutRef.current);
+        confirmTimeoutRef.current = null;
+      }
+      handleRemoveRepository();
+      setConfirmDelete(false);
+    }
+  };
+
   return (
-    <div className='repo-selector'>
-      <div className='repo-btn-container' style={{ borderBottom: '1px solid #333', justifyContent: 'center', alignItems: 'center' }}>
+    <motion.div
+      className='repo-selector'
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className='repo-btn-container'
+        style={{ borderBottom: '1px solid #333', justifyContent: 'center', alignItems: 'center' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className='repo-info'>
           {selectedRepository ? (
             <>
@@ -105,12 +141,20 @@ const RepositorySelector: React.FC = () => {
                   className='repo-name-input'
                   placeholder='Repository Name'
                 />
-                {showSavedAlert && (
-                  <div className='saved-alert'>
-                    <CheckCircledIcon />
-                    Changes saved!
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showSavedAlert && (
+                    <motion.div
+                      className='saved-alert'
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CheckCircledIcon />
+                      Changes saved!
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <h5 style={{ userSelect: 'none' }}>#{selectedRepository.id}</h5>
               <textarea
@@ -130,33 +174,51 @@ const RepositorySelector: React.FC = () => {
           )}
         </div>
 
-        <div className='repo-btn-container' style={{ flexDirection: 'row', justifyContent: 'center', padding: '0', width: '90%' }}>
-          <button onClick={handleAddRepository} className='repo-btn'>
+        <motion.div
+          className='repo-btn-container'
+          style={{ flexDirection: 'row', justifyContent: 'center', padding: '0', width: '90%' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <motion.button
+            onClick={handleAddRepository}
+            className='repo-btn'
+          >
             <PlusIcon />
             Create Repository
-          </button>
-          <button onClick={handleRemoveRepository} className='repo-btn'>
+          </motion.button>
+          <motion.button
+            onClick={handleDeleteButtonClick}
+            className='repo-btn'
+            animate={{ backgroundColor: confirmDelete ? '#ff0000' : '#1a1a1a'}}
+            transition={{ duration: 0.3 }}
+          >
             <TrashIcon />
-            Delete Repository
-          </button>
-        </div>
-      </div>
-
-      <div className='repo-btn-container2'>
-        {repositories.map((repository) => (
-          <RepoButton
-            key={repository.id}
-            repository={repository}
-            isSelected={selectedRepository?.id === repository.id}
-            onClick={() => {
-              if (!selectedRepository || selectedRepository.id !== repository.id) {
-                setSelectedRepository(repository);
-              }
-            }}
-          />
-        ))}
-      </div>
-    </div>
+            {confirmDelete ? 'Confirm Deletion' : 'Delete Repository'}
+          </motion.button>
+        </motion.div>
+      </motion.div>
+      <motion.div
+        className='repo-btn-container2'
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+          {repositories.map((repository) => (
+            <RepoButton
+              key={repository.id}
+              repository={repository}
+              isSelected={selectedRepository?.id === repository.id}
+              onClick={() => {
+                if (!selectedRepository || selectedRepository.id !== repository.id) {
+                  setSelectedRepository(repository);
+                }
+              }}
+            />
+          ))}
+      </motion.div>
+    </motion.div>
   );
 };
 
@@ -167,13 +229,20 @@ interface RepoButtonProps {
 }
 
 const RepoButton: React.FC<RepoButtonProps> = ({ repository, isSelected, onClick }) => (
-  <button className={`repo-btn2 ${isSelected ? 'selected' : ''}`} onClick={onClick}>
+  <motion.button
+    className={`repo-btn2 ${isSelected ? 'selected' : ''}`}
+    onClick={onClick}
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 10 }}
+    transition={{ duration: 0.3 }}
+  >
     <CubeIcon />
     <div>
       <h4>{repository.name}</h4>
       <h5>#{repository.id}</h5>
     </div>
-  </button>
+  </motion.button>
 );
 
 export default RepositorySelector;

@@ -12,28 +12,41 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
     let files = get_files_in_repository(repo_id)?;
     for file in files {
         let path = Path::new(&file.path);
+    
         if !path.exists() {
             let mut updated_file = file.clone();
-            updated_file.accessible = false;
-            update_file(repo_id, &updated_file)?;
+            if updated_file.accessible {
+                println!("Marking '{}' as inaccessible", updated_file.name);
+                updated_file.accessible = false;
+                update_file(repo_id, &updated_file)?;
+            }
             continue;
         }
-
+    
         let fs_metadata = fs::metadata(&file.path)?;
         let new_date_modified = fs_metadata
             .modified()
             .map(|t| format!("{:?}", t))
             .unwrap_or_default();
-
+    
         if new_date_modified != file.date_modified {
+            // File changed! Reload full metadata
             let new_file_metadata = get_audio_metadata_from_file(&file.path)?;
             let updated_file = FileMetadata {
                 id: file.id.clone(),
                 ..new_file_metadata
             };
+            println!("Updating metadata for '{}'", updated_file.name);
+            update_file(repo_id, &updated_file)?;
+        } else if !file.accessible {
+            // File is back, but no change in date_modified - still needs marking as accessible!
+            let mut updated_file = file.clone();
+            updated_file.accessible = true;
+            println!("Marking '{}' as accessible again", updated_file.name);
             update_file(repo_id, &updated_file)?;
         }
     }
+    
     Ok(())
 }
 

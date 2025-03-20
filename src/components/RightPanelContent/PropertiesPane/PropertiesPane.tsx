@@ -7,7 +7,7 @@ import MetadataEditor from './MetadataEditor';
 const PropertiesPane: React.FC = () => {
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-  console.log("file:", singleSelected);
+  console.log("file:", singleSelected);  
 
   if (selectedFiles.length <= 1) {
     return (

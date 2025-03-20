@@ -5,9 +5,10 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 interface MultiInputProps {
   value?: string;
   onChange?: (value: string) => void;
+  onEnterPress?: () => void;
 }
 
-const MultiInput: React.FC<MultiInputProps> = ({ value, onChange }) => {
+const MultiInput: React.FC<MultiInputProps> = ({ value, onChange, onEnterPress }) => {
   // Initialize the items from the provided value prop, if any.
   const [items, setItems] = useState<string[]>(() => {
     return value
@@ -61,6 +62,14 @@ const MultiInput: React.FC<MultiInputProps> = ({ value, onChange }) => {
     if (e.key === 'Enter' && inputValue.trim()) {
       setItems(prevItems => [...prevItems, inputValue.trim()]);
       setInputValue('');
+
+      if (onEnterPress) {
+        onEnterPress();
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
     }
     // If the input is empty and user hits backspace, remove the last item
     else if (e.key === 'Backspace' && !inputValue) {

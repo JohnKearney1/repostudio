@@ -35,7 +35,8 @@ const WindowBar: React.FC = () => {
 
   const handleClose = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    appWindow.close();
+    // appWindow.close();
+    appWindow.hide();
   };
 
   return (
@@ -44,8 +45,10 @@ const WindowBar: React.FC = () => {
       onMouseDown={handleTitleBarMouseDown}
       className='window-bar'
     >
-      {/* Title area */}
-      <div className='window-title'>ProGit</div>
+      <div className='window-title-container'>
+        <img src='/64x64.png' alt='logo' className='windowbar-icon'/>
+        <div className='window-title'>ProGit <h5>0.1.1-a</h5></div>
+      </div>
       
       <div className='window-controls'>
         <div

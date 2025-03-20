@@ -45,7 +45,7 @@
   }
   
   .audio-player button:hover {
-    color: #00ff00;
+    color: #00a2ff;
   }
   
   .audio-player input[type="range"] {
@@ -64,7 +64,7 @@
     -webkit-appearance: none;
     width: 10px;
     height: 6px;
-    background: #00ff00;
+    background: #00a2ff;
     cursor: pointer;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     transition: background 0.2s;

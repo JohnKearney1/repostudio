@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import MultiInput from '../../Layout/MultiInput';
 import './MetadataEditor.css';
-import { CheckIcon } from '@radix-ui/react-icons';
+import { ArrowRightIcon, CheckIcon, CrossCircledIcon } from '@radix-ui/react-icons';
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore } from '../../../scripts/store';
+import { useRepositoryStore, useFileStore } from '../../../scripts/store';
+import { loadFilesScript } from '../../../scripts/fileOperations';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircledIcon } from '@radix-ui/react-icons'; // for success icon
 
 interface MetadataEditorProps {
-  file: FileMetadata;
-  onSave: (updated: Partial<FileMetadata>) => void;
+  onSave(updated: Partial<FileMetadata>): void;
 }
 
-const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
+const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
+  const file = useFileStore((state) => state.selectedFiles[0]);
   const [metaTitle, setMetaTitle] = useState(file.meta_title || '');
   const [metaComment, setMetaComment] = useState(file.meta_comment || '');
   const [metaAlbumArtist, setMetaAlbumArtist] = useState(file.meta_album_artist || '');
@@ -21,7 +24,22 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
   const [customTags, setCustomTags] = useState(file.tags || '');
   const repoId = useRepositoryStore((state) => state.selectedRepository?.id);
 
-  // Update state when file prop changes
+  // Updated status type to include 'error'
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  // Flag to hide unsaved changes message after a save attempt
+  const [justSaved, setJustSaved] = useState(false);
+
+  // Determine if there are unsaved changes by comparing current state to file metadata
+  const unsavedChanges =
+    (file.meta_title || '') !== metaTitle ||
+    (file.meta_comment || '') !== metaComment ||
+    (file.meta_album_artist || '') !== metaAlbumArtist ||
+    (file.meta_album || '') !== metaAlbum ||
+    (file.meta_track_number || '') !== metaTrackNumber ||
+    (file.meta_genre || '') !== metaGenre ||
+    (file.tags || '') !== customTags;
+
+  // Reset state when a new file is selected
   useEffect(() => {
     setMetaTitle(file.meta_title || '');
     setMetaComment(file.meta_comment || '');
@@ -32,8 +50,27 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
     setCustomTags(file.tags || '');
   }, [file]);
 
+  // Clear the justSaved flag if there are no pending changes
+  useEffect(() => {
+    if (!unsavedChanges) {
+      setJustSaved(false);
+    }
+  }, [unsavedChanges]);
+
+  // Auto-reset status (both 'success' and 'error') to 'idle' after 2 seconds
+  useEffect(() => {
+    if (status === 'success' || status === 'error') {
+      const timer = setTimeout(() => {
+        setStatus('idle');
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const formData: Partial<FileMetadata> = {
       meta_title: metaTitle.trim() || null,
       meta_comment: metaComment.trim() || null,
@@ -43,24 +80,27 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
       meta_genre: metaGenre.trim() || null,
       tags: customTags.trim() || null,
     };
-  
+
     const updatedFile: FileMetadata = { ...file, ...formData };
-  
+
     try {
-      // Update the file record in the database.
       await invoke('update_file_command', { repoId, file: updatedFile });
       console.log("Metadata updated successfully in database.");
-  
-      // Write the new metadata into the file itself.
+
       await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });
       console.log("Metadata written to file successfully.");
-  
+
       onSave(formData);
+
+      await loadFilesScript();
+
+      setStatus('success');
+      setJustSaved(true);
     } catch (error) {
       console.error("Failed to update metadata:", error);
+      setStatus('error');
     }
   };
-  
 
   return (
     <form onSubmit={handleSubmit} className="metadata-editor">
@@ -115,7 +155,13 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
           id="metaTrackNumber"
           type="text"
           value={metaTrackNumber}
-          onChange={(e) => setMetaTrackNumber(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Allow empty input or only digits
+            if (value === '' || /^[0-9]+$/.test(value)) {
+              setMetaTrackNumber(value);
+            }
+          }}
           autoComplete="off"
         />
       </div>
@@ -127,10 +173,72 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ file, onSave }) => {
         <h5 className="metadata-item-title">Tags:</h5>
         <MultiInput value={customTags} onChange={setCustomTags} />
       </div>
-      <button type="submit" className="metadata-btn">
-        <CheckIcon height="16px" width="16px" />
-        Apply
-      </button>
+
+      <motion.button
+        type="submit"
+        onClick={handleSubmit}
+        className="metadata-btn"
+        whileTap={{ scale: 0.95 }}
+        animate={
+          status === 'success'
+            ? { backgroundColor: '#00ff00' }
+            : status === 'error'
+            ? { backgroundColor: '#ff0000' }
+            : { backgroundColor: '#2a2a2a' }
+        }
+        transition={{ duration: 0.3 }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {status === 'success' ? (
+            <motion.span
+              key="success"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <CheckCircledIcon height="16px" width="16px" />
+              Success!
+            </motion.span>
+          ) : status === 'error' ? (
+            <motion.span
+              key="error"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <CrossCircledIcon height="16px" width="16px" />
+              Failed
+            </motion.span>
+          ) : (
+            <motion.span
+              key="idle"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              Apply
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Animated unsaved changes message; remains visible until the user applies changes or the values match */}
+      <AnimatePresence>
+        {unsavedChanges && !justSaved && (
+          <motion.h5
+            key="unsaved"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            style={{ marginTop: '10px', textAlign: 'center' }}
+          >
+            You have unsaved changes.
+          </motion.h5>
+        )}
+      </AnimatePresence>
     </form>
   );
 };

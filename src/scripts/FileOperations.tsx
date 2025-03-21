@@ -159,3 +159,4 @@ export const fingerprintFileScript = async (
     console.error("Failed to generate fingerprint for file:", error);
   }
 };
+

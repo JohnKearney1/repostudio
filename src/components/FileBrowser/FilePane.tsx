@@ -237,6 +237,30 @@ useEffect(() => {
     }
   };
 
+  // Utility: Recursively read directories and return all files
+const getAllAudioFilesRecursively = async (directory: string): Promise<string[]> => {
+  const entries = await readDir(directory);
+  const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
+
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    if ('children' in entry && (entry as any).children && (entry as any).children.length > 0) {
+      // It's a directory, recurse
+      const nestedFiles = await getAllAudioFilesRecursively(`${directory}/${entry.name}`);
+      files.push(...nestedFiles);
+    } else if (entry.name) {
+      const ext = entry.name.split('.').pop()?.toLowerCase();
+      if (ext && audioExtensions.includes(ext)) {
+        files.push(`${directory}/${entry.name}`);
+      }
+    }
+  }
+
+  return files;
+};
+
+
   // Handles adding a folder of files.
   const handleFolderAdd = async () => {
     try {

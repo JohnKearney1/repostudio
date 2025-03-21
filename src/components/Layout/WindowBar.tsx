@@ -47,7 +47,7 @@ const WindowBar: React.FC = () => {
     >
       <div className='window-title-container'>
         <img src='/64x64.png' alt='logo' className='windowbar-icon'/>
-        <div className='window-title'>ProGit <h5>0.1.1-a</h5></div>
+        <div className='window-title'>Repo Studio <h5>0.1.2-a</h5></div>
       </div>
       
       <div className='window-controls'>

@@ -1,70 +1,140 @@
-# ProGit
+<p align="center">
+  <img src="./app-icon.png" alt="Repo Studio Icon" width="50"/>
+</p>
+<h1 align="center">Repo Studio</h1>
+<p align="center"><i>A Git-like desktop app for managing and versioning audio files, built for producers and musicians.</i></p>
 
-![ProGit 0.1.0a](./src/assets/img/0.1.0a.png)
-ProGit is a first of its kind version control software built specifically with audio professionals in mind. It is built using Tauri, React and Typescript.
+<p align="center">
+  <img src="https://img.shields.io/badge/Made%20with%20Love-@JohnKearney1-ff69b4?style=for-the-badge" alt="Love Badge">
+</p>
 
-## TODO
+<p align="center">
+  <img src="https://img.shields.io/badge/Made%20with-Rust-00ff00?style=for-the-badge&logo=rust" alt="Rust Badge">
+  <img src="https://img.shields.io/badge/Frontend-React%20-00d8ff?style=for-the-badge&logo=react" alt="React Badge">
+  <img src="https://img.shields.io/badge/Backend-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
+</p>
 
-### v0.1.0a (Current)
-- [x] Implement Basic UI
-- [x] Implement Local Database & CRUD Operations
-- [x] Implement Git Integration
-- [x] Implement audio fingerprinting
-- [x] Implement audio player
-- [x] Implement Repository Management
-- [] Implement File Selection & Management (add removal functionality)
-- [ ] Clean up & Refactor CSS 
-- [ ] Clean up & Refactor Typescript
-- [ ] Monitor metadata changes on FS
+<p align="center">
+  <img src="./assets/readme1.png" alt="Repo Studio Preview"/>
+</p>
 
+---
 
-### BUGS 
-- [x] Audio Player doesn't get audio first time audio is selected
-- [ ] Metadata doesn't get updated when audio is selected
-- [ ] Metadata doesn't get updated properly on FS 
+## 🚀 About Repo Studio
 
-### v0.2.0a (Next)
-**Backend**
-- [ ] Implement audio comparison algorithm (user selected comparison action)
-- [ ] Implement audio similarity algorithm (repo-wide comparison action)
-- [ ] Implement audio file conversion (user selected conversion action)
-- [ ] Implement metadata extraction & changes to audio files on user's system
-- [ ] Implement spectrogram generation for audio files
-- [ ] Implement Settings Table in Local Database
+Repo Studio is a next-gen desktop app for musicians, producers, and audio professionals.  
+It brings **Git-style version control** and **audio fingerprinting** for your local music library, helping you manage, compare, and track your sounds with ease.
 
+✨ **Key Features**  
+✅ Repository management  
+✅ Audio metadata tagging  
+✅ Sonic similarity detection (fingerprinting)  
+✅ Git-style tracking and file management  
 
-**Frontend**
-- [ ] Add metadata editing functionality to `PropertiesPane.tsx` (When exactly one file is selected)
+🔜 **Upcoming Features**  
+💿 Audio conversion and format support  
+💿 Spectrogram generation  
+💿 Batch Metadata Tagging  
+💿 Audio Similarity Graphing  
+💿 Audio Compression and Conversion  
+💿 Mailing List Dispersion   
 
-- [ ] Add audio comparison functionality to `PropertiesPane.tsx` (When exactly two files are selected) : This should be a visual representation of the comparison between the two files. Show both spectrograms side by side, and highlight the differences between the two files. 
+---
 
-- [ ] Add audio similarity functionality to `PropertiesPane.tsx` (When > 2 files are selected) : This should be a visual representation of the comparison between the selected files. Show a 2d axis with the selected files plotted on it. The distance between the files should be proportional to the similarity between the files.
+## ⚙️ Getting Started
 
-- [ ] Add Settings Page to the UI
+### 🛠️ Built With
+- ⚡ **[Tauri](https://tauri.app/)** (Rust backend)
+- ⚛️ **[React](https://reactjs.org/)** + Typescript frontend
+- 🖌️ CSS styling (Dark mode friendly 🖤)
+- 🎧 [Symphonia](https://github.com/pdeljanov/Symphonia) (audio decoding)  
+- 🧬 [Rusty Chromaprint](https://github.com/acoustid/rusty-chromaprint) (audio fingerprinting)  
+- 🏷️ [Lofty](https://github.com/Serial-ATA/lofty-rs) (audio metadata)
 
-- [x] Add Action Button to the UI (to switch between properties and actions on the right panel, change the element in the rightPaneElement store)
+---
 
-## Setup
+### 🏗️ Project Structure
+```plaintext
+repostudio/                 (root directory)
+├─ package.json             (frontend dependencies file)
+├─ tsconfig.node.json       (TypeScript configuration file)
+├─ vite.config.ts           (vite configuration file)
+├─ src-tauri/               (Tauri source directory)
+│  ├─ capabilities/         (Tauri API capabilities directory)
+│  ├─ gen/                  (Tauri API bindings directory)
+│  ├─ icons/                (App icons directory)
+│  ├─ src/                  (Rust source code directory)
+│  └── commands/            (Tauri CLI commands directory)
+├─ tauri.conf.js            (Tauri configuration file)
+├─ Cargo.toml               (Rust dependencies file)
+├─ src/                     (frontend source directory)
+│  ├─ assets/               (frontend assets directory)
+│  ├─ components/           (React components directory)
+│  ├─ scripts/              (common scripts directory)
+│  ├─ styles/               (CSS styles directory)
+│  └── types/               (TypeScript types directory)
+├─ assets/                  (root assets)
+└── public/                 (public files)
+```
 
-This project requires:
-- Node.js & npm/yarn
-- [Rust Toolchain](https://rustup.rs/)
-- Tauri CLI (install with `cargo install tauri-cli`)
+### Prerequisites
+- 📦 [Node.js](https://nodejs.org/) (v18+ recommended)
+- 🦀 [Rust Toolchain](https://rustup.rs/) (Stable)
+- 🔧 [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites/)  
+  Install via:  
+  ```bash
+  cargo install tauri-cli
+  ```
 
-## Usage
-For Desktop Development: 
-1. Clone this repository
-2. Run `npm i` to install dependencies
-3. To start the development server, run: `npm run tauri dev`
+---
 
-For Android Development:
-1. Initialize the project with `npm run tauri android init`
-2. Run the development server with `npm run tauri android dev`
-## Tauri + React + Typescript
+### 🔨 Development Setup
+```bash
+# 1. Clone the repo
+git clone https://github.com/yourusername/repo-studio.git
+cd repo-studio
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+# 2. Install frontend dependencies
+npm install
 
-## Recommended IDE Setup
+# 3. Start the dev server
+npm run tauri dev
+```
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### 🏗️ Build for Production
+```bash
+npm run tauri build
+```
+
+---
+
+## 💡 Recommended IDE Setup
+- 📝 [VS Code](https://code.visualstudio.com/)
+- 📦 Extensions:  
+  - [Tauri Extension](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)  
+  - [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+---
+
+## ✅ Current Roadmap (v0.1.x-a)
+- [x] Basic UI & UX
+- [x] Local Database CRUD
+- [x] Git-like Repo Management
+- [x] Audio Fingerprinting
+- [x] Audio Player
+- [x] File System Metadata Sync
+- [ ] File Selection & Management (deletion & removal)
+- [ ] Settings Page
+- [ ] Real-time Folder Monitoring
+
+---
+
+## 🔮 Future Features (v0.2.x-a)
+- [ ] Audio similarity algorithms for repo-wide comparisons  
+- [ ] Audio conversion between formats  
+- [ ] Spectrogram generation  
+- [ ] Advanced settings management  
+- [ ] Polished UI + CSS refactor  
+- [ ] Audio metadata extraction/enrichment automation  
+
 

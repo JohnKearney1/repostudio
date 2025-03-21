@@ -44,7 +44,7 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 - **Parameters:**  
   - `repo_id` (String): The identifier of the repository.
 - **Description:**  
-  Retrieves all file records stored in the repository’s file table. Each record is returned as a `FileMetadata` object containing various file attributes (e.g. id, name, encoding, path, metadata, etc.).
+  Retrieves all file records stored in the repository’s file table. Each record is returned as a `FileMetadata` object containing various file attributes.
 
 ---
 
@@ -53,11 +53,17 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 ### create_file_command
 - **Parameters:**  
   - `repo_id` (String): The repository identifier where the file should be inserted.  
-  - `file` (FileMetadata): The file data to insert. This structure includes fields such as `id`, `name`, `encoding`, `path`, `date_created`, `date_modified`, and additional metadata.
+  - `file` (FileMetadata): The file data to insert, including fields such as `id`, `name`, `encoding`, `path`, `date_created`, `date_modified`, and additional metadata.
 - **Description:**  
   Inserts a new file record into the repository’s file table.  
-  - **Duplicate Handling:** Before insertion, the command checks if a file with the same normalized path (backslashes converted to forward slashes) already exists. If so, the insert is skipped.  
-  - After insertion, the command automatically scans for and removes duplicate file records—retaining only the most recently modified file in case of duplicates.
+  - **Duplicate Handling:** If a file with the same normalized path (backslashes converted to forward slashes) already exists, the insert is skipped. After insertion, duplicate files are removed—retaining only the most recently modified record.
+
+### update_file_command
+- **Parameters:**  
+  - `repo_id` (String): The repository identifier where the file is stored.  
+  - `file` (FileMetadata): The updated file data.
+- **Description:**  
+  Updates an existing file record in the repository’s file table with new metadata.
 
 ### delete_file_command
 - **Parameters:**  
@@ -77,7 +83,7 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 - **Parameters:**  
   - `repo_id` (String): The repository identifier.
 - **Description:**  
-  Scans the file records in the specified repository for duplicates based on normalized file paths. If duplicates are found, it removes all but the most recently modified record. This ensures that only the best version of each file remains.
+  Scans the file records in the repository for duplicates based on normalized file paths, and removes all but the most recently modified record.
 
 ---
 
@@ -88,7 +94,7 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
   - `setting_name` (String): The name/key of the setting.  
   - `value` (String): The value to assign to the setting.
 - **Description:**  
-  Inserts a new setting into the `Settings` table with a generated unique id. Useful for adding new configurable options.
+  Inserts a new setting into the `Settings` table with a generated unique id, allowing for configurable options.
 
 ### update_setting_command
 - **Parameters:**  
@@ -101,7 +107,7 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 - **Parameters:**  
   - `setting_name` (String): The name/key of the setting to retrieve.
 - **Description:**  
-  Fetches a setting from the database. Returns an optional `Settings` record (with `id`, `setting`, and `value`). If the setting does not exist, it returns `None`.
+  Fetches a setting from the database. Returns an optional `Settings` record containing `id`, `setting`, and `value`. Returns `None` if the setting does not exist.
 
 ---
 
@@ -111,27 +117,19 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 - **Parameters:**  
   - `file_path` (String): The full path to the audio file.
 - **Description:**  
-  Reads audio metadata from the specified file using Lofty’s `Probe`.  
-  - Extracts both editable tag fields (such as title, comment, album artist, album, track number, genre) and file system properties (creation time, modification time, file size).  
-  - Returns a `FileMetadata` object populated with the extracted data.
+  Reads audio metadata from the specified file using Lofty’s `Probe`. Extracts both editable tag fields (such as title, comment, album artist, album, track number, genre) and file system properties (creation time, modification time, file size). Returns a populated `FileMetadata` object.
 
 ### clear_audio_metadata_from_file_command
 - **Parameters:**  
   - `file_path` (String): The full path to the audio file.
 - **Description:**  
-  Clears all metadata from the file by iterating over each unique tag type and invoking its built-in removal function.  
-  - This effectively strips the file of any embedded tags.
+  Clears all metadata from the file by removing all embedded tags.
 
 ### write_audio_metadata_to_file_command
 - **Parameters:**  
   - `file_metadata` (FileMetadata): A structure containing new metadata values.
 - **Description:**  
-  Writes new audio metadata to the specified file.  
-  - **Process:**  
-    1. Clears all existing metadata from the file.  
-    2. Re-opens the file and either obtains a mutable reference to an existing tag or creates a new tag if none exists.  
-    3. Populates the tag with new editable fields from the provided `FileMetadata` (e.g. title, comment, album artist, album, track number, genre).  
-    4. Saves the updated tag back to the file using Lofty’s default write options.
+  Writes new audio metadata to the specified file by first clearing existing metadata and then writing updated tag information (e.g. title, comment, album artist, album, track number, genre) to the file.
 
 ---
 
@@ -142,12 +140,12 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
   - `repo_id` (String): The repository identifier where the file is stored.  
   - `file` (FileMetadata): The file metadata object for the file to be fingerprinted.
 - **Description:**  
-  Generates an audio fingerprint for the provided file using Symphonia for audio decoding and a fingerprinting library (e.g., rusty_chromaprint) with a preset configuration.  
-  - **Process:**  
-    1. Opens and decodes the audio file, processing packets from the first supported audio track.  
-    2. Feeds the decoded samples to the fingerprinter to compute a fingerprint.  
-    3. Converts the resulting fingerprint (a vector of `u32` values) into a hexadecimal string.  
-    4. Updates the file's database entry with its original metadata plus the newly generated fingerprint using the existing update function.
+  Generates an audio fingerprint for the provided file using Symphonia for decoding and a fingerprinting library (e.g., rusty_chromaprint).  
+  **Process:**  
+  1. Opens and decodes the audio file, processing packets from the first supported audio track.  
+  2. Feeds the decoded samples to the fingerprinter to compute a fingerprint.  
+  3. Converts the fingerprint (a vector of `u32` values) into a hexadecimal string.  
+  4. Updates the file's database entry with the new fingerprint.
 
 ---
 
@@ -157,14 +155,13 @@ All functions are wrapped in Tauri commands using `spawn_blocking` to ensure tha
 - **Parameters:**  
   - `repo_id` (String): The repository identifier.
 - **Description:**  
-  Refreshes the file records for a single repository by:
-  - Checking that each file still exists at its stored path.
-  - If a file no longer exists, marking it as inaccessible.
-  - If a file exists, comparing the file’s last modified timestamp on the system with the stored value.  
-    If they differ, re-reading the file’s metadata from disk and updating the database entry accordingly.
+  Refreshes the file records for a single repository by:  
+  - Checking if each file still exists at its stored path.  
+  - Marking files as inaccessible if they no longer exist.  
+  - Updating file metadata if the file’s last modified timestamp has changed.
 
 ### refresh_files_in_all_repositories_command
 - **Parameters:**  
   - _None_
 - **Description:**  
-  Iterates over all repositories in the database and refreshes each repository’s file records by calling `refresh_files_in_repository_command` for each one.
+  Iterates over all repositories in the database and refreshes each repository’s file records by invoking `refresh_files_in_repository_command` for each one.

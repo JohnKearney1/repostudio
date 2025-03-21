@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./app-icon.png" alt="Repo Studio Icon" width="50"/>
+  <img src="./app-icon.png" alt="Repo Studio Icon" width="75"/>
 </p>
 <h1 align="center">Repo Studio</h1>
 <p align="center"><i>A Git-like desktop app for managing and versioning audio files, built for producers and musicians.</i></p>

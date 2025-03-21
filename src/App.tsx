@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store";
 import AudioPlayer from "./components/AudioPlayer/AudioPlayer";
 
-import { loadRepositoriesScript } from "./scripts/repoOperations";
+import { loadRepositoriesScript } from "./scripts/RepoOperations";
 
 function App() {
   const { isVisible: isRepoSelectorVisible} = usePopupStore();

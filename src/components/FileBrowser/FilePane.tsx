@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './FilePane.css';
-import { fileAddScript, fingerprintFileScript } from '../../scripts/fileOperations';
+import { fileAddScript, fingerprintFileScript } from '../../scripts/FileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { readDir } from '@tauri-apps/plugin-fs';

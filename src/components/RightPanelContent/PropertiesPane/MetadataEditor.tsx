@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import MultiInput from '../../Layout/MultiInput';
 import './MetadataEditor.css';
-import { ArrowRightIcon, CheckIcon, CrossCircledIcon } from '@radix-ui/react-icons';
+import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { invoke } from '@tauri-apps/api/core';
 import { useRepositoryStore, useFileStore } from '../../../scripts/store';
 import { loadFilesScript } from '../../../scripts/fileOperations';

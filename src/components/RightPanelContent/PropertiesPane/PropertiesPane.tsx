@@ -34,7 +34,6 @@ const PropertiesPane: React.FC = () => {
               <div className="file-info" style={{ padding: '0.5rem' }}>
 
                 <MetadataEditor
-                  file={singleSelected}
                   onSave={() => console.log("Metadata saved.")}
                 />
               </div>

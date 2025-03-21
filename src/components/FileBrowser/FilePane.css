@@ -5,7 +5,7 @@
     max-width: 25vw;
     display: flex;
     flex-direction: column;
-    height: calc((var(--vh, 1vh) * 100) - 107px);
+    height: calc((var(--vh, 1vh) * 100) - 93px);
 }
 
 .toolbar {

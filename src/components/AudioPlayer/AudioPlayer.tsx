@@ -87,12 +87,14 @@ const AudioPlayer: React.FC = () => {
   const formatTime = (time: number) =>
     `${Math.floor(time / 60)}:${Math.floor(time % 60) < 10 ? '0' : ''}${Math.floor(time % 60)}`;
 
+  const progress = duration ? (currentTime / duration) * 100 : 0;
+
   return (
     <div className="audio-player">
       <div className="audio-controls">
         {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
         <button onClick={togglePlayPause} className="play-pause-button">
-          {isPlaying ? <PauseIcon height="20px" width="20px" /> : <PlayIcon height="20px" width="20px" />}
+          {isPlaying ? <PauseIcon height="20px" width="20px" /> : <PlayIcon height="20px" width="20px"/>}
         </button>
         <input
           type="range"
@@ -101,7 +103,11 @@ const AudioPlayer: React.FC = () => {
           step="0.1"
           value={currentTime}
           onChange={handleSeek}
+          style={{
+            background: `linear-gradient(to right,rgb(144, 214, 255) 0%, #00a2ff ${progress}%, #444 ${progress}%, #444 100%)`
+          }}
         />
+
         <div className="time-display">
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>

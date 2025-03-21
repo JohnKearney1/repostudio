@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "repostudio",
+  "productName": "Repo Studio",
   "version": "0.1.2",
   "identifier": "com.repostudio",
   "build": {
@@ -34,6 +34,13 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine",
+        "displayLanguageSelector": true
+      }
+    }
   }
 }

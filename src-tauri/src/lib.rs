@@ -1,4 +1,4 @@
-use commands::refresh_files_in_all_repositories;
+use background::folder_watcher;
 // lib.rs
 use tauri::{
     menu::{Menu, MenuItem},
@@ -6,6 +6,8 @@ use tauri::{
     Manager,
   };
 mod commands;
+use commands::{db, refresh_files_in_all_repositories};
+mod background;
 
 pub fn run() {
 
@@ -58,6 +60,13 @@ pub fn run() {
             commands::refresh_files_in_repository_command,
             commands::refresh_files_in_all_repositories_command,
 
+            // ---------------------------------- //
+            //         folder_watcher.rs          //
+            // ---------------------------------- //
+            background::watch_folder_command,
+            background::unwatch_folder_command,
+            background::get_tracked_folders_command,
+            
         ])
         .setup(|app| {
 
@@ -65,6 +74,20 @@ pub fn run() {
               Ok(_) => println!("Checked all file accessibility at startup!"),
               Err(e) => println!("Failed to refresh files at startup: {:?}", e),
             };
+
+            // Start folder watchers on launch
+            let window = app.get_webview_window("main").unwrap(); // Or get the correct window
+            match db::get_tracked_folders() {
+              Ok(folders) => {
+                  for folder in folders {
+                      println!("Auto-watching folder: {} for repo {}", folder.folder_path, folder.repo_id);
+                      if let Err(e) = folder_watcher::watch_folder(window.clone(), folder.repo_id.clone(), folder.folder_path.clone()) {
+                          println!("Failed to watch folder '{}': {:?}", folder.folder_path, e);
+                      }
+                  }
+              }
+              Err(e) => println!("Failed to load tracked folders: {:?}", e),
+            }
 
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let exit_i = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;

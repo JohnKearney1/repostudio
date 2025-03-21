@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Made%20with-Rust-00ff00?style=for-the-badge&logo=rust" alt="Rust Badge">
+  <img src="https://img.shields.io/badge/Made%20with-Rust-ff0000?style=for-the-badge&logo=rust" alt="Rust Badge">
   <img src="https://img.shields.io/badge/Frontend-React%20-00d8ff?style=for-the-badge&logo=react" alt="React Badge">
   <img src="https://img.shields.io/badge/Backend-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
 </p>
@@ -25,23 +25,20 @@
 Repo Studio is a next-gen desktop app for musicians, producers, and audio professionals.  
 It brings **Git-style version control** and **audio fingerprinting** for your local music library, helping you manage, compare, and track your sounds with ease.
 
-✨ **Key Features**  
+✨ **Features**  
 ✅ Repository management  
 ✅ Audio metadata tagging  
 ✅ Sonic similarity detection (fingerprinting)  
 ✅ Git-style tracking and file management  
+✅ Audio Playback  
 
-🔜 **Upcoming Features**  
-💿 Audio conversion and format support  
-💿 Spectrogram generation  
-💿 Batch Metadata Tagging  
-💿 Audio Similarity Graphing  
-💿 Audio Compression and Conversion  
-💿 Mailing List Dispersion   
 
 ---
 
 ## ⚙️ Getting Started
+
+Are you a musician, producer, or audio enthusiast? The section below is mostly for developers.
+Visit the [Releases](https://github.com/JohnKearney1/repostudio/releases) page to download the latest version of Repo Studio.
 
 ### 🛠️ Built With
 - ⚡ **[Tauri](https://tauri.app/)** (Rust backend)
@@ -123,9 +120,10 @@ npm run tauri build
 - [x] Audio Fingerprinting
 - [x] Audio Player
 - [x] File System Metadata Sync
+- [x] True Folder Tracking  
+- [x] Real-time Folder Monitoring
 - [ ] File Selection & Management (deletion & removal)
 - [ ] Settings Page
-- [ ] Real-time Folder Monitoring
 
 ---
 

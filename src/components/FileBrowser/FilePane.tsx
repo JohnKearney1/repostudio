@@ -3,6 +3,7 @@ import './FilePane.css';
 import { fileAddScript, fingerprintFileScript } from '../../scripts/FileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { readDir } from '@tauri-apps/plugin-fs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
@@ -44,6 +45,8 @@ const FilePane: React.FC = () => {
   const { setContent } = usePopupContentStore();
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
+  const [, setTrackedFolders] = useState<string[]>([]);
+
 
   // New state to track fingerprinting progress.
   const [fingerprintingTotal, setFingerprintingTotal] = useState<number>(0);
@@ -57,6 +60,41 @@ const FilePane: React.FC = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
+
+  const reloadFiles = async () => {
+    if (!selectedRepository) return;
+  
+    try {
+      // Refresh accessibility status before loading files
+      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+  
+      // Then reload files from the backend
+      await loadFiles([]);
+    } catch (error) {
+      console.error("Failed to reload files:", error);
+    }
+  };
+  
+  
+
+  // Listen for file changes in tracked folders
+  useEffect(() => {
+    const unlistenAdded = listen<string>("folder_file_added", async () => {
+      console.log("File added! Refreshing repo + files...");
+      await reloadFiles();
+    });
+  
+    const unlistenRemoved = listen<string>("folder_file_removed", async () => {
+      console.log("File removed! Refreshing repo + files...");
+      await reloadFiles();
+    });
+  
+    return () => {
+      unlistenAdded.then((fn) => fn());
+      unlistenRemoved.then((fn) => fn());
+    };
+  }, [selectedRepository]);
+  
 
   // Every 30 seconds, refresh the files in the selected repository.
   useEffect(() => {
@@ -124,6 +162,28 @@ useEffect(() => {
     }
   }
 }, [fingerprintingTotal, fingerprintingCompleted]); // removed selectedFiles from dependencies
+
+
+useEffect(() => {
+  const loadTrackedFolders = async () => {
+    if (!selectedRepository) {
+      setTrackedFolders([]);
+      return;
+    }
+
+    try {
+      const folders: string[] = await invoke("get_tracked_folders_command", {
+        repoId: selectedRepository.id
+      });
+      setTrackedFolders(folders);
+      console.log("Tracked folders loaded:", folders);
+    } catch (error) {
+      console.error("Failed to load tracked folders:", error);
+    }
+  };
+
+  loadTrackedFolders();
+}, [selectedRepository]);
 
 
 
@@ -268,36 +328,43 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
         console.warn("No repository selected!");
         return;
       }
+  
       const selectedDir = await open({
         directory: true,
         multiple: false,
         recursive: true,
       });
       if (!selectedDir) return;
-      const entries = await readDir(selectedDir);
-      const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
-      const audioFiles = entries
-        .filter((entry) => !(entry as any).children)
-        .filter((entry) => {
-          const ext = entry.name?.split('.').pop()?.toLowerCase();
-          return ext && audioExtensions.includes(ext);
-        })
-        .map((file) => `${selectedDir}/${file.name}`);
-      if (audioFiles.length === 0) {
-        console.log("No audio files found in folder.");
-        return;
-      }
+  
+      // Step 1: Add existing files like you already do
+      const audioFiles = await getAllAudioFilesRecursively(selectedDir);
       setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
       for (const filePath of audioFiles) {
         await fileAddScript(selectedRepository, filePath);
       }
+  
+      // Step 2: Start watching the folder for future changes
+      await invoke("watch_folder_command", {
+        repoId: selectedRepository.id,
+        folderPath: selectedDir
+      });
+      
+      // Refresh the tracked folders list!
+      const folders: string[] = await invoke("get_tracked_folders_command", {
+        repoId: selectedRepository.id
+      });
+      setTrackedFolders(folders);
+      
+  
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
+  
     } catch (error) {
       console.error("Failed to add folder:", error);
       setProgressItemMessage('');
     }
   };
+  
 
   const handleOpenSettings = () => {
     if (rightPanelContent && rightPanelContent.type === PropertiesPane) {
@@ -345,6 +412,12 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
         return newSelection;
       });
       ctrlKeyRef.current = false;
+
+      // Skip if inaccessible
+      if (!file.accessible) {
+        console.warn(`Skipping fingerprinting for inaccessible file: ${file.name}`);
+        return;
+      }
 
       // If the file lacks a fingerprint and is not already being fingerprinted, trigger the fingerprint script.
       if (!file.audio_fingerprint && selectedRepository) {

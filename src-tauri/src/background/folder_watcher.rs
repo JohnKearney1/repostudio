@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 use notify::{Watcher, RecursiveMode, Event, RecommendedWatcher, Config, EventKind};
-use tauri::{WebviewWindow};
+use tauri::WebviewWindow;
 use tauri::Emitter;
 use crate::commands::{db, file_ops, actions};
 
@@ -38,11 +38,25 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
                         EventKind::Remove(_) => {
                             println!("File removed! Refreshing repository...");
                             let _ = actions::refresh_files_in_repository(&repo_id_for_watcher);
+                        
+                            // Emit folder_file_removed event!
+                            let _ = window.emit(
+                                "folder_file_removed",
+                                format!("A file was removed from repo '{}'", repo_id_for_watcher)
+                            );
                         }
+                        
                         EventKind::Modify(_) => {
                             println!("File modified! Refreshing repository...");
                             let _ = actions::refresh_files_in_repository(&repo_id_for_watcher);
+                        
+                            // Emit folder_file_modified event! (optional, if you want to track these)
+                            let _ = window.emit(
+                                "folder_file_modified",
+                                format!("A file was modified in repo '{}'", repo_id_for_watcher)
+                            );
                         }
+                        
                         _ => {}
                     }
                 }

@@ -46,16 +46,13 @@ const FilePane: React.FC = () => {
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
   const [, setTrackedFolders] = useState<string[]>([]);
-
-
-  // New state to track fingerprinting progress.
   const [fingerprintingTotal, setFingerprintingTotal] = useState<number>(0);
   const [fingerprintingCompleted, setFingerprintingCompleted] = useState<number>(0);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
 
   // Ref to track file IDs that are currently being fingerprinted.
   const fingerprintingInProgress = useRef<Set<string>>(new Set());
-  
+
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
@@ -74,7 +71,7 @@ const FilePane: React.FC = () => {
       console.error("Failed to reload files:", error);
     }
   };
-  
+
   
 
   // Listen for file changes in tracked folders
@@ -95,7 +92,7 @@ const FilePane: React.FC = () => {
     };
   }, [selectedRepository]);
   
-
+  
   // Every 30 seconds, refresh the files in the selected repository.
   useEffect(() => {
     if (!selectedRepository) return;

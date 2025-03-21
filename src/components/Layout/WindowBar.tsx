@@ -7,6 +7,7 @@ import React from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BorderSolidIcon, SizeIcon, Cross2Icon } from '@radix-ui/react-icons';
 import './WindowBar.css';
+import logo from '../../assets/img/64x64.png';
 
 const WindowBar: React.FC = () => {
   const appWindow = getCurrentWindow();
@@ -46,7 +47,7 @@ const WindowBar: React.FC = () => {
       className='window-bar'
     >
       <div className='window-title-container'>
-        <img src='/64x64.png' alt='logo' className='windowbar-icon'/>
+        <img src={logo} alt='logo' className='windowbar-icon'/>
         <div className='window-title'>Repo Studio <h5>0.1.2-a</h5></div>
       </div>
       

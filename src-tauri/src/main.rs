@@ -4,5 +4,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    kcra_ts_tauri_lib::run()
+    repostudio_lib::run()
 }

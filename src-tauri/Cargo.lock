@@ -1951,27 +1951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kcra-ts-tauri"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "lofty",
- "regex",
- "rusqlite",
- "rusty-chromaprint",
- "serde",
- "serde_json",
- "symphonia",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
- "uuid",
-]
-
-[[package]]
 name = "keyboard-types"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3201,6 +3180,27 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+
+[[package]]
+name = "repostudio"
+version = "0.1.2"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "lofty",
+ "regex",
+ "rusqlite",
+ "rusty-chromaprint",
+ "serde",
+ "serde_json",
+ "symphonia",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+ "uuid",
+]
 
 [[package]]
 name = "reqwest"

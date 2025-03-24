@@ -117,7 +117,7 @@ export default function ActionsPane() {
                     <SymbolIcon />
                     Check for Updates
                 </h4>
-                <h5>Version: 0.1.2-a</h5>
+                <h5>Version: 0.1.3-a</h5>
             </button>
 
             <h5 style={{padding: '0.5rem', fontSize: '0.8rem',

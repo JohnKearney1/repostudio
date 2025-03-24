@@ -3,6 +3,7 @@ import './FilePane.css';
 import { fileAddScript, fingerprintFileScript } from '../../scripts/FileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { readDir } from '@tauri-apps/plugin-fs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
@@ -44,20 +45,54 @@ const FilePane: React.FC = () => {
   const { setContent } = usePopupContentStore();
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
-
-  // New state to track fingerprinting progress.
+  const [, setTrackedFolders] = useState<string[]>([]);
   const [fingerprintingTotal, setFingerprintingTotal] = useState<number>(0);
   const [fingerprintingCompleted, setFingerprintingCompleted] = useState<number>(0);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
 
   // Ref to track file IDs that are currently being fingerprinted.
   const fingerprintingInProgress = useRef<Set<string>>(new Set());
-  
+
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
 
+  const reloadFiles = async () => {
+    if (!selectedRepository) return;
+  
+    try {
+      // Refresh accessibility status before loading files
+      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+  
+      // Then reload files from the backend
+      await loadFiles([]);
+    } catch (error) {
+      console.error("Failed to reload files:", error);
+    }
+  };
+
+  
+
+  // Listen for file changes in tracked folders
+  useEffect(() => {
+    const unlistenAdded = listen<string>("folder_file_added", async () => {
+      console.log("File added! Refreshing repo + files...");
+      await reloadFiles();
+    });
+  
+    const unlistenRemoved = listen<string>("folder_file_removed", async () => {
+      console.log("File removed! Refreshing repo + files...");
+      await reloadFiles();
+    });
+  
+    return () => {
+      unlistenAdded.then((fn) => fn());
+      unlistenRemoved.then((fn) => fn());
+    };
+  }, [selectedRepository]);
+  
+  
   // Every 30 seconds, refresh the files in the selected repository.
   useEffect(() => {
     if (!selectedRepository) return;
@@ -108,7 +143,7 @@ useEffect(() => {
   if (fingerprintingTotal > 0) {
     if (fingerprintingCompleted < fingerprintingTotal) {
       // Always show the progress message while tasks remain.
-      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} Files...`);
+      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} File(s)...`);
     } else if (fingerprintingCompleted === fingerprintingTotal) {
       setProgressItemMessage('Done!');
       // Keep the "Done!" message for 2 seconds before clearing.
@@ -125,24 +160,57 @@ useEffect(() => {
   }
 }, [fingerprintingTotal, fingerprintingCompleted]); // removed selectedFiles from dependencies
 
-
+const repoInitialized = useRef<string | null>(null);
 
 useEffect(() => {
-  const handleRepositoryChange = async () => {
-    if (!selectedRepository) return;
+  if (!selectedRepository) {
+    setAllFiles([]);
+    setSelectedFiles([]);
+    setTrackedFolders([]);
+    repoInitialized.current = null;
+    return;
+  }
 
+  const repoId = selectedRepository.id;
+
+  // If we've already initialized this repo, skip.
+  if (repoInitialized.current === repoId) {
+    return;
+  }
+
+  repoInitialized.current = repoId;
+
+  let cancelled = false;
+
+  const handleRepositoryInit = async () => {
     try {
-      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+      console.log(`Initializing repository: ${repoId}`);
+
+      // Refresh file accessibility status & reload files
+      await invoke("refresh_files_in_repository_command", { repoId });
+
       const preservedSelection = [...selectedFiles];
       await loadFiles(preservedSelection);
+
+      // Load tracked folders
+      const folders: string[] = await invoke("get_tracked_folders_command", { repoId });
+
+      if (!cancelled) {
+        setTrackedFolders(folders);
+        console.log("Tracked folders loaded:", folders);
+      }
+
+      console.log("Finished initializing repository:", repoId);
     } catch (error) {
-      console.error("Failed to refresh files for repository:", error);
-    } finally {
-      console.log("Finished refreshing files.");
+      console.error(`Failed to initialize repository ${repoId}:`, error);
     }
   };
 
-  handleRepositoryChange();
+  handleRepositoryInit();
+
+  return () => {
+    cancelled = true;
+  };
 }, [selectedRepository]);
 
 
@@ -268,36 +336,43 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
         console.warn("No repository selected!");
         return;
       }
+  
       const selectedDir = await open({
         directory: true,
         multiple: false,
         recursive: true,
       });
       if (!selectedDir) return;
-      const entries = await readDir(selectedDir);
-      const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
-      const audioFiles = entries
-        .filter((entry) => !(entry as any).children)
-        .filter((entry) => {
-          const ext = entry.name?.split('.').pop()?.toLowerCase();
-          return ext && audioExtensions.includes(ext);
-        })
-        .map((file) => `${selectedDir}/${file.name}`);
-      if (audioFiles.length === 0) {
-        console.log("No audio files found in folder.");
-        return;
-      }
+  
+      // Step 1: Add existing files like you already do
+      const audioFiles = await getAllAudioFilesRecursively(selectedDir);
       setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
       for (const filePath of audioFiles) {
         await fileAddScript(selectedRepository, filePath);
       }
+  
+      // Step 2: Start watching the folder for future changes
+      await invoke("watch_folder_command", {
+        repoId: selectedRepository.id,
+        folderPath: selectedDir
+      });
+      
+      // Refresh the tracked folders list!
+      const folders: string[] = await invoke("get_tracked_folders_command", {
+        repoId: selectedRepository.id
+      });
+      setTrackedFolders(folders);
+      
+  
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
+  
     } catch (error) {
       console.error("Failed to add folder:", error);
       setProgressItemMessage('');
     }
   };
+  
 
   const handleOpenSettings = () => {
     if (rightPanelContent && rightPanelContent.type === PropertiesPane) {
@@ -346,6 +421,12 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
       });
       ctrlKeyRef.current = false;
 
+      // Skip if inaccessible
+      if (!file.accessible) {
+        console.warn(`Skipping fingerprinting for inaccessible file: ${file.name}`);
+        return;
+      }
+
       // If the file lacks a fingerprint and is not already being fingerprinted, trigger the fingerprint script.
       if (!file.audio_fingerprint && selectedRepository) {
         if (fingerprintingInProgress.current.has(file.id)) {
@@ -368,6 +449,15 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
     },
     [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]
   );
+
+  const truncateFileName = (fileName: string): string => {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.slice(0, lastDotIndex);
+    return nameWithoutExtension.length > 35
+      ? nameWithoutExtension.slice(0, 35) + '…'
+      : nameWithoutExtension;
+  };
+  
 
   // Keyboard navigation remains unchanged.
   const handleKeyDown = useCallback(
@@ -501,6 +591,8 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
                     top: 0,
                     backgroundColor: '#1a1a1a',
                     borderBottom: '1px solid black',
+                    justifyContent: 'flex-start',
+                    gap: '0rem',
                   }}
                 >
                   {progressItemMessage !== 'Done!' ? (
@@ -539,7 +631,8 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
                   onMouseDown={handleMouseDown}
                   onMouseUp={(e) => handleMouseUp(e, file, index)}
                 >
-                  {file.name}
+                  {truncateFileName(file.name)}
+                  <h5>{file.encoding}</h5>
                 </motion.div>
               ))}
             </AnimatePresence>

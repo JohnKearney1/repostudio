@@ -1,5 +1,5 @@
 [package]
-name = "repostudio"
+name = "Repo-Studio"
 version = "0.1.2"
 description = "A Git-like desktop app for managing and versioning audio files."
 authors = ["John Kearney"]
@@ -32,3 +32,5 @@ anyhow = "1.0"
 symphonia = { version = "0.5", features = ["default", "mp3", "wav", "flac", "ogg"] }
 rusty-chromaprint = "0.3"
 lofty = "0.22.2" 
+notify = "8.0.0"
+lazy_static = "1.5"

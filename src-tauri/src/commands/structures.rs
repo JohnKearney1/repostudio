@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TrackedFolder {
+    pub id: String,
+    pub repo_id: String,
+    pub folder_path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileMetadata {
     pub id: String,
     pub name: String,

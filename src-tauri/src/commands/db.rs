@@ -12,7 +12,8 @@ use std::time::UNIX_EPOCH;
 
 use tauri::{Window, Emitter};
 
-use crate::commands::structures::{FileMetadata, Repository, Settings};
+use crate::commands::structures::{FileMetadata, Repository, Settings, TrackedFolder};
+
 
 /// Returns the path to the SQLite database file.
 fn get_db_path() -> String {
@@ -31,6 +32,16 @@ pub fn establish_connection() -> Result<Connection> {
             id          TEXT PRIMARY KEY,
             name        TEXT NOT NULL,
             description TEXT
+        )",
+        [],
+    )?;
+
+    // Create TrackedFolders table (call in `establish_connection`)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS TrackedFolders (
+            id          TEXT PRIMARY KEY,
+            repo_id     TEXT NOT NULL,
+            folder_path TEXT NOT NULL
         )",
         [],
     )?;
@@ -459,6 +470,46 @@ pub fn delete_file(repo_id: &str, file_id: &str) -> Result<()> {
     )?;
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Folder tracking operations
+// ---------------------------------------------------------------------------
+pub fn create_tracked_folder(repo_id: &str, folder_path: &str) -> Result<()> {
+    let conn = establish_connection()?;
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO TrackedFolders (id, repo_id, folder_path) VALUES (?1, ?2, ?3)",
+        params![id, repo_id, folder_path],
+    )?;
+    Ok(())
+}
+
+// Delete
+pub fn delete_tracked_folder(repo_id: &str, folder_path: &str) -> Result<()> {
+    let conn = establish_connection()?;
+    conn.execute(
+        "DELETE FROM TrackedFolders WHERE repo_id = ?1 AND folder_path = ?2",
+        params![repo_id, folder_path],
+    )?;
+    Ok(())
+}
+
+// Get all
+pub fn get_tracked_folders() -> Result<Vec<TrackedFolder>> {
+    let conn = establish_connection()?;
+    let mut stmt = conn.prepare("SELECT id, repo_id, folder_path FROM TrackedFolders")?;
+    let folders = stmt
+        .query_map([], |row| {
+            Ok(TrackedFolder {
+                id: row.get(0)?,
+                repo_id: row.get(1)?,
+                folder_path: row.get(2)?,
+            })
+        })?
+        .collect::<Result<Vec<TrackedFolder>>>()?;
+    Ok(folders)
+}
+
 
 // ---------------------------------------------------------------------------
 // Settings operations

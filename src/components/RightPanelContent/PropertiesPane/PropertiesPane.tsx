@@ -18,7 +18,7 @@ const PropertiesPane: React.FC = () => {
             <div className="properties-header-icon-bg">
               <h4>Properties</h4>
               <h5 style={{ textOverflow: 'ellipsis' }}>
-                {singleSelected?.name || 'No file selected'}
+                {singleSelected?.name || '0 Files Selected'}
               </h5>
             </div>
           </div>

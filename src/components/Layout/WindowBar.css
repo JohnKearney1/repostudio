@@ -13,6 +13,14 @@
     transition: all 0.2s;
 }
 
+.window-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 1rem;
+}
+
 .min-btn:hover {
     background-color: #27c93f;
     color: black;
@@ -69,10 +77,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: row;
-    gap: 0.5rem;
+    flex-direction: column;
     user-select: none;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     padding-left: 0.5rem;
 }

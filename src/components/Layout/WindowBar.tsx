@@ -46,12 +46,21 @@ const WindowBar: React.FC = () => {
       onMouseDown={handleTitleBarMouseDown}
       className='window-bar'
     >
-      <div className='window-title-container'>
-        <img src={logo} alt='logo' className='windowbar-icon'/>
-        <div className='window-title'>Repo Studio <h5>0.1.2-a</h5></div>
+      <div className='window-controls'>
+        <div className='window-title-container'>
+          <img src={logo} alt='logo' className='windowbar-icon'/>
+          {/* <div className='window-title'>
+            Repo Studio 
+            <h5 style={{ fontSize: '0.5rem'}}>
+              v0.1.2 - alpha
+            </h5>
+          </div> */}
+        </div>
       </div>
       
-      <div className='window-controls'>
+      <div className='window-controls'
+        style={{gap: '0'}}
+      >
         <div
           id="titlebar-minimize"
           onMouseDown={(e) => e.stopPropagation()}

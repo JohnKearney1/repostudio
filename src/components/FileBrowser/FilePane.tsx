@@ -160,46 +160,57 @@ useEffect(() => {
   }
 }, [fingerprintingTotal, fingerprintingCompleted]); // removed selectedFiles from dependencies
 
+const repoInitialized = useRef<string | null>(null);
 
 useEffect(() => {
-  const loadTrackedFolders = async () => {
-    if (!selectedRepository) {
-      setTrackedFolders([]);
-      return;
-    }
+  if (!selectedRepository) {
+    setAllFiles([]);
+    setSelectedFiles([]);
+    setTrackedFolders([]);
+    repoInitialized.current = null;
+    return;
+  }
 
+  const repoId = selectedRepository.id;
+
+  // If we've already initialized this repo, skip.
+  if (repoInitialized.current === repoId) {
+    return;
+  }
+
+  repoInitialized.current = repoId;
+
+  let cancelled = false;
+
+  const handleRepositoryInit = async () => {
     try {
-      const folders: string[] = await invoke("get_tracked_folders_command", {
-        repoId: selectedRepository.id
-      });
-      setTrackedFolders(folders);
-      console.log("Tracked folders loaded:", folders);
-    } catch (error) {
-      console.error("Failed to load tracked folders:", error);
-    }
-  };
+      console.log(`Initializing repository: ${repoId}`);
 
-  loadTrackedFolders();
-}, [selectedRepository]);
+      // Refresh file accessibility status & reload files
+      await invoke("refresh_files_in_repository_command", { repoId });
 
-
-
-useEffect(() => {
-  const handleRepositoryChange = async () => {
-    if (!selectedRepository) return;
-
-    try {
-      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
       const preservedSelection = [...selectedFiles];
       await loadFiles(preservedSelection);
+
+      // Load tracked folders
+      const folders: string[] = await invoke("get_tracked_folders_command", { repoId });
+
+      if (!cancelled) {
+        setTrackedFolders(folders);
+        console.log("Tracked folders loaded:", folders);
+      }
+
+      console.log("Finished initializing repository:", repoId);
     } catch (error) {
-      console.error("Failed to refresh files for repository:", error);
-    } finally {
-      console.log("Finished refreshing files.");
+      console.error(`Failed to initialize repository ${repoId}:`, error);
     }
   };
 
-  handleRepositoryChange();
+  handleRepositoryInit();
+
+  return () => {
+    cancelled = true;
+  };
 }, [selectedRepository]);
 
 

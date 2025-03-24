@@ -17,6 +17,15 @@ lazy_static! {
 pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String) -> notify::Result<()> {
     let path = PathBuf::from(folder_path.clone());
 
+    // 1. Lock only for the check
+    {
+        let watchers = WATCHERS.lock().unwrap();
+        if watchers.contains_key(&folder_path) {
+            println!("Already watching folder: {}", folder_path);
+            return Ok(()); // Exit early if already watching
+        }
+    } // 🔓 The lock is dropped here
+
     let repo_id_for_watcher = repo_id.clone(); // clone here
     let repo_id_for_db = repo_id.clone();      // clone for DB use
 

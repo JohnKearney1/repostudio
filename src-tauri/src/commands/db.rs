@@ -1,7 +1,7 @@
 // src/commands/db.rs
 //! This module handles all reads and writes to the SQLite database,
 //! including operations on repositories, file metadata, and settings.
-
+use once_cell::sync::OnceCell;
 use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
 use regex::Regex;
@@ -9,15 +9,16 @@ use rusqlite::OptionalExtension;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc, FixedOffset};
 use std::time::UNIX_EPOCH;
-
 use tauri::{Window, Emitter};
-
 use crate::commands::structures::{FileMetadata, Repository, Settings, TrackedFolder};
 
+pub static APP_DB_PATH: OnceCell<String> = OnceCell::new();
 
 /// Returns the path to the SQLite database file.
 fn get_db_path() -> String {
-    "db.sqlite".to_string()
+    APP_DB_PATH.get()
+        .cloned()
+        .unwrap_or_else(|| "db.sqlite".to_string())
 }
 
 /// Establish a connection to the database and ensure that the core tables exist.

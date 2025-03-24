@@ -70,6 +70,23 @@ pub fn run() {
         ])
         .setup(|app| {
 
+            // Get the app data directory
+            let path = app.path().app_data_dir().expect("Failed to get app data directory");
+            println!("App data path: {:?}", path);
+            
+            // Create a subdirectory for the app data if it doesn't exist
+            let app_data_path = path.join("RepoStudio_AppData");
+            std::fs::create_dir_all(&app_data_path).unwrap_or_else(|_| {
+                println!("Failed to create Repo Studio app data directory");
+            });
+
+            // append the database file name
+            let db_path = app_data_path.join("db.sqlite");
+
+            // Store the computed path in the global OnceCell
+            crate::commands::db::APP_DB_PATH.set(db_path.to_string_lossy().to_string())
+                .expect("Database path already set");
+
             match refresh_files_in_all_repositories() {
               Ok(_) => println!("Checked all file accessibility at startup!"),
               Err(e) => println!("Failed to refresh files at startup: {:?}", e),

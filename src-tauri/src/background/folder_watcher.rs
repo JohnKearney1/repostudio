@@ -82,7 +82,7 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
     db::create_tracked_folder(&repo_id_for_db, &folder_path)
         .expect("Failed to store tracked folder in database");
 
-    println!("Started watching folder: {}", folder_path);
+    // println!("Started watching folder: {}", folder_path);
 
     Ok(())
 }

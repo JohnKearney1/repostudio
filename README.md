@@ -122,8 +122,10 @@ npm run tauri build
 - [x] File System Metadata Sync
 - [x] True Folder Tracking  
 - [x] Real-time Folder Monitoring
-- [ ] File Selection & Management (deletion & removal)
+- [x] File Selection & Management
+- [x] Actions Page
 - [ ] Settings Page
+
 
 ---
 

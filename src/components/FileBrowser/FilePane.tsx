@@ -143,7 +143,7 @@ useEffect(() => {
   if (fingerprintingTotal > 0) {
     if (fingerprintingCompleted < fingerprintingTotal) {
       // Always show the progress message while tasks remain.
-      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} Files...`);
+      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} File(s)...`);
     } else if (fingerprintingCompleted === fingerprintingTotal) {
       setProgressItemMessage('Done!');
       // Keep the "Done!" message for 2 seconds before clearing.
@@ -450,6 +450,15 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
     [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]
   );
 
+  const truncateFileName = (fileName: string): string => {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.slice(0, lastDotIndex);
+    return nameWithoutExtension.length > 35
+      ? nameWithoutExtension.slice(0, 35) + '…'
+      : nameWithoutExtension;
+  };
+  
+
   // Keyboard navigation remains unchanged.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -582,6 +591,8 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
                     top: 0,
                     backgroundColor: '#1a1a1a',
                     borderBottom: '1px solid black',
+                    justifyContent: 'flex-start',
+                    gap: '0rem',
                   }}
                 >
                   {progressItemMessage !== 'Done!' ? (
@@ -620,7 +631,8 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
                   onMouseDown={handleMouseDown}
                   onMouseUp={(e) => handleMouseUp(e, file, index)}
                 >
-                  {file.name}
+                  {truncateFileName(file.name)}
+                  <h5>{file.encoding}</h5>
                 </motion.div>
               ))}
             </AnimatePresence>

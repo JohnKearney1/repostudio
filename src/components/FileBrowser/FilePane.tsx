@@ -470,6 +470,13 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
         setLastSelectedIndex(sortedFiles.length - 1);
         return;
       }
+
+      // If ctrl/meta + D is pressed, disselect all files.
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setSelectedFiles([]);
+        return;
+      }
       
       // Existing keys to ignore.
       if (e.key === 'Control' || e.key === 'Meta' || e.key === 'Shift') return;

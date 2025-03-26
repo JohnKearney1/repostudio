@@ -14,7 +14,11 @@ export default function ActionsPane() {
             <div className="actions-header-icon-bg">
                 <h4>Actions</h4>
                 <h5>
-                    {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'} Selected
+                    {selectedFiles.length === 0 
+                        ? "No files selected" 
+                        : selectedFiles.length === 1 
+                            ? "1 File Selected" 
+                            : `${selectedFiles.length} Files Selected`}
                 </h5>
             </div>
             </div>
@@ -117,7 +121,7 @@ export default function ActionsPane() {
                     <SymbolIcon />
                     Check for Updates
                 </h4>
-                <h5>Version: 0.1.3-a</h5>
+                <h5>Version: 0.1.4</h5>
             </button>
 
             <h5 style={{padding: '0.5rem', fontSize: '0.8rem',

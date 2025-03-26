@@ -80,11 +80,20 @@
 .file-info {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    /* gap: 0.5rem; */
     align-items: flex-start;
     padding: 10px;
     border-bottom: 1px solid black;
     background-color: #1a1a1a;
     width: 100%;
     flex: 1;
+}
+
+.fileinfo-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0.5rem;
 }

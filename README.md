@@ -22,7 +22,7 @@
 
 ## 🚀 About Repo Studio
 
-Repo Studio is a next-gen desktop app for musicians, producers, and audio professionals.  
+Repo Studio is a desktop app for musicians, producers, and audio professionals.  
 It brings **Git-style version control** and **audio fingerprinting** for your local music library, helping you manage, compare, and track your sounds with ease.
 
 ✨ **Features**  

@@ -42,5 +42,11 @@
         "displayLanguageSelector": true
       }
     }
+    
+  },
+  "plugins": {
+    "updater": {
+      "active": true
+    }
   }
 }

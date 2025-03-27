@@ -105,4 +105,5 @@
     padding-left: 0.5rem;
     height: 20px;
     width: 20px;
+    user-select: none;
 }

@@ -4,18 +4,28 @@
 <h1 align="center">Repo Studio</h1>
 <p align="center"><i>A Git-like desktop app for managing and versioning audio files, built for producers and musicians.</i></p>
 
-<p align="center">
+<!-- <p align="center">
   <img src="https://img.shields.io/badge/Made%20with%20Love-@JohnKearney1-ff69b4?style=for-the-badge" alt="Love Badge">
-</p>
+</p> -->
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Made%20with-Rust-ff0000?style=for-the-badge&logo=rust" alt="Rust Badge">
-  <img src="https://img.shields.io/badge/Frontend-React%20-00d8ff?style=for-the-badge&logo=react" alt="React Badge">
-  <img src="https://img.shields.io/badge/Backend-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
-</p>
+</br>
+
+<div align="center">
+  <a href="https://github.com/JohnKearney1/repostudio/releases">
+    <img src="https://github.com/JohnKearney1/repostudio/actions/workflows/build.yml/badge.svg?branch=main" alt="Windows Build Badge" />
+  </a>
+</div>
+
+</br>
 
 <p align="center">
   <img src="./assets/readme1.png" alt="Repo Studio Preview"/>
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/Made%20with-Rust-ff0000?style=for-the-badge&logo=rust" alt="Rust Badge">
+    <img src="https://img.shields.io/badge/Frontend-React%20-00d8ff?style=for-the-badge&logo=react" alt="React Badge">
+    <img src="https://img.shields.io/badge/Backend-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
+  </p>
 </p>
 
 ---

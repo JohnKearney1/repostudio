@@ -151,4 +151,4 @@ const PropertiesPane: React.FC = () => {
   )
 };
 
-export default PropertiesPane;;
+export default PropertiesPane;

@@ -9,8 +9,6 @@ const PropertiesPane: React.FC = () => {
   
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-  console.log("file:", singleSelected);  
-
 
   interface IParseSystemTime {
     (str: string): Date | null;
@@ -51,14 +49,14 @@ const PropertiesPane: React.FC = () => {
             {singleSelected.accessible ? (
               <div className="file-info" style={{ padding: '0.5rem' }}>
                 <div className="fileinfo-detail">
-                  <h6>Name: <h5>{singleSelected.name}</h5></h6>
-                  <h6>Sample Rate: <h5>{singleSelected.meta_sample_rate != null ? (Number(singleSelected.meta_sample_rate) / 1000) + " kHz" : "N/A"}</h5></h6>
-                  <h6>Bit Rate: <h5>{singleSelected.meta_bit_rate} kbps</h5></h6>
-                  <h6 style={{marginBottom: '0.5rem'}}>Channels: <h5>{singleSelected.meta_channels} {(parseInt(singleSelected.meta_channels || "0") === 2) ? "(Stereo)" : "(Mono)"}</h5></h6>
-                  <h6>Size on Disk: <h5>{singleSelected.meta_size_on_disk != null ? (Number(singleSelected.meta_size_on_disk) / (1024 * 1024)).toFixed(2) + " MB" : "N/A"}</h5></h6>
-                  <h6>Created: <h5>{createdDate && !isNaN(createdDate.getTime()) ? createdDate.toLocaleString() : "Invalid Date"}</h5></h6>
-                  <h6 style={{marginBottom: '0.5rem'}}>Modified: <h5>{modifiedDate && !isNaN(modifiedDate.getTime()) ? modifiedDate.toLocaleString() : "Invalid Date"}</h5></h6>
-                  <h6>Fingerprinted: <h5>{singleSelected.audio_fingerprint ? (<CheckCircledIcon color='limegreen'/>) : (<CrossCircledIcon color='red'/>)}</h5></h6>
+                  <h6>Name: <span style={{ color: '#808080' }}>{singleSelected.name}</span></h6>
+                  <h6>Sample Rate: <span style={{ color: '#808080' }}>{singleSelected.meta_sample_rate != null ? (Number(singleSelected.meta_sample_rate) / 1000) + " kHz" : "N/A"}</span></h6>
+                  <h6>Bit Rate: <span style={{ color: '#808080' }}>{singleSelected.meta_bit_rate} kbps</span></h6>
+                  <h6 style={{marginBottom: '0.5rem'}}>Channels: <span style={{ color: '#808080' }}>{singleSelected.meta_channels} {(parseInt(singleSelected.meta_channels || "0") === 2) ? "(Stereo)" : "(Mono)"}</span></h6>
+                  <h6>Size on Disk: <span style={{ color: '#808080' }}>{singleSelected.meta_size_on_disk != null ? (Number(singleSelected.meta_size_on_disk) / (1024 * 1024)).toFixed(2) + " MB" : "N/A"}</span></h6>
+                  <h6>Created: <span style={{ color: '#808080' }}>{createdDate && !isNaN(createdDate.getTime()) ? createdDate.toLocaleString() : "Invalid Date"}</span></h6>
+                  <h6 style={{marginBottom: '0.5rem'}}>Modified: <span style={{ color: '#808080' }}>{modifiedDate && !isNaN(modifiedDate.getTime()) ? modifiedDate.toLocaleString() : "Invalid Date"}</span></h6>
+                  <h6>Fingerprinted: <span>{singleSelected.audio_fingerprint ? (<CheckCircledIcon color='limegreen'/>) : (<CrossCircledIcon color='red'/>)}</span></h6>
                 </div>
                 <MetadataEditor
                   onSave={() => console.log("Metadata saved.")}

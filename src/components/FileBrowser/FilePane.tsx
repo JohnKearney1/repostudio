@@ -184,8 +184,6 @@ useEffect(() => {
 
   const handleRepositoryInit = async () => {
     try {
-      console.log(`Initializing repository: ${repoId}`);
-
       // Refresh file accessibility status & reload files
       await invoke("refresh_files_in_repository_command", { repoId });
 
@@ -197,10 +195,7 @@ useEffect(() => {
 
       if (!cancelled) {
         setTrackedFolders(folders);
-        console.log("Tracked folders loaded:", folders);
       }
-
-      console.log("Finished initializing repository:", repoId);
     } catch (error) {
       console.error(`Failed to initialize repository ${repoId}:`, error);
     }
@@ -376,10 +371,8 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
 
   const handleOpenSettings = () => {
     if (rightPanelContent && rightPanelContent.type === PropertiesPane) {
-      console.log("Switching to actions pane");
       setRightPanelContent(<ActionsPane />);
     } else {
-      console.log("Switching to properties pane");
       setRightPanelContent(<PropertiesPane />);
     }
   };

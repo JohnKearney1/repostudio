@@ -21,7 +21,6 @@ const AudioPlayer: React.FC = () => {
       .then(file => {
         const url = URL.createObjectURL(new Blob([file]));
         setAudioUrl(url);
-        console.log('Generated new audio url:', url);
       })
       .catch(console.error);
   }, [singleSelected?.id]);

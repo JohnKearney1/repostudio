@@ -3,22 +3,29 @@
 // It also contains the minimize, maximize, and close buttons.
 // It uses the Tauri API to interact with the window, and is draggable by the title bar.
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { BorderSolidIcon, SizeIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { BorderSolidIcon, SizeIcon, Cross2Icon, HamburgerMenuIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import './WindowBar.css';
 import logo from '../../assets/img/64x64.png';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const WindowBar: React.FC = () => {
-  const appWindow = getCurrentWindow();
+  const [appWindow, setAppWindow] = useState<WebviewWindow | null>(null);
+
+  useEffect(() => {
+    setAppWindow(getCurrentWebviewWindow());
+  }, []);
 
   // Handle mouse down on the title bar
   const handleTitleBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only start dragging if no button was clicked on the controls
     // Double-click toggles maximize
-    if (e.detail === 2) {
+    if (e.detail === 2 && appWindow) {
       appWindow.toggleMaximize();
-    } else if (e.buttons === 1) {
+    } else if (e.buttons === 1 && appWindow) {
       appWindow.startDragging();
     }
   };
@@ -26,18 +33,27 @@ const WindowBar: React.FC = () => {
   // Button handlers with event propagation stopped
   const handleMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    appWindow.minimize();
+    if (appWindow) {
+      appWindow.minimize();
+    }
   };
 
   const handleMaximize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    appWindow.toggleMaximize();
+    if (appWindow) {
+      appWindow.toggleMaximize();
+    }
   };
 
   const handleClose = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     // appWindow.close();
-    appWindow.hide();
+    if (appWindow?.label === 'repo-studio') {
+      appWindow.close()
+    } 
+    else {
+      appWindow?.hide();
+    }
   };
 
   return (
@@ -47,15 +63,71 @@ const WindowBar: React.FC = () => {
       className='window-bar'
     >
       <div className='window-controls'>
-        <div className='window-title-container'>
-          <img src={logo} alt='logo' className='windowbar-icon'/>
-          {/* <div className='window-title'>
-            Repo Studio 
-            <h5 style={{ fontSize: '0.5rem'}}>
-              v0.1.2 - alpha
-            </h5>
-          </div> */}
-        </div>
+            <button className='window-title-container'>
+              <img src={logo} alt='logo' className='windowbar-icon'/>
+            </button>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger className='window-title-container'
+                onMouseDown={(e) => e.stopPropagation()}
+                asChild
+              >
+                  <HamburgerMenuIcon color='white'/>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content onMouseDown={(e) => e.stopPropagation()}
+                  sideOffset={11}
+                  className='DropdownMenuContent'
+                  >
+                  { appWindow?.label === 'repo-studio' ? (
+                    null
+                  ) : (
+                    <>
+                      <DropdownMenu.Item className='DropdownMenuItem'
+                      onSelect={() => {
+                        const newWindow = new WebviewWindow(`repo-studio`, {
+                          url: 'index.html', // or a custom route if you're using something like React Router
+                          title: `repo-studio-${Date.now()}`,
+                          resizable: true,
+                          decorations: false
+                        });
+                    
+                        newWindow.once('tauri://created', () => {
+                          console.log('New Repo Studio window created');
+                        });
+                    
+                        newWindow.once('tauri://error', (e): void => {
+                          console.error('Failed to create new window', e);
+                        });
+                      }}
+                    
+                    >
+                        New Window
+                        <div className="RightSlot">⌘+N</div>
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Separator className='DropdownMenuSeparator' />
+                    </>
+                  )} 
+
+
+                  {/* Sub Menu */}
+                  <DropdownMenu.Sub>
+                    <DropdownMenu.SubTrigger className='DropdownMenuSubTrigger'>
+                      View
+                      <div className="RightSlot">
+                        <ChevronRightIcon />
+                      </div>
+                    </DropdownMenu.SubTrigger>
+                    
+                  </DropdownMenu.Sub>
+
+                  <DropdownMenu.Separator className='DropdownMenuSeparator' />
+
+                  <DropdownMenu.Item className='DropdownMenuItem'>
+                    Settings
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
       </div>
       
       <div className='window-controls'

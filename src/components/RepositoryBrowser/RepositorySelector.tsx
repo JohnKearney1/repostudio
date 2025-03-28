@@ -186,7 +186,7 @@ const RepositorySelector: React.FC = () => {
             className='repo-btn'
           >
             <PlusIcon />
-            Create Repository
+            New Repository
           </motion.button>
           <motion.button
             onClick={handleDeleteButtonClick}

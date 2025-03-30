@@ -133,13 +133,14 @@ useEffect(() => {
     processQueue().finally(() => {
       if (!processingCancelledRef) {
         setIsFingerprinting(false);
+        setProgressItemMessage('Done!');
+        setTimeout(() => setProgressItemMessage(''), 2000);
       }
     });
   } else if (fingerprintQueue.length === 0) {
     setIsFingerprinting(false);
   }
-  setProgressItemMessage('Done!');
-  setTimeout(() => setProgressItemMessage(''), 2000);
+  
 }, [fingerprintQueue, selectedRepository, isFingerprinting, setFingerprintQueue]);
 
   

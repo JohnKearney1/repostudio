@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircledIcon, CrossCircledIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';
-import { useFileStore } from '../../../scripts/store';
+import { useFileStore } from '../../../../scripts/store';
 import MetadataEditor from './MetadataEditor';
 import MultiMetadataEditor from './MultiMetadataEditor';
 

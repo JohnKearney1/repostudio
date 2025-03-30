@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-use crate::commands::db::{get_repositories, get_files_in_repository, update_file};
+use crate::commands::db::{get_files_in_repository, get_repositories, update_file};
 use crate::commands::file_ops::get_audio_metadata_from_file;
 use crate::commands::structures::FileMetadata;
 use tauri::{Emitter, Window};
@@ -12,7 +12,7 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
     let files = get_files_in_repository(repo_id)?;
     for file in files {
         let path = Path::new(&file.path);
-    
+
         if !path.exists() {
             let mut updated_file = file.clone();
             if updated_file.accessible {
@@ -22,13 +22,13 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
             }
             continue;
         }
-    
+
         let fs_metadata = fs::metadata(&file.path)?;
         let new_date_modified = fs_metadata
             .modified()
             .map(|t| format!("{:?}", t))
             .unwrap_or_default();
-    
+
         if new_date_modified != file.date_modified {
             // File changed! Reload full metadata
             let new_file_metadata = get_audio_metadata_from_file(&file.path)?;
@@ -46,7 +46,7 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
             update_file(repo_id, &updated_file)?;
         }
     }
-    
+
     Ok(())
 }
 
@@ -60,11 +60,14 @@ pub fn refresh_files_in_all_repositories() -> Result<(), Box<dyn Error>> {
 }
 
 #[tauri::command]
-pub async fn refresh_files_in_repository_command(window: Window, repo_id: String) -> Result<(), String> {
+pub async fn refresh_files_in_repository_command(
+    window: Window,
+    repo_id: String,
+) -> Result<(), String> {
     let emit_window = window.clone(); // clone for later use in the spawn_blocking
     tauri::async_runtime::spawn_blocking(move || {
         let result = refresh_files_in_repository(&repo_id);
-        
+
         // Emit an event based on result
         let event_payload = match &result {
             Ok(_) => format!("Repository {} refreshed successfully!", repo_id),
@@ -77,7 +80,10 @@ pub async fn refresh_files_in_repository_command(window: Window, repo_id: String
                 event_payload,
             )
             .unwrap_or_else(|e| {
-                println!("Failed to emit refresh_files_in_repository_completed event: {}", e);
+                println!(
+                    "Failed to emit refresh_files_in_repository_completed event: {}",
+                    e
+                );
             });
 
         result.map_err(|e| e.to_string())
@@ -103,7 +109,10 @@ pub async fn refresh_files_in_all_repositories_command(window: Window) -> Result
                 event_payload,
             )
             .unwrap_or_else(|e| {
-                println!("Failed to emit refresh_files_in_all_repositories_completed event: {}", e);
+                println!(
+                    "Failed to emit refresh_files_in_all_repositories_completed event: {}",
+                    e
+                );
             });
 
         result.map_err(|e| e.to_string())

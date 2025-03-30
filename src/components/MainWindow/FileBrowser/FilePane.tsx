@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './FilePane.css';
-import { fileAddScript, fingerprintFileScript } from '../../scripts/FileOperations';
+import { fileAddScript, fingerprintFileScript } from '../../../scripts/FileOperations';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { readDir } from '@tauri-apps/plugin-fs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
-  FilePlusIcon, 
-  ArchiveIcon, 
   CubeIcon, 
   PieChartIcon, 
   DoubleArrowDownIcon, 
   DoubleArrowUpIcon, 
   RocketIcon, 
   InfoCircledIcon,
-  CheckCircledIcon
+  CheckCircledIcon,
+  StackIcon,
+  LayersIcon
 } from '@radix-ui/react-icons';
 import { 
   useFileStore, 
@@ -23,9 +23,9 @@ import {
   useRepositoryStore, 
   usePopupContentStore, 
   useRightPanelContentStore 
-} from '../../scripts/store';
+} from '../../../scripts/store';
 import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
-import { FileMetadata } from '../../types/ObjectTypes';
+import { FileMetadata } from '../../../types/ObjectTypes';
 import PropertiesPane from '../RightPanelContent/PropertiesPane/PropertiesPane';
 import ActionsPane from '../RightPanelContent/ActionsPane/ActionsPane';
 
@@ -509,25 +509,27 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
     <div className="file-pane">
       <div className="toolbar">
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%', borderBottom: '1px solid black' }}>
-          <button className="toolbar-button" onClick={handleOpenRepositorySelector}>
+          <button className="repo-toolbar-button" onClick={handleOpenRepositorySelector}>
             <CubeIcon style={{ paddingRight: '0.75rem', width: '20px', height: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', textAlign: 'left' }}>
-              <h4>{selectedRepository?.name || '(untitled)'}</h4>
-              <h5>#{selectedRepository?.id || 'Select a repository to view files'}</h5>
+              <h4>{selectedRepository?.name || 'No Repository Selected'}</h4>
+              <h5>#{selectedRepository?.id.slice(-32) || 'Select a repository to view files'}</h5>
             </div>
           </button>
         </div>
   
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+          <button onClick={handleFolderAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
+            <LayersIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+            <h6>Folder</h6>
+          </button>
+
           <button onClick={handleFileAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
-            <FilePlusIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-            <h6>Track File</h6>
+            <StackIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
+            <h6>File</h6>
           </button>
   
-          <button onClick={handleFolderAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
-            <ArchiveIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-            <h6>Track Folder</h6>
-          </button>
+          
   
           <button onClick={handleOpenSettings} className="toolbar-button">
             <motion.div

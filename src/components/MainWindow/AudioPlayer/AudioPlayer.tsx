@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
-import { useFileStore } from '../../scripts/store';
+import { useFileStore } from '../../../scripts/store';
 import { readFile } from '@tauri-apps/plugin-fs';
 import './AudioPlayer.css';
 
@@ -113,10 +113,7 @@ const AudioPlayer: React.FC = () => {
       </div>
       <div className="audio-info">
         {singleSelected ? (
-          <>
-            <h4 className="audio-title">{singleSelected.name}</h4>
-            <h5 className="audio-path">{singleSelected.encoding}</h5>
-          </>
+          <h5 className="audio-title">{singleSelected.name.split('.').slice(0, -1).join('.')} - {singleSelected.encoding}</h5>
         ) : (
           <h5 className="no-audio-selected">No audio file selected</h5>
         )}

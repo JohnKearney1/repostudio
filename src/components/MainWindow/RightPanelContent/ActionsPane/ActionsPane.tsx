@@ -1,6 +1,6 @@
 import { BoxModelIcon, CommitIcon, Component1Icon, CubeIcon, DownloadIcon, EnvelopeClosedIcon, FaceIcon, InputIcon, LightningBoltIcon, MixerHorizontalIcon, RocketIcon, SymbolIcon, UploadIcon } from '@radix-ui/react-icons';
 import './ActionsPane.css';
-import { useFileStore } from '../../../scripts/store';
+import { useFileStore } from '../../../../scripts/store';
 
 
 export default function ActionsPane() {
@@ -29,16 +29,16 @@ export default function ActionsPane() {
                 }}>
                 Repository Actions
             </h5>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <LightningBoltIcon />
+                    <LightningBoltIcon width={'15px'} height={'15px'} />
                     Process Repository
                 </h4>
                 <h5>Generates Fingerprints for all Files</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CubeIcon />
+                    <CubeIcon width={'15px'} height={'15px'} />
                     New Repo From Meta
                 </h4>
                 <h5>Creates and Populates a new Repository</h5>
@@ -50,28 +50,28 @@ export default function ActionsPane() {
                 }}>
                 Selected Files
             </h5>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Component1Icon />
                     Bundle
                 </h4>
                 <h5>Generate a Folder / Archive</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <BoxModelIcon />
                     Compress
                 </h4>
                 <h5>Compress File Sizes</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <MixerHorizontalIcon />
                     Convert
                 </h4>
                 <h5>Change Audio Encodings</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <InputIcon />
                     Rename 
@@ -87,7 +87,7 @@ export default function ActionsPane() {
                 Sharing
             </h5>
 
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <EnvelopeClosedIcon />
                     MailKit
@@ -102,26 +102,26 @@ export default function ActionsPane() {
                 }}>
                 System
             </h5>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <FaceIcon />
                     Stats
                 </h4>
                 <h5>Understand your Library</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <CommitIcon />
                     Event Log
                 </h4>
                 <h5>View Repository History</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <SymbolIcon />
                     Check for Updates
                 </h4>
-                <h5>Version: 0.1.5</h5>
+                <h5>Version: 0.1.6</h5>
             </button>
 
             <h5 style={{padding: '0.5rem', fontSize: '0.8rem',
@@ -131,14 +131,14 @@ export default function ActionsPane() {
                 }}>
                 Advanced
             </h5>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <DownloadIcon />
                     Export Database
                 </h4>
                 <h5>Backup Your Settings and Repositories</h5>
             </button>
-            <button className="actions-details-button">
+            <button className="actions-details-button  ">
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <UploadIcon />
                     Import Database

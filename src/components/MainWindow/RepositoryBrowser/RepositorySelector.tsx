@@ -3,9 +3,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './RepositorySelector.css';
 import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react-icons';
-import { useRepositoryStore } from '../../scripts/store';
-import { Repository } from '../../types/ObjectTypes';
-import { deleteRepository, createRepository } from '../../scripts/RepoOperations';
+import { useRepositoryStore } from '../../../scripts/store';
+import { Repository } from '../../../types/ObjectTypes';
+import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const RepositorySelector: React.FC = () => {

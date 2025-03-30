@@ -1,7 +1,7 @@
 .file-pane {
     background-color: #1a1a1a;
     border: black solid 1px;
-    min-width: 350px;
+    min-width: 300px;
     max-width: 25vw;
     display: flex;
     flex-direction: column;
@@ -17,9 +17,23 @@
     color: white;
 }
 
-.toolbar-button {
+.repo-toolbar-button {
     display: flex;
     justify-content: flex-start;
+    padding: 0.5rem 0.75rem;
+    align-items: center;
+    background-color: #1a1a1a;
+    width: 100%;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.toolbar-button {
+    display: flex;
+    justify-content: center;
     padding: 0.5rem 0.75rem;
     align-items: center;
     background-color: #1a1a1a;

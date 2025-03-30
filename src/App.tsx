@@ -4,33 +4,20 @@
 // It also loads the repositories when the app starts.
 
 import "./App.css";
-import FilePane from "./components/FileBrowser/FilePane";
+import FilePane from "./components/MainWindow/FileBrowser/FilePane";
 import WindowBar from "./components/Layout/WindowBar";
-import PropertiesPane from "./components/RightPanelContent/PropertiesPane/PropertiesPane";
+import PropertiesPane from "./components/MainWindow/RightPanelContent/PropertiesPane/PropertiesPane";
 import Popup from "./components/Layout/Popup";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store";
-import AudioPlayer from "./components/AudioPlayer/AudioPlayer";
-
+import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import Settings from "./components/SettingsWindow/Settings";
 
 function App() {
-  const { isVisible: isRepoSelectorVisible} = usePopupStore();
-  const { content: popupContent } = usePopupContentStore();
-  const { content: rightPanelContent, setContent } = useRightPanelContentStore();
+  const [windowLabel, setWindowLabel] = useState<string | null>(null);
 
-  // Load repositories and set the first repository as selected.
-  useEffect(() => {
-    // If the rightPanelContent does not contain a value, set it to the PropertiesPane.
-    if (!rightPanelContent) {
-      setContent(<PropertiesPane />);
-    }
-    
-    // Load the repositories from the backend.
-    loadRepositoriesScript();
-  }, []);
-
-  // Effect to set the CSS variable for viewport height.
   useEffect(() => {
     const setVh = () => {
       const vh = window.innerHeight * 0.01;
@@ -43,32 +30,65 @@ function App() {
     };
   }, []);  
 
+  useEffect(() => {
+    const currentWindow = getCurrentWebviewWindow();
+    // Set initial label
+    setWindowLabel(currentWindow.label);
+
+    // Poll every second to check if the label changes
+    const interval = setInterval(() => {
+      const newLabel = currentWindow.label;
+      setWindowLabel(prev => (prev !== newLabel ? newLabel : prev));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Render nothing until the label is loaded
+  if (!windowLabel) {
+    return null;
+  }
+
+  // Conditionally render based on the window label
+  if (windowLabel === "settings") {
+    return <Settings />;
+  } else if (windowLabel === "main" || windowLabel === "main-2") {
+    return <Home />;
+  }
+
+  return null;
+}
+
+
+function Home() {
+  const { isVisible: isRepoSelectorVisible} = usePopupStore();
+  const { content: popupContent } = usePopupContentStore();
+  const { content: rightPanelContent, setContent } = useRightPanelContentStore();
+
+  
+  useEffect(() => {
+    if (!rightPanelContent) {
+      setContent(<PropertiesPane />);
+    }
+    loadRepositoriesScript();
+  }, []);
+
   return (
     <div className="app">
-        {/* Window Bar of the App */}
         <WindowBar />
-        
-        {/* Main Content */}
         <div className="main-content"> 
-
           <div className="panel-container">
-            {/* Displays the popup, and whatever element is inside it (as supplied by the store) */}
             <Popup isVisible={isRepoSelectorVisible} setVisible={usePopupStore.getState().setVisible}>
               {popupContent}
             </Popup>
-
-            {/* Left Content*/}
             <div className="left-content">
               <FilePane />
             </div>
-
-            {/* Right Content*/}
             <div className="right-content">
               {rightPanelContent}
             </div> 
           </div>
           <AudioPlayer />
-
         </div>
     </div>
   );

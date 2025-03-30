@@ -1,0 +1,74 @@
+.settings-background {
+    background-color: #1a1a1a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: calc((var(--vh, 1vh) * 100));
+    user-select: none;
+}
+
+.settings-container {
+    display: flex;
+    flex-direction: row;
+    background-color: #1a1a1a;
+    height: 75%;
+    flex-wrap: wrap;
+}
+
+.settings-sidebar {
+    min-width: 200px;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    border-top: 1px solid black;
+    display: flex;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.settings-tab {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    color: white;
+    cursor: pointer;
+}
+
+.settings-tab:hover {
+    background: linear-gradient(to right, #2a2a2a, #1a1a1a);
+}
+
+.settings-tab.selected {
+    background: linear-gradient(to right, #2a2a2a, #1a1a1a);
+    border-left: 3px solid #00ff00;
+}
+
+.settings-main {
+    display: flex;
+    flex: 2;
+    border-top: 1px solid black;
+    color: white;
+    background-color: #1a1a1a;
+}
+
+.settings-content {
+    background-color: #1a1a1a;
+    padding: 1rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow-y: auto;
+}
+
+
+.settings-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    margin-left: -0.25rem;
+}
+
+.divider {
+    margin: 0.25rem 0;
+}
+

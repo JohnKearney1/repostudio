@@ -22,7 +22,9 @@ import {
   usePopupStore, 
   useRepositoryStore, 
   usePopupContentStore, 
-  useRightPanelContentStore 
+  useRightPanelContentStore, 
+  useFingerprintQueueStore,
+  useFingerprintCancellationStore
 } from '../../../scripts/store';
 import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
 import { FileMetadata } from '../../../types/ObjectTypes';
@@ -34,8 +36,10 @@ const FilePane: React.FC = () => {
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
+  const setFingerprintQueue = useFingerprintQueueStore((state) => state.setQueue);
   const allFiles = useFileStore((state) => state.allFiles);
   const setAllFiles = useFileStore((state) => state.setAllFiles);
+  const fingerprintQueue = useFingerprintQueueStore((state) => state.fingerprintQueue);
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
@@ -46,12 +50,8 @@ const FilePane: React.FC = () => {
   const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
   const [, setTrackedFolders] = useState<string[]>([]);
-  const [fingerprintingTotal, setFingerprintingTotal] = useState<number>(0);
-  const [fingerprintingCompleted, setFingerprintingCompleted] = useState<number>(0);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
-
-  // Ref to track file IDs that are currently being fingerprinted.
-  const fingerprintingInProgress = useRef<Set<string>>(new Set());
+  const processingCancelledRef = useFingerprintCancellationStore((state) => state.processingCancelled);
 
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
@@ -71,6 +71,76 @@ const FilePane: React.FC = () => {
       console.error("Failed to reload files:", error);
     }
   };
+
+  useEffect(() => {
+    const checkFingerprintQueue = async () => {
+      if (!selectedRepository) return;
+      const newQueue = fingerprintQueue.filter((file) => !file.audio_fingerprint);
+      // Only update if there is an actual change.
+      if (newQueue.length !== fingerprintQueue.length) {
+        console.log(`Removed ${fingerprintQueue.length - newQueue.length} files from the fingerprint queue.`);
+        setFingerprintQueue(newQueue);
+      }
+      if (newQueue.length === 0 && isFingerprinting) {
+        setIsFingerprinting(false);
+      }
+      if (newQueue.length > 0) {
+        setProgressItemMessage(`Fingerprinting ${newQueue.length} File(s)...`);
+      }
+    };
+    checkFingerprintQueue();
+  }, [fingerprintQueue, selectedRepository, setFingerprintQueue, isFingerprinting]);
+  
+
+
+useEffect(() => {
+  if (!selectedRepository) return;
+  if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) {
+    setIsFingerprinting(true);
+    console.log(`Processing fingerprint queue with ${fingerprintQueue.length} files...`);
+    setProgressItemMessage(`Fingerprinting ${fingerprintQueue.length} File(s)...`);
+    const processQueue = async () => {
+      // Use the latest state with a functional update.
+      setFingerprintQueue((prevQueue) => {
+        if (prevQueue.length === 0) return prevQueue;
+        const file = prevQueue[0];
+        // Process the file only if processing hasn’t been cancelled.
+        if (!processingCancelledRef) {
+          fingerprintFileScript(selectedRepository, file)
+            .then(() => {
+              console.log(`Fingerprinting completed for file: ${file.name}`);
+            })
+            .catch((error) => {
+              console.error(`Error fingerprinting file ${file.name}:`, error);
+            })
+            .finally(() => {
+              // Only update the queue if we haven’t cancelled processing.
+              if (!processingCancelledRef) {
+                setFingerprintQueue(current => current.slice(1));
+              }
+              else {
+                setProgressItemMessage('Done!');
+                setTimeout(() => setProgressItemMessage(''), 2000);
+                setIsFingerprinting(false);
+                console.log('Processing cancelled!');
+                return;
+              }
+            });
+        }
+        return prevQueue; // Return the previous queue; its update happens in the callback.
+      });
+    };
+    processQueue().finally(() => {
+      if (!processingCancelledRef) {
+        setIsFingerprinting(false);
+      }
+    });
+  } else if (fingerprintQueue.length === 0) {
+    setIsFingerprinting(false);
+  }
+  setProgressItemMessage('Done!');
+  setTimeout(() => setProgressItemMessage(''), 2000);
+}, [fingerprintQueue, selectedRepository, isFingerprinting, setFingerprintQueue]);
 
   
 
@@ -136,29 +206,6 @@ const FilePane: React.FC = () => {
       refreshAndLoadFiles();
     }
   }, [selectedRepository, selectedFiles, isFingerprinting]);
-
-  // Update fingerprinting progress message.
-// Update fingerprinting progress message.
-useEffect(() => {
-  if (fingerprintingTotal > 0) {
-    if (fingerprintingCompleted < fingerprintingTotal) {
-      // Always show the progress message while tasks remain.
-      setProgressItemMessage(`Fingerprinting ${fingerprintingTotal} File(s)...`);
-    } else if (fingerprintingCompleted === fingerprintingTotal) {
-      setProgressItemMessage('Done!');
-      // Keep the "Done!" message for 2 seconds before clearing.
-      const timeout = setTimeout(() => {
-        setProgressItemMessage('');
-        setFingerprintingTotal(0);
-        setFingerprintingCompleted(0);
-        setIsFingerprinting(false);
-        // After all fingerprinting tasks finish, reload files.
-        loadFiles(selectedFiles);
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }
-}, [fingerprintingTotal, fingerprintingCompleted]); // removed selectedFiles from dependencies
 
 const repoInitialized = useRef<string | null>(null);
 
@@ -422,22 +469,13 @@ const getAllAudioFilesRecursively = async (directory: string): Promise<string[]>
 
       // If the file lacks a fingerprint and is not already being fingerprinted, trigger the fingerprint script.
       if (!file.audio_fingerprint && selectedRepository) {
-        if (fingerprintingInProgress.current.has(file.id)) {
+        if (fingerprintQueue.some((queuedFile) => queuedFile.id === file.id) && !file.audio_fingerprint) {
+          console.warn(`File ${file.name} is already in the fingerprint queue.`);
           return;
         }
-        fingerprintingInProgress.current.add(file.id);
-        setIsFingerprinting(true);
-        setFingerprintingTotal((prev) => prev + 1);
-        fingerprintFileScript(selectedRepository, file)
-          .then(() => {
-            setFingerprintingCompleted((prev) => prev + 1);
-            fingerprintingInProgress.current.delete(file.id);
-          })
-          .catch((error) => {
-            console.error("Failed to generate fingerprint", error);
-            setFingerprintingCompleted((prev) => prev + 1);
-            fingerprintingInProgress.current.delete(file.id);
-          });
+        
+        // Add the file to the fingerprint queue
+        setFingerprintQueue([...fingerprintQueue, file]);
       }
     },
     [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]

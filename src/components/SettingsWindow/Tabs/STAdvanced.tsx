@@ -5,7 +5,7 @@ export default function STAdvanced() {
             <div className="divider" />
 
             <div className="settings-checkbox">
-                <input type="checkbox" id="autoplay" />
+                <input type="checkbox" id="autoplay" disabled/>
                 <h6>Send Usage Statistics</h6>
             </div>
             <h5>

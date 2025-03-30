@@ -5,7 +5,7 @@ export default function STGeneral() {
             <div className="divider" />
 
             <div className="settings-checkbox">
-                <input type="checkbox" id="autoplay" />
+                <input type="checkbox" id="autoplay" checked={true} disabled/>
                 <h6>Fingerprint Automatically</h6>
             </div>
             <h5>

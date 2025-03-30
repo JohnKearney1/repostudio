@@ -52,7 +52,7 @@
 
 .settings-content {
     background-color: #1a1a1a;
-    padding: 1rem 0.5rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;

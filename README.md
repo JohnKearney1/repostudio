@@ -51,47 +51,18 @@ Are you a musician, producer, or audio enthusiast? The section below is mostly f
 Visit the [Releases](https://github.com/JohnKearney1/repostudio/releases) page to download the latest version of Repo Studio.
 
 ### 🛠️ Built With
-- ⚡ **[Tauri](https://tauri.app/)** (Rust backend)
-- ⚛️ **[React](https://reactjs.org/)** + Typescript frontend
-- 🖌️ CSS styling (Dark mode friendly 🖤)
+- ⚡ **[Tauri Framework](https://tauri.app/)** + Rust Backend
+- ⚛️ **[React](https://reactjs.org/)** + Typescript
 - 🎧 [Symphonia](https://github.com/pdeljanov/Symphonia) (audio decoding)  
 - 🧬 [Rusty Chromaprint](https://github.com/acoustid/rusty-chromaprint) (audio fingerprinting)  
 - 🏷️ [Lofty](https://github.com/Serial-ATA/lofty-rs) (audio metadata)
 
 ---
 
-### 🏗️ Project Structure
-```plaintext
-repostudio/                 (root directory)
-├─ package.json             (frontend dependencies file)
-├─ tsconfig.node.json       (TypeScript configuration file)
-├─ vite.config.ts           (vite configuration file)
-├─ src-tauri/               (Tauri source directory)
-│  ├─ capabilities/         (Tauri API capabilities directory)
-│  ├─ gen/                  (Tauri API bindings directory)
-│  ├─ icons/                (App icons directory)
-│  ├─ src/                  (Rust source code directory)
-│  └── commands/            (Tauri CLI commands directory)
-├─ tauri.conf.js            (Tauri configuration file)
-├─ Cargo.toml               (Rust dependencies file)
-├─ src/                     (frontend source directory)
-│  ├─ assets/               (frontend assets directory)
-│  ├─ components/           (React components directory)
-│  ├─ scripts/              (common scripts directory)
-│  ├─ styles/               (CSS styles directory)
-│  └── types/               (TypeScript types directory)
-├─ assets/                  (root assets)
-└── public/                 (public files)
-```
-
 ### Prerequisites
 - 📦 [Node.js](https://nodejs.org/) (v18+ recommended)
 - 🦀 [Rust Toolchain](https://rustup.rs/) (Stable)
 - 🔧 [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites/)  
-  Install via:  
-  ```bash
-  cargo install tauri-cli
-  ```
 
 ---
 
@@ -134,17 +105,7 @@ npm run tauri build
 - [x] Real-time Folder Monitoring
 - [x] File Selection & Management
 - [x] Actions Page
-- [ ] Settings Page
+- [x] Settings Page
 
 
 ---
-
-## 🔮 Future Features (v0.2.x-a)
-- [ ] Audio similarity algorithms for repo-wide comparisons  
-- [ ] Audio conversion between formats  
-- [ ] Spectrogram generation  
-- [ ] Advanced settings management  
-- [ ] Polished UI + CSS refactor  
-- [ ] Audio metadata extraction/enrichment automation  
-
-

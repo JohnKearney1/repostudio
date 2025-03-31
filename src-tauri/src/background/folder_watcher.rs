@@ -1,10 +1,10 @@
+use crate::commands::{actions, db, file_ops};
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
-use notify::{Watcher, RecursiveMode, Event, RecommendedWatcher, Config, EventKind};
-use tauri::WebviewWindow;
+use std::sync::{Arc, Mutex};
 use tauri::Emitter;
-use crate::commands::{db, file_ops, actions};
+use tauri::WebviewWindow;
 
 type WatcherMap = Arc<Mutex<HashMap<String, RecommendedWatcher>>>;
 
@@ -14,7 +14,11 @@ lazy_static! {
     static ref WATCHERS: WatcherMap = Arc::new(Mutex::new(HashMap::new()));
 }
 
-pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String) -> notify::Result<()> {
+pub fn watch_folder(
+    window: WebviewWindow,
+    repo_id: String,
+    folder_path: String,
+) -> notify::Result<()> {
     let path = PathBuf::from(folder_path.clone());
 
     // 1. Lock only for the check
@@ -27,7 +31,7 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
     } // 🔓 The lock is dropped here
 
     let repo_id_for_watcher = repo_id.clone(); // clone here
-    let repo_id_for_db = repo_id.clone();      // clone for DB use
+    let repo_id_for_db = repo_id.clone(); // clone for DB use
 
     let mut watcher: RecommendedWatcher = RecommendedWatcher::new(
         move |res: notify::Result<Event>| {
@@ -40,32 +44,36 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
                             if let Some(path) = event.paths.first() {
                                 if path.is_file() {
                                     println!("New file detected: {:?}", path);
-                                    handle_new_file(window.clone(), &repo_id_for_watcher, path.clone());
+                                    handle_new_file(
+                                        window.clone(),
+                                        &repo_id_for_watcher,
+                                        path.clone(),
+                                    );
                                 }
                             }
                         }
                         EventKind::Remove(_) => {
                             println!("File removed! Refreshing repository...");
                             let _ = actions::refresh_files_in_repository(&repo_id_for_watcher);
-                        
+
                             // Emit folder_file_removed event!
                             let _ = window.emit(
                                 "folder_file_removed",
-                                format!("A file was removed from repo '{}'", repo_id_for_watcher)
+                                format!("A file was removed from repo '{}'", repo_id_for_watcher),
                             );
                         }
-                        
+
                         EventKind::Modify(_) => {
                             println!("File modified! Refreshing repository...");
                             let _ = actions::refresh_files_in_repository(&repo_id_for_watcher);
-                        
+
                             // Emit folder_file_modified event! (optional, if you want to track these)
                             let _ = window.emit(
                                 "folder_file_modified",
-                                format!("A file was modified in repo '{}'", repo_id_for_watcher)
+                                format!("A file was modified in repo '{}'", repo_id_for_watcher),
                             );
                         }
-                        
+
                         _ => {}
                     }
                 }
@@ -77,7 +85,10 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
 
     watcher.watch(&path, RecursiveMode::Recursive)?;
 
-    WATCHERS.lock().unwrap().insert(folder_path.clone(), watcher);
+    WATCHERS
+        .lock()
+        .unwrap()
+        .insert(folder_path.clone(), watcher);
 
     db::create_tracked_folder(&repo_id_for_db, &folder_path)
         .expect("Failed to store tracked folder in database");
@@ -86,7 +97,6 @@ pub fn watch_folder(window: WebviewWindow, repo_id: String, folder_path: String)
 
     Ok(())
 }
-
 
 fn handle_new_file(window: WebviewWindow, repo_id: &str, path: PathBuf) {
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -103,7 +113,7 @@ fn handle_new_file(window: WebviewWindow, repo_id: &str, path: PathBuf) {
 
                         let _ = window.emit(
                             "folder_file_added",
-                            format!("New file '{}' added to repo '{}'", file.name, repo_id)
+                            format!("New file '{}' added to repo '{}'", file.name, repo_id),
                         );
                     }
                 }
@@ -113,7 +123,10 @@ fn handle_new_file(window: WebviewWindow, repo_id: &str, path: PathBuf) {
     }
 }
 
-pub fn unwatch_folder(repo_id: String, folder_path: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn unwatch_folder(
+    repo_id: String,
+    folder_path: String,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut watchers = WATCHERS.lock().unwrap();
 
     // 1. Stop the watcher if it exists.
@@ -134,22 +147,31 @@ pub fn unwatch_folder(repo_id: String, folder_path: String) -> Result<(), Box<dy
         let file_path_normalized = file.path.replace("\\", "/");
 
         if file_path_normalized.starts_with(&folder_path_normalized) {
-            println!("Deleting file '{}' from repository '{}'", file.name, repo_id);
+            println!(
+                "Deleting file '{}' from repository '{}'",
+                file.name, repo_id
+            );
             db::delete_file(&repo_id, &file.id)?;
         }
     }
 
     db::delete_tracked_folder(&repo_id, &folder_path)
-    .expect("Failed to remove tracked folder from database");
+        .expect("Failed to remove tracked folder from database");
 
-
-    println!("Unwatched folder '{}' and deleted matching files from repo '{}'", folder_path, repo_id);
+    println!(
+        "Unwatched folder '{}' and deleted matching files from repo '{}'",
+        folder_path, repo_id
+    );
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn watch_folder_command(window: WebviewWindow, repo_id: String, folder_path: String) -> Result<(), String> {
+pub async fn watch_folder_command(
+    window: WebviewWindow,
+    repo_id: String,
+    folder_path: String,
+) -> Result<(), String> {
     watch_folder(window, repo_id, folder_path)
         .map_err(|e| format!("Failed to watch folder: {:?}", e))
 }
@@ -166,8 +188,7 @@ pub async fn unwatch_folder_command(repo_id: String, folder_path: String) -> Res
 
 #[tauri::command]
 pub async fn get_tracked_folders_command(repo_id: String) -> Result<Vec<String>, String> {
-    let folders = db::get_tracked_folders()
-        .map_err(|e| e.to_string())?;
+    let folders = db::get_tracked_folders().map_err(|e| e.to_string())?;
 
     let filtered = folders
         .into_iter()

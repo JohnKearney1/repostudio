@@ -13,13 +13,13 @@ pub struct FileMetadata {
     pub name: String,
     pub encoding: String,
     pub path: String,
-    pub related_files: Option<String>,        
-    pub tags: Option<String>,                 
+    pub related_files: Option<String>,
+    pub tags: Option<String>,
     pub date_created: String,
     pub date_modified: String,
     pub audio_fingerprint: Option<String>,
     pub accessible: bool,
-    
+
     // Editable metadata fields
     pub meta_title: Option<String>,
     pub meta_comment: Option<String>,

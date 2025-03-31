@@ -2,25 +2,25 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use symphonia::core::io::MediaSourceStream;
-use symphonia::core::formats::FormatOptions;
-use symphonia::core::meta::MetadataOptions;
-use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
-use symphonia::default::{get_probe, get_codecs};
-use symphonia::core::audio::SampleBuffer;
-use symphonia::core::errors::Error as SymphError;
 use rusty_chromaprint::Configuration;
 use rusty_chromaprint::Fingerprinter;
+use symphonia::core::audio::SampleBuffer;
+use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
+use symphonia::core::errors::Error as SymphError;
+use symphonia::core::formats::FormatOptions;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
+use symphonia::default::{get_codecs, get_probe};
 
 use tauri::{Emitter, Window};
 
-use crate::commands::structures::FileMetadata;
 use crate::commands::db::update_file;
+use crate::commands::structures::FileMetadata;
 
 /// Generates an audio fingerprint for a given file and updates its record in the database.
 pub fn generate_audio_fingerprint_for_file(
     repo_id: &str,
-    file_metadata: &FileMetadata
+    file_metadata: &FileMetadata,
 ) -> Result<String, Box<dyn Error>> {
     println!("Generating fingerprint for file: {}", file_metadata.path);
 
@@ -39,15 +39,24 @@ pub fn generate_audio_fingerprint_for_file(
     let probed = get_probe().format(&hint, mss, &format_opts, &meta_opts)?;
     let mut format = probed.format;
 
-    let track = format.tracks().iter()
+    let track = format
+        .tracks()
+        .iter()
         .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
         .ok_or("No supported audio track found")?;
     let track_id = track.id;
 
     let dec_opts = DecoderOptions::default();
     let mut decoder = get_codecs().make(&track.codec_params, &dec_opts)?;
-    let sample_rate = track.codec_params.sample_rate.ok_or("Missing sample rate")?;
-    let channels = track.codec_params.channels.ok_or("Missing channels")?.count() as u32;
+    let sample_rate = track
+        .codec_params
+        .sample_rate
+        .ok_or("Missing sample rate")?;
+    let channels = track
+        .codec_params
+        .channels
+        .ok_or("Missing channels")?
+        .count() as u32;
 
     let config = Configuration::preset_test1();
     let mut printer = Fingerprinter::new(&config);
@@ -78,7 +87,7 @@ pub fn generate_audio_fingerprint_for_file(
                     buf.copy_interleaved_ref(audio_buf);
                     printer.consume(buf.samples());
                 }
-            },
+            }
             Err(SymphError::DecodeError(_)) => continue,
             Err(e) => return Err(Box::new(e)),
         }
@@ -93,7 +102,8 @@ pub fn generate_audio_fingerprint_for_file(
     println!("Fingerprinting complete.");
 
     let fp_vec = printer.fingerprint().to_vec();
-    let fp_string = fp_vec.iter()
+    let fp_string = fp_vec
+        .iter()
         .map(|num| format!("{:08x}", num))
         .collect::<Vec<_>>()
         .join("");
@@ -107,9 +117,9 @@ pub fn generate_audio_fingerprint_for_file(
 
 #[tauri::command]
 pub async fn generate_audio_fingerprint_for_file_command(
-    window: Window,        // <-- Added
+    window: Window, // <-- Added
     repo_id: String,
-    file: FileMetadata
+    file: FileMetadata,
 ) -> Result<(), String> {
     let emit_window = window.clone();
 
@@ -122,7 +132,7 @@ pub async fn generate_audio_fingerprint_for_file_command(
                     "Fingerprint generated for file '{}' (repo '{}'): {}",
                     file.name, repo_id, fp
                 )
-            },
+            }
             Err(e) => {
                 format!(
                     "Failed to generate fingerprint for file '{}' (repo '{}'): {}",
@@ -131,13 +141,17 @@ pub async fn generate_audio_fingerprint_for_file_command(
             }
         };
 
-        emit_window.emit(
-            "generate_audio_fingerprint_completed", // Event name
-            event_payload,
-        )
-        .unwrap_or_else(|e| {
-            println!("Failed to emit generate_audio_fingerprint_completed event: {}", e);
-        });
+        emit_window
+            .emit(
+                "generate_audio_fingerprint_completed", // Event name
+                event_payload,
+            )
+            .unwrap_or_else(|e| {
+                println!(
+                    "Failed to emit generate_audio_fingerprint_completed event: {}",
+                    e
+                );
+            });
 
         result.map(|_| ()).map_err(|e| e.to_string())
     })

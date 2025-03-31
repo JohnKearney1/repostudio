@@ -3,9 +3,9 @@ use std::fs;
 use std::path::Path;
 
 use lofty::config::WriteOptions;
+use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::*;
-use lofty::prelude::*;
 
 use tauri::Emitter;
 use tauri::Window;
@@ -22,27 +22,31 @@ pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn 
     let metadata_result = (|| {
         // Attempt to open and read the tagged file.
         let tagged_file = Probe::open(path)?.read()?;
-        let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag());
-    
+        let tag = tagged_file
+            .primary_tag()
+            .or_else(|| tagged_file.first_tag());
+
         let meta_title = tag.and_then(|t| t.title().map(|s| s.to_string()));
         let meta_comment = tag.and_then(|t| t.get_string(&ItemKey::Comment).map(|s| s.to_string()));
-        let meta_album_artist = tag.and_then(|t| t.get_string(&ItemKey::AlbumArtist).map(|s| s.to_string()));
+        let meta_album_artist =
+            tag.and_then(|t| t.get_string(&ItemKey::AlbumArtist).map(|s| s.to_string()));
         let meta_album = tag.and_then(|t| t.album().map(|s| s.to_string()));
-        let meta_track_number = tag.and_then(|t| t.get_string(&ItemKey::TrackNumber).map(|s| s.to_string()));
+        let meta_track_number =
+            tag.and_then(|t| t.get_string(&ItemKey::TrackNumber).map(|s| s.to_string()));
         let meta_genre = tag.and_then(|t| t.genre().map(|s| s.to_string()));
-    
+
         let encoding = path_obj
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("")
             .to_string();
-    
+
         let name = path_obj
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("")
             .to_string();
-    
+
         let fs_metadata = fs::metadata(path)?;
         let date_created = fs_metadata
             .created()
@@ -52,13 +56,13 @@ pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn 
             .modified()
             .map(|t| format!("{:?}", t))
             .unwrap_or_default();
-    
+
         let properties = tagged_file.properties();
         let meta_bit_rate = properties.audio_bitrate().map(|b| b.to_string());
         let meta_sample_rate = properties.sample_rate().map(|s| s.to_string());
         let meta_channels = properties.channels().map(|c| c.to_string());
         let meta_size_on_disk = Some(fs_metadata.len().to_string());
-    
+
         Ok(FileMetadata {
             id: "".to_string(),
             name,
@@ -107,12 +111,12 @@ pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn 
                     .and_then(|n| n.to_str())
                     .unwrap_or("")
                     .to_string();
-    
+
                 println!(
                     "Warning: Failed to get full metadata for '{}': {}. Falling back to minimal data.",
                     name, e
                 );
-    
+
                 Ok(FileMetadata {
                     id: "".to_string(),
                     name,
@@ -142,7 +146,6 @@ pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn 
         }
     }
 }
-
 
 pub fn clear_audio_metadata_from_file(path: &str) -> Result<(), Box<dyn Error>> {
     let tagged_file = Probe::open(path)?.read()?;
@@ -184,23 +187,32 @@ pub fn write_audio_metadata_to_file(file_metadata: &FileMetadata) -> Result<(), 
                     .primary_tag_mut()
                     .ok_or("Failed to create a new tag")?
             }
-        },
+        }
     };
 
     if let Some(ref title) = file_metadata.meta_title {
         tag.set_title(title.clone());
     }
     if let Some(ref comment) = file_metadata.meta_comment {
-        tag.insert(TagItem::new(ItemKey::Comment, ItemValue::Text(comment.clone())));
+        tag.insert(TagItem::new(
+            ItemKey::Comment,
+            ItemValue::Text(comment.clone()),
+        ));
     }
     if let Some(ref album_artist) = file_metadata.meta_album_artist {
-        tag.insert(TagItem::new(ItemKey::AlbumArtist, ItemValue::Text(album_artist.clone())));
+        tag.insert(TagItem::new(
+            ItemKey::AlbumArtist,
+            ItemValue::Text(album_artist.clone()),
+        ));
     }
     if let Some(ref album) = file_metadata.meta_album {
         tag.set_album(album.clone());
     }
     if let Some(ref track_number) = file_metadata.meta_track_number {
-        tag.insert(TagItem::new(ItemKey::TrackNumber, ItemValue::Text(track_number.clone())));
+        tag.insert(TagItem::new(
+            ItemKey::TrackNumber,
+            ItemValue::Text(track_number.clone()),
+        ));
     }
     if let Some(ref genre) = file_metadata.meta_genre {
         tag.set_genre(genre.clone());
@@ -216,7 +228,7 @@ pub fn write_audio_metadata_to_file(file_metadata: &FileMetadata) -> Result<(), 
 #[tauri::command]
 pub async fn get_audio_metadata_from_file_command(
     window: Window,
-    file_path: String
+    file_path: String,
 ) -> Result<FileMetadata, String> {
     let emit_window = window.clone();
 
@@ -228,9 +240,11 @@ pub async fn get_audio_metadata_from_file_command(
             Err(e) => format!("Failed to load metadata from '{}': {}", file_path, e),
         };
 
-        emit_window.emit("get_audio_metadata_completed", payload).unwrap_or_else(|e| {
-            println!("Failed to emit get_audio_metadata_completed event: {}", e);
-        });
+        emit_window
+            .emit("get_audio_metadata_completed", payload)
+            .unwrap_or_else(|e| {
+                println!("Failed to emit get_audio_metadata_completed event: {}", e);
+            });
 
         result.map_err(|e| e.to_string())
     })
@@ -241,7 +255,7 @@ pub async fn get_audio_metadata_from_file_command(
 #[tauri::command]
 pub async fn clear_audio_metadata_from_file_command(
     window: Window,
-    file_path: String
+    file_path: String,
 ) -> Result<(), String> {
     let emit_window = window.clone();
 
@@ -253,9 +267,11 @@ pub async fn clear_audio_metadata_from_file_command(
             Err(e) => format!("Failed to clear metadata for '{}': {}", file_path, e),
         };
 
-        emit_window.emit("clear_audio_metadata_completed", payload).unwrap_or_else(|e| {
-            println!("Failed to emit clear_audio_metadata_completed event: {}", e);
-        });
+        emit_window
+            .emit("clear_audio_metadata_completed", payload)
+            .unwrap_or_else(|e| {
+                println!("Failed to emit clear_audio_metadata_completed event: {}", e);
+            });
 
         result.map_err(|e| e.to_string())
     })
@@ -266,7 +282,7 @@ pub async fn clear_audio_metadata_from_file_command(
 #[tauri::command]
 pub async fn write_audio_metadata_to_file_command(
     window: Window,
-    file_metadata: FileMetadata
+    file_metadata: FileMetadata,
 ) -> Result<(), String> {
     let emit_window = window.clone();
 
@@ -275,12 +291,17 @@ pub async fn write_audio_metadata_to_file_command(
 
         let payload = match &result {
             Ok(_) => format!("Wrote metadata to file '{}'", file_metadata.path),
-            Err(e) => format!("Failed to write metadata to '{}': {}", file_metadata.path, e),
+            Err(e) => format!(
+                "Failed to write metadata to '{}': {}",
+                file_metadata.path, e
+            ),
         };
 
-        emit_window.emit("write_audio_metadata_completed", payload).unwrap_or_else(|e| {
-            println!("Failed to emit write_audio_metadata_completed event: {}", e);
-        });
+        emit_window
+            .emit("write_audio_metadata_completed", payload)
+            .unwrap_or_else(|e| {
+                println!("Failed to emit write_audio_metadata_completed event: {}", e);
+            });
 
         result.map_err(|e| e.to_string())
     })

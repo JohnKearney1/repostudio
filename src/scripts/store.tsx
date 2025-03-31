@@ -14,8 +14,9 @@ export interface FingerprintQueueStore {
   fingerprintQueue: FileMetadata[];
   addToQueue: (file: FileMetadata) => void;
   clearQueue: () => void;
-  setQueue: (queue: FileMetadata[]) => void;
+  setQueue: (update: FileMetadata[] | ((queue: FileMetadata[]) => FileMetadata[])) => void;
 }
+
 
 export const useFingerprintQueueStore = create<FingerprintQueueStore, [["zustand/persist", FingerprintQueueStore]]>(
   persist(
@@ -28,11 +29,29 @@ export const useFingerprintQueueStore = create<FingerprintQueueStore, [["zustand
             : [...state.fingerprintQueue, file],
         })),
       clearQueue: () => set({ fingerprintQueue: [] }),
-      setQueue: (queue: FileMetadata[]) => set({ fingerprintQueue: queue }),
+      setQueue: (update: FileMetadata[] | ((queue: FileMetadata[]) => FileMetadata[])) =>
+        set((state) => ({
+          fingerprintQueue: typeof update === 'function' ? update(state.fingerprintQueue) : update,
+        }))
     }),
     { name: 'fingerprint-queue-storage' }
   )
 );
+
+// ------------------------------------------------------------------- //
+
+interface FingerprintCancellationState {
+  processingCancelled: boolean;
+  cancelProcessing: () => void;
+  resetCancellation: () => void;
+}
+
+export const useFingerprintCancellationStore = create<FingerprintCancellationState>((set) => ({
+  processingCancelled: false,
+  cancelProcessing: () => set({ processingCancelled: true }),
+  resetCancellation: () => set({ processingCancelled: false }),
+}));
+
 
 // ------------------------------------------------------------------- // 
 

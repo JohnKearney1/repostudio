@@ -20,13 +20,9 @@ export const loadFilesScript = async () => {
       return;
     }
 
-    console.log("Loading files from repository:", repoId);
-
     const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
       repoId: repoId,
     });
-
-    console.log("Files returned from backend:", newFiles);
 
     const selectedFileIds = new Set(selectedFiles.map((f) => f.id));
     setAllFiles(newFiles);
@@ -51,14 +47,10 @@ export const fileAddScript = async (
   }
 
   try {
-    console.log("Getting metadata for:", file_path);
-
     // Step 1: Get the audio metadata from backend
     const fileMetadata: FileMetadata = await invoke("get_audio_metadata_from_file_command", {
       filePath: file_path,
     });
-
-    console.log("Metadata fetched:", fileMetadata);
 
     // Step 2: Add additional required fields to FileMetadata
     const newFile: FileMetadata = {
@@ -76,8 +68,6 @@ export const fileAddScript = async (
       file: newFile,
     });
 
-    console.log("File added successfully!");
-
     // Optional: Refresh repository files
     await loadFilesScript();
   } catch (error) {
@@ -94,10 +84,7 @@ export const handleRemoveDuplicates = async (repoId: string) => {
       console.warn("No repository selected!");
       return;
     }
-
     await invoke("remove_duplicate_files_command", { repoId: repoId });
-    console.log(`Duplicates removed from repository: ${repoId}`);
-
     // Optional: Reload files after removing duplicates
     await loadFilesScript();
   } catch (error) {

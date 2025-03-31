@@ -32,6 +32,7 @@ html,
 body {
   height: 100vh;
   overflow: hidden;
+  background-color: #202020;
 }
 
 
@@ -68,7 +69,7 @@ h6 {
 
 /* Scrollbar track (background) */
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: transparent;
 }
 
 /* Scrollbar thumb (draggable part) */
@@ -109,4 +110,24 @@ h6 {
   display: flex;
   flex: 1;
   flex-direction: column;
+}
+
+.disabled {
+  pointer-events: none;
+  filter: blur(0.15rem);
+}
+
+a {
+  text-decoration: underline;
+  color: white;
+  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+a:hover {
+  text-decoration: none;
+  color: #808080;
 }

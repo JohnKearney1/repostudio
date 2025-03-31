@@ -1,61 +1,86 @@
+// MultiMetadataEditor.tsx
 import React, { useState, useEffect } from 'react';
-import { FileMetadata } from '../../../types/ObjectTypes';
-import MultiInput from '../../Layout/MultiInput';
+import MultiInput from '../../../Layout/MultiInput';
 import './MetadataEditor.css';
-import { CrossCircledIcon } from '@radix-ui/react-icons';
+import { CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons';
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore, useFileStore } from '../../../scripts/store';
-import { loadFilesScript } from '../../../scripts/FileOperations';
+import { useRepositoryStore, useFileStore } from '../../../../scripts/store';
+import { loadFilesScript } from '../../../../scripts/FileOperations';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircledIcon } from '@radix-ui/react-icons'; // for success icon
+import { FileMetadata } from '../../../../types/ObjectTypes';
 
-interface MetadataEditorProps {
-  onSave(updated: Partial<FileMetadata>): void;
-}
-
-const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
-  const file = useFileStore((state) => state.selectedFiles[0]);
-  const [metaTitle, setMetaTitle] = useState(file.meta_title || '');
-  const [metaComment, setMetaComment] = useState(file.meta_comment || '');
-  const [metaAlbumArtist, setMetaAlbumArtist] = useState(file.meta_album_artist || '');
-  const [metaAlbum, setMetaAlbum] = useState(file.meta_album || '');
-  const [metaTrackNumber, setMetaTrackNumber] = useState(file.meta_track_number || '');
-  const [metaGenre, setMetaGenre] = useState(file.meta_genre || '');
-  const [customTags, setCustomTags] = useState(file.tags || '');
+const MultiMetadataEditor: React.FC = () => {
+  // Get all selected files (for multi-edit)
+  const selectedFiles = useFileStore((state) => state.selectedFiles);
   const repoId = useRepositoryStore((state) => state.selectedRepository?.id);
 
-  // Updated status type to include 'error'
+  // Form fields – note: title and track number are intentionally omitted.
+  const [metaComment, setMetaComment] = useState('');
+  const [metaAlbumArtist, setMetaAlbumArtist] = useState('');
+  const [metaAlbum, setMetaAlbum] = useState('');
+  const [metaGenre, setMetaGenre] = useState('');
+  const [customTags, setCustomTags] = useState('');
+
+  // Store initial common values so we can compare for unsaved changes.
+  const [initialMetaComment, setInitialMetaComment] = useState('');
+  const [initialMetaAlbumArtist, setInitialMetaAlbumArtist] = useState('');
+  const [initialMetaAlbum, setInitialMetaAlbum] = useState('');
+  const [initialMetaGenre, setInitialMetaGenre] = useState('');
+  const [initialCustomTags, setInitialCustomTags] = useState('');
+
+  // Status and flag for displaying unsaved changes message
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  // Flag to hide unsaved changes message after a save attempt
   const [justSaved, setJustSaved] = useState(false);
 
-  // Determine if there are unsaved changes by comparing current state to file metadata
-  const unsavedChanges =
-    (file.meta_title || '') !== metaTitle ||
-    (file.meta_comment || '') !== metaComment ||
-    (file.meta_album_artist || '') !== metaAlbumArtist ||
-    (file.meta_album || '') !== metaAlbum ||
-    (file.meta_track_number || '') !== metaTrackNumber ||
-    (file.meta_genre || '') !== metaGenre ||
-    (file.tags || '') !== customTags;
-
-  // Reset state when a new file is selected
+  // When selectedFiles change, pre-populate form fields if all files share the same metadata.
   useEffect(() => {
-    setMetaTitle(file.meta_title || '');
-    setMetaComment(file.meta_comment || '');
-    setMetaAlbumArtist(file.meta_album_artist || '');
-    setMetaAlbum(file.meta_album || '');
-    setMetaTrackNumber(file.meta_track_number || '');
-    setMetaGenre(file.meta_genre || '');
-    setCustomTags(file.tags || '');
-  }, [file]);
-
-  // Clear the justSaved flag if there are no pending changes
-  useEffect(() => {
-    if (!unsavedChanges) {
-      setJustSaved(false);
+    if (selectedFiles.length === 0) {
+      setMetaComment('');
+      setMetaAlbumArtist('');
+      setMetaAlbum('');
+      setMetaGenre('');
+      setCustomTags('');
+      setInitialMetaComment('');
+      setInitialMetaAlbumArtist('');
+      setInitialMetaAlbum('');
+      setInitialMetaGenre('');
+      setInitialCustomTags('');
+      return;
     }
-  }, [unsavedChanges]);
+
+    const commonValue = (field: keyof FileMetadata): string => {
+      const firstVal = `${selectedFiles[0][field] || ''}`;
+      return selectedFiles.every(file => `${file[field] || ''}` === firstVal)
+        ? firstVal
+        : '';
+    };
+
+    const newMetaComment = commonValue('meta_comment');
+    const newMetaAlbumArtist = commonValue('meta_album_artist');
+    const newMetaAlbum = commonValue('meta_album');
+    const newMetaGenre = commonValue('meta_genre');
+    const newCustomTags = commonValue('tags');
+
+    setMetaComment(newMetaComment);
+    setMetaAlbumArtist(newMetaAlbumArtist);
+    setMetaAlbum(newMetaAlbum);
+    setMetaGenre(newMetaGenre);
+    setCustomTags(newCustomTags);
+
+    setInitialMetaComment(newMetaComment);
+    setInitialMetaAlbumArtist(newMetaAlbumArtist);
+    setInitialMetaAlbum(newMetaAlbum);
+    setInitialMetaGenre(newMetaGenre);
+    setInitialCustomTags(newCustomTags);
+  }, [selectedFiles]);
+
+  // Show unsaved changes only if a field differs from its initial value.
+  const unsavedChanges =
+    metaComment !== initialMetaComment ||
+    metaAlbumArtist !== initialMetaAlbumArtist ||
+    metaAlbum !== initialMetaAlbum ||
+    metaGenre !== initialMetaGenre ||
+    customTags !== initialCustomTags;
 
   // Auto-reset status (both 'success' and 'error') to 'idle' after 2 seconds
   useEffect(() => {
@@ -63,58 +88,46 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
       const timer = setTimeout(() => {
         setStatus('idle');
       }, 2000);
-
       return () => clearTimeout(timer);
     }
   }, [status]);
+
+  // Clear the justSaved flag if there are no pending unsaved changes
+  useEffect(() => {
+    if (!unsavedChanges) {
+      setJustSaved(false);
+    }
+  }, [unsavedChanges]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const formData: Partial<FileMetadata> = {
-      meta_title: metaTitle.trim() || null,
       meta_comment: metaComment.trim() || null,
       meta_album_artist: metaAlbumArtist.trim() || null,
       meta_album: metaAlbum.trim() || null,
-      meta_track_number: metaTrackNumber.trim() || null,
       meta_genre: metaGenre.trim() || null,
       tags: customTags.trim() || null,
     };
 
-    const updatedFile: FileMetadata = { ...file, ...formData };
-
     try {
-      await invoke('update_file_command', { repoId, file: updatedFile });
-      console.log("Metadata updated successfully in database.");
-
-      await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });
-      console.log("Metadata written to file successfully.");
-
-      onSave(formData);
-
+      // Update each selected file with the new metadata
+      for (const file of selectedFiles) {
+        const updatedFile: FileMetadata = { ...file, ...formData };
+        await invoke('update_file_command', { repoId, file: updatedFile });
+        await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });
+      }
       await loadFilesScript();
-
       setStatus('success');
       setJustSaved(true);
     } catch (error) {
-      console.error("Failed to update metadata:", error);
+      console.error("Failed to update metadata for multiple files:", error);
       setStatus('error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="metadata-editor">
-      <div className="metadata-item">
-        <h5 className="metadata-item-title">Title:</h5>
-        <input
-          className="metadata-item-input"
-          id="metaTitle"
-          type="text"
-          value={metaTitle}
-          onChange={(e) => setMetaTitle(e.target.value)}
-          autoComplete="off"
-        />
-      </div>
       <div className="metadata-item">
         <h5 className="metadata-item-title">Comments:</h5>
         <textarea
@@ -145,23 +158,6 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
           type="text"
           value={metaAlbum}
           onChange={(e) => setMetaAlbum(e.target.value)}
-          autoComplete="off"
-        />
-      </div>
-      <div className="metadata-item">
-        <h5 className="metadata-item-title">Track #:</h5>
-        <input
-          className="metadata-item-input"
-          id="metaTrackNumber"
-          type="text"
-          value={metaTrackNumber}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Allow empty input or only digits
-            if (value === '' || /^[0-9]+$/.test(value)) {
-              setMetaTrackNumber(value);
-            }
-          }}
           autoComplete="off"
         />
       </div>
@@ -225,7 +221,6 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
         </AnimatePresence>
       </motion.button>
 
-      {/* Animated unsaved changes message; remains visible until the user applies changes or the values match */}
       <AnimatePresence>
         {unsavedChanges && !justSaved && (
           <motion.h5
@@ -243,4 +238,4 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
   );
 };
 
-export default MetadataEditor;
+export default MultiMetadataEditor;

@@ -37,8 +37,6 @@ export const createRepository = async (id: string, name: string, description: st
     let repos: Repository[] = await invoke("get_repositories_command");
     setRepositories(repos);
 
-    console.log(`Repository '${name}' created successfully!`);
-
     const newRepo = repos.find((repo) => repo.id === id);
     if (newRepo) {
       setSelectedRepository(newRepo);
@@ -59,8 +57,6 @@ export const deleteRepository = async (repoId: string) => {
 
   try {
     await invoke("delete_repository_command", { id: repoId });
-    console.log(`Repository '${repoId}' deleted successfully!`);
-
     // Clear file state if the deleted repo was selected
     if (selectedRepository?.id === repoId) {
       setAllFiles([]);

@@ -4,8 +4,7 @@
   "description": "Capability configuration for the main window",
   "windows": [
     "main",
-    "main-2",
-    "settings"
+    "main-2"
   ],
   "permissions": [
     "core:default",

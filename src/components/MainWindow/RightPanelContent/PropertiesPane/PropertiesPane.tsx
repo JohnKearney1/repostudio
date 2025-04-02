@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircledIcon, CrossCircledIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';
 import { useFileStore } from '../../../../scripts/store';
 import MetadataEditor from './MetadataEditor';
@@ -30,20 +30,6 @@ const PropertiesPane: React.FC = () => {
   if (selectedFiles.length === 1) {
     return (
       <div className="properties-pane">
-        <div className="properties-header">
-          <div className="properties-header-icon">
-            <InfoCircledIcon width="20px" height="20px" />
-            <div className="properties-header-icon-bg">
-              <h4>Properties</h4>
-              <h5 style={{ textOverflow: 'ellipsis' }}>
-                {singleSelected?.name || '0 Files Selected'}
-              </h5>
-            </div>
-          </div>
-          <h5 style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
-            {singleSelected?.encoding}
-          </h5>
-        </div>
         {singleSelected ? (
           <div className="properties-details">
             {singleSelected.accessible ? (
@@ -97,17 +83,6 @@ const PropertiesPane: React.FC = () => {
   if (selectedFiles.length > 1) {
     return (
       <div className="properties-pane">
-        <div className="properties-header">
-          <div className="properties-header-icon">
-            <InfoCircledIcon width="20px" height="20px" />
-            <div className="properties-header-icon-bg">
-              <h4>Properties</h4>
-              <h5 style={{ overflow: 'hidden' }}>
-                {selectedFiles.length} files selected
-              </h5>
-            </div>
-          </div>
-        </div>
         <div className="properties-details">
           <div className="file-info" style={{ padding: '0.5rem' }}>
             <div className="fileinfo-detail">
@@ -130,7 +105,7 @@ const PropertiesPane: React.FC = () => {
 
   return (
     <div className="properties-pane">
-        <div className="properties-header">
+        {/* <div className="properties-header">
           <div className="properties-header-icon">
               <InfoCircledIcon width="20px" height="20px" />
               <div className="properties-header-icon-bg">
@@ -140,7 +115,7 @@ const PropertiesPane: React.FC = () => {
                 </h5>
               </div>
             </div>
-        </div>
+        </div> */}
         <div className="no-selection">
           <h4 style={{ marginBottom: '0.5rem'}}>Nothing Selected...</h4>
           <h5>Select a file from the list to view its properties</h5>

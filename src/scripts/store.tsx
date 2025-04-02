@@ -9,6 +9,77 @@ import { persist } from 'zustand/middleware';
 // Import Types
 import { FileMetadata, Repository } from '../types/ObjectTypes';
 
+// ------------------------------------------------------------------- //
+
+export interface Tab {
+  id: string;
+  name: string;
+  iconName: string; // Store icon name as string
+  componentId: string; // Store component identifier as string
+}
+
+
+interface TabStore {
+  tabs: Tab[];
+  activeTabId: string | null;
+  openTab: (tab: Tab) => void;
+  closeTab: (tabId: string) => void;
+  setActiveTab: (tabId: string) => void;
+}
+export const useTabStore = create<TabStore, [["zustand/persist", TabStore]]>(
+  persist((set) => ({
+    tabs: [
+      {
+        id: 'properties',
+        name: 'Properties',
+        iconName: 'InfoCircledIcon',
+        componentId: 'PropertiesPane'
+      },
+      {
+        id: 'actions',
+        name: 'Actions',
+        iconName: 'RocketIcon',
+        componentId: 'ActionsPane'
+      }
+    ],
+    activeTabId: 'properties',
+    openTab: (tab) =>
+      set((state) => ({
+        tabs: state.tabs.find(t => t.id === tab.id) ? state.tabs : [...state.tabs, tab],
+        activeTabId: tab.id,
+      })),
+
+    closeTab: (tabId) =>
+      set((state) => {
+        const newTabs = state.tabs.filter(t => t.id !== tabId);
+        const newActiveTabId = tabId === state.activeTabId && newTabs.length ? newTabs[newTabs.length - 1].id : state.activeTabId;
+        return {
+          tabs: newTabs,
+          activeTabId: newActiveTabId,
+        };
+      }),
+
+    setActiveTab: (tabId) =>
+      set(() => ({ activeTabId: tabId })),
+  }), { name: 'tab-store-storage' })
+);
+
+
+// ------------------------------------------------------------------- //
+interface ProcessingStore {
+  isProcessing: boolean;
+  statusMessage: string;
+  description: string;
+  setProcessing: (isProcessing: boolean, message?: string, description?: string) => void;
+}
+export const useProcessingStore = create<ProcessingStore>((set) => ({
+  isProcessing: false,
+  statusMessage: '',
+  description: '',
+  setProcessing: (isProcessing, message = '', description = '') =>
+    set({ isProcessing, statusMessage: message, description }),
+}));
+
 // ------------------------------------------------------------------- // 
 export interface FingerprintQueueStore {
   fingerprintQueue: FileMetadata[];

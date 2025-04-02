@@ -9,7 +9,6 @@ import {
     InputIcon,
     LightningBoltIcon,
     MixerHorizontalIcon,
-    RocketIcon,
     SymbolIcon,
     UploadIcon,
   } from '@radix-ui/react-icons';
@@ -17,7 +16,6 @@ import {
   import { useFileStore, useFingerprintCancellationStore, useFingerprintQueueStore } from '../../../../scripts/store';
   
   export default function ActionsPane() {
-    const selectedFiles = useFileStore((state) => state.selectedFiles);
     const allFiles = useFileStore((state) => state.allFiles);
     const fingerprintQueue = useFingerprintQueueStore((state) => state.fingerprintQueue);
     const addToQueue = useFingerprintQueueStore((state) => state.addToQueue);
@@ -39,21 +37,6 @@ import {
 
     return (
       <div className="actions-pane">
-        <div className="actions-header">
-          <div className="actions-header-icon">
-            <RocketIcon width={'20px'} height={'20px'} />
-            <div className="actions-header-icon-bg">
-              <h4>Actions</h4>
-              <h5>
-                {selectedFiles.length === 0
-                  ? 'No files selected'
-                  : selectedFiles.length === 1
-                  ? '1 File Selected'
-                  : `${selectedFiles.length} Files Selected`}
-              </h5>
-            </div>
-          </div>
-        </div>
         <div className="actions-details">
           <h5
             style={{

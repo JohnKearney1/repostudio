@@ -19,7 +19,6 @@
     min-width: 200px;
     background-color: #1a1a1a;
     flex-direction: column;
-    border-top: 1px solid black;
     display: flex;
     flex: 1;
     overflow-y: auto;
@@ -45,7 +44,6 @@
 .settings-main {
     display: flex;
     flex: 2;
-    border-top: 1px solid black;
     color: white;
     background-color: #1a1a1a;
 }

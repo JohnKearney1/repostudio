@@ -14,9 +14,47 @@ import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import Settings from "./components/SettingsWindow/Settings";
+import { useTabStore } from "./scripts/store";
+import { Cross2Icon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
+import ActionsPane from "./components/MainWindow/RightPanelContent/ActionsPane/ActionsPane";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { AnimatePresence, motion } from "framer-motion";
+
+
+const ComponentMap: Record<string, React.FC> = {
+  'PropertiesPane': PropertiesPane,
+  'ActionsPane': ActionsPane,
+  // Add other panes here
+};
+
+const IconMap: Record<string, React.ReactNode> = {
+  'InfoCircledIcon': <InfoCircledIcon />,
+  'RocketIcon': <RocketIcon />,
+  // Add other icons here
+};
 
 function App() {
   const [windowLabel, setWindowLabel] = useState<string | null>(null);
+
+  
+
+  useEffect(() => {
+    useTabStore.getState().openTab({
+      id: 'properties',
+      name: 'Properties',
+      iconName: 'InfoCircledIcon',
+      componentId: 'PropertiesPane'
+    });
+    useTabStore.getState().openTab({
+      id: 'actions',
+      name: 'Actions',
+      iconName: 'RocketIcon',
+      componentId: 'ActionsPane'
+    });
+    console.log("Tab opened: PropertiesPane");
+    useTabStore.getState().setActiveTab('properties');
+  }, []);
+  
 
   useEffect(() => {
     const setVh = () => {
@@ -60,6 +98,8 @@ function App() {
 }
 
 
+
+
 function Home() {
   const { isVisible: isRepoSelectorVisible} = usePopupStore();
   const { content: popupContent } = usePopupContentStore();
@@ -73,6 +113,8 @@ function Home() {
     loadRepositoriesScript();
   }, []);
 
+  
+
   return (
     <div className="app">
         <WindowBar />
@@ -85,7 +127,8 @@ function Home() {
               <FilePane />
             </div>
             <div className="right-content">
-              {rightPanelContent}
+              <TabBar />
+              <ActiveTabContent />
             </div> 
           </div>
           <AudioPlayer />
@@ -93,5 +136,100 @@ function Home() {
     </div>
   );
 }
+
+function TabBar() {
+  const { tabs, activeTabId, closeTab, setActiveTab } = useTabStore();
+
+  return (
+    <div className="tab-bar">
+      <AnimatePresence mode="wait">
+        {tabs.map((tab) => (
+          <motion.div
+            key={tab.id}
+            className={`tab-item ${activeTabId === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.1 }}
+          >
+            <button>
+              {IconMap[tab.iconName]}
+              {tab.name}
+            </button>
+            {tab.id !== 'properties' && tab.id === activeTabId && (
+              <motion.button
+                className="tab-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeTab(tab.id);
+                }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.1 }}
+              >
+                <Cross2Icon />
+              </motion.button>
+            )}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger className="tab-add" asChild>
+          <motion.div
+          >
+            <PlusIcon />
+          </motion.div>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content className="DropdownMenuContent" sideOffset={5}>
+            <DropdownMenu.Item
+              className="DropdownMenuItem Tab"
+              onSelect={() =>
+                useTabStore.getState().openTab({
+                  id: 'actions',
+                  name: 'Actions',
+                  iconName: 'RocketIcon',
+                  componentId: 'ActionsPane',
+                })
+              }
+            >
+              <RocketIcon />
+              Actions
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </div>
+  );
+}
+
+
+
+function ActiveTabContent() {
+  const { tabs, activeTabId } = useTabStore();
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const ActiveComponent = activeTab ? ComponentMap[activeTab.componentId] : null;
+
+  return (
+    <AnimatePresence mode="wait">
+      {ActiveComponent && (
+        <motion.div
+          key={activeTabId}
+          className="tab-content"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.25 }}
+        >
+          <ActiveComponent />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 
 export default App;

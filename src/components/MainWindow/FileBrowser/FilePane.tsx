@@ -10,32 +10,25 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { 
   CubeIcon, 
   PieChartIcon, 
-  DoubleArrowDownIcon, 
-  DoubleArrowUpIcon, 
-  RocketIcon, 
-  InfoCircledIcon,
   CheckCircledIcon,
   StackIcon,
-  LayersIcon
+  LayersIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@radix-ui/react-icons';
 import { 
   useFileStore, 
   usePopupStore, 
   useRepositoryStore, 
   usePopupContentStore, 
-  useRightPanelContentStore, 
   useFingerprintQueueStore,
   useFingerprintCancellationStore
 } from '../../../scripts/store';
 import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
-import PropertiesPane from '../RightPanelContent/PropertiesPane/PropertiesPane';
-import ActionsPane from '../RightPanelContent/ActionsPane/ActionsPane';
-// Import the new fingerprint processing module
 import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
 
 const FilePane: React.FC = () => {
-  /* State / Store Declarations */
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const setSelectedFiles = useFileStore((state) => state.setSelectedFiles);
@@ -50,7 +43,6 @@ const FilePane: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const { setVisible } = usePopupStore();
   const { setContent } = usePopupContentStore();
-  const { setContent: setRightPanelContent, content: rightPanelContent } = useRightPanelContentStore();
   const [progressItemMessage, setProgressItemMessage] = useState<string>('');
   const [, setTrackedFolders] = useState<string[]>([]);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
@@ -91,7 +83,6 @@ const FilePane: React.FC = () => {
     }
   }, [fingerprintQueue, selectedRepository, setFingerprintQueue, isFingerprinting]);
 
-  // Refactored fingerprint processing useEffect that calls our centralized processing function.
   useEffect(() => {
     if (!selectedRepository) return;
     if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) {
@@ -107,7 +98,6 @@ const FilePane: React.FC = () => {
     }
   }, [fingerprintQueue, selectedRepository, isFingerprinting, processingCancelledRef]);
 
-  // Listen for file changes in tracked folders
   useEffect(() => {
     const unlistenAdded = listen<string>("folder_file_added", async () => {
       console.log("File added! Refreshing repo + files...");
@@ -350,14 +340,6 @@ const FilePane: React.FC = () => {
     }
   };
   
-  const handleOpenSettings = () => {
-    if (rightPanelContent && rightPanelContent.type === PropertiesPane) {
-      setRightPanelContent(<ActionsPane />);
-    } else {
-      setRightPanelContent(<PropertiesPane />);
-    }
-  };
-
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     ctrlKeyRef.current = e.ctrlKey || e.metaKey;
   }, []);
@@ -478,33 +460,24 @@ const FilePane: React.FC = () => {
             <LayersIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
             <h6>Folder</h6>
           </button>
-          <button onClick={handleFileAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
+          <button onClick={handleFileAdd} className="toolbar-button">
             <StackIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
             <h6>File</h6>
           </button>
-          <button onClick={handleOpenSettings} className="toolbar-button">
-            <motion.div
-              key={rightPanelContent && rightPanelContent.type === PropertiesPane ? 'actions' : 'properties'}
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              transition={{ duration: 0.2 }}
-              style={{ display: 'flex', alignItems: 'center' }}
-            >
-              {rightPanelContent && rightPanelContent.type === PropertiesPane ? (
-                <>
-                  <RocketIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-                  <h6>Actions</h6>
-                </>
-              ) : (
-                <>
-                  <InfoCircledIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
-                  <h6>Properties</h6>
-                </>
-              )}
-            </motion.div>
-          </button>
         </div>
+      </div>
+
+      <div className="sort-options">
+        
+        <select className="dropdown-menu" value={sortOption} onChange={(e) => setSortOption(e.target.value as any)}>
+          <option value="alphabetical">Alphabetical</option>
+          <option value="dateCreated">Date Created</option>
+          <option value="dateModified">Date Modified</option>
+          <option value="encoding">By Encoding</option>
+        </select>
+        <button className="sort-toggle-button" onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
+          {sortOrder === 'asc' ? <ChevronDownIcon /> : <ChevronUpIcon />}
+        </button>
       </div>
   
       <input
@@ -515,17 +488,7 @@ const FilePane: React.FC = () => {
         onChange={(e) => setSearchQuery(e.target.value)}
       />
   
-      <div className="sort-options">
-        <button className="sort-toggle-button" onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
-          {sortOrder === 'asc' ? <DoubleArrowDownIcon /> : <DoubleArrowUpIcon />}
-        </button>
-        <select className="dropdown-menu" value={sortOption} onChange={(e) => setSortOption(e.target.value as any)}>
-          <option value="alphabetical">Alphabetical</option>
-          <option value="dateCreated">Date Created</option>
-          <option value="dateModified">Date Modified</option>
-          <option value="encoding">By Encoding</option>
-        </select>
-      </div>
+      
   
       <div className="file-view" tabIndex={0} onKeyDown={handleKeyDown}>
         {sortedFiles.length > 0 ? (

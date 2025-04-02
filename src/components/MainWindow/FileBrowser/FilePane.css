@@ -1,6 +1,7 @@
 .file-pane {
     background-color: #1a1a1a;
     border: black solid 1px;
+    border-top: none;
     min-width: 300px;
     max-width: 25vw;
     display: flex;
@@ -148,7 +149,7 @@
     justify-content: center;
     align-items: center;
     color: white;
-    border-bottom: black solid 1px;
+    border-top: black solid 1px;
 }
 
 /* Dropdown menu styling */
@@ -164,6 +165,7 @@
     width: 100%;
     border: none;
     user-select: none;
+    text-align: center;
   }
   
   /* When focused, darken the background slightly */

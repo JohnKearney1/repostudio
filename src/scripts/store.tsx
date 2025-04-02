@@ -9,6 +9,21 @@ import { persist } from 'zustand/middleware';
 // Import Types
 import { FileMetadata, Repository } from '../types/ObjectTypes';
 
+// ------------------------------------------------------------------- //
+interface ProcessingStore {
+  isProcessing: boolean;
+  statusMessage: string;
+  description: string;
+  setProcessing: (isProcessing: boolean, message?: string, description?: string) => void;
+}
+export const useProcessingStore = create<ProcessingStore>((set) => ({
+  isProcessing: false,
+  statusMessage: '',
+  description: '',
+  setProcessing: (isProcessing, message = '', description = '') =>
+    set({ isProcessing, statusMessage: message, description }),
+}));
+
 // ------------------------------------------------------------------- // 
 export interface FingerprintQueueStore {
   fingerprintQueue: FileMetadata[];

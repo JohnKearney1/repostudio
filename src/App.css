@@ -131,3 +131,74 @@ a:hover {
   text-decoration: none;
   color: #808080;
 }
+
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  background-color: #1a1a1a;
+  user-select: none;
+  border-bottom: 1px solid black;
+}
+
+.tab-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 0.55rem 0.5rem;
+  border-right: 1px solid black;
+  cursor: pointer;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 0.55rem 0.5rem;
+  border-right: 1px solid black;
+  cursor: pointer;
+}
+
+.DropdownMenuItem.Tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+.tab-item.active {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.tab-item button {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  align-items: center;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: auto;
+}

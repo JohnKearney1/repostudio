@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WindowBar from '../Layout/WindowBar';
 import './Settings.css';
@@ -8,7 +8,7 @@ import STConnectedApps from './Tabs/STConnectedApps';
 import STAudio from './Tabs/STAudio';
 import STAdvanced from './Tabs/STAdvanced';
 
-const Settings: React.FC = () => {
+function Settings(headless: boolean) {
     const [activeTab, setActiveTab] = useState('About');
 
     const tabs = [
@@ -45,9 +45,12 @@ const Settings: React.FC = () => {
 
     return (
         <div className="settings-background">
-            <WindowBar />
+            { !headless && <WindowBar /> }
             <div className="settings-container">
-                <div className="settings-sidebar">
+                <div className="settings-sidebar"
+                    // if headless is true, remove the border
+                    style={headless ? { borderTop: 'none' } : {}}
+                >
                     {tabs.map(tab => (
                         <motion.div
                             key={tab}

@@ -72,6 +72,7 @@
   flex-direction: row;
   background-color: #1a1a1a;
   color: white;
+  border-bottom: 1px solid black;
 }
 
 .window-title {

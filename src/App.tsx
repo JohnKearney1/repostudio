@@ -8,14 +8,13 @@ import FilePane from "./components/MainWindow/FileBrowser/FilePane";
 import WindowBar from "./components/Layout/WindowBar";
 import PropertiesPane from "./components/MainWindow/RightPanelContent/PropertiesPane/PropertiesPane";
 import Popup from "./components/Layout/Popup";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store";
 import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import Settings from "./components/SettingsWindow/Settings";
 import { useTabStore } from "./scripts/store";
-import { Cross2Icon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
+import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
 import ActionsPane from "./components/MainWindow/RightPanelContent/ActionsPane/ActionsPane";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,19 +23,18 @@ import { AnimatePresence, motion } from "framer-motion";
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
   'ActionsPane': ActionsPane,
+  'Settings': () => Settings(true),
   // Add other panes here
 };
 
 const IconMap: Record<string, React.ReactNode> = {
   'InfoCircledIcon': <InfoCircledIcon />,
   'RocketIcon': <RocketIcon />,
+  'GearIcon': <GearIcon />
   // Add other icons here
 };
 
 function App() {
-  const [windowLabel, setWindowLabel] = useState<string | null>(null);
-
-  
 
   useEffect(() => {
     useTabStore.getState().openTab({
@@ -68,33 +66,7 @@ function App() {
     };
   }, []);  
 
-  useEffect(() => {
-    const currentWindow = getCurrentWebviewWindow();
-    // Set initial label
-    setWindowLabel(currentWindow.label);
-
-    // Poll every second to check if the label changes
-    const interval = setInterval(() => {
-      const newLabel = currentWindow.label;
-      setWindowLabel(prev => (prev !== newLabel ? newLabel : prev));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Render nothing until the label is loaded
-  if (!windowLabel) {
-    return null;
-  }
-
-  // Conditionally render based on the window label
-  if (windowLabel === "settings") {
-    return <Settings />;
-  } else if (windowLabel === "main" || windowLabel === "main-2") {
-    return <Home />;
-  }
-
-  return null;
+  return <Home />;
 }
 
 
@@ -198,6 +170,20 @@ function TabBar() {
             >
               <RocketIcon />
               Actions
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className="DropdownMenuItem Tab"
+              onSelect={() =>
+                useTabStore.getState().openTab({
+                  id: 'settings',
+                  name: 'Settings',
+                  iconName: 'GearIcon',
+                  componentId: 'Settings',
+                })
+              }
+            >
+              <GearIcon />
+              Settings
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

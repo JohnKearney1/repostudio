@@ -14,7 +14,7 @@ export default function STAbout() {
         fetchVersion();
     }, []);
 
-    const typeText = `Repo Studio is a Windows and OSX desktop application that allows audio professionals to organize and preform useful operations on audio files. Files are organized into collections called Repositories, that keep track of individual files, or specific directories. Since no files are duplicated, it makes organizing sample packs or libraries fast and extremely space efficient.`;
+    const typeText = 'This software is a work in progress. If you find a bug, please report it on GitHub.';
     const letters = typeText.split("");
 
     // Parent container to stagger each letter's animation.

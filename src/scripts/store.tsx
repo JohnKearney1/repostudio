@@ -42,8 +42,7 @@ export const useTabStore = create<TabStore, [["zustand/persist", TabStore]]>(
         componentId: 'ActionsPane'
       }
     ],
-    activeTabId: 'PropertiesPane',
-
+    activeTabId: 'properties',
     openTab: (tab) =>
       set((state) => ({
         tabs: state.tabs.find(t => t.id === tab.id) ? state.tabs : [...state.tabs, tab],

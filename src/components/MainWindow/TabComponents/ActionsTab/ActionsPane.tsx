@@ -14,14 +14,27 @@ import {
   } from '@radix-ui/react-icons';
   import './ActionsPane.css';
   import { useFileStore, useFingerprintCancellationStore, useFingerprintQueueStore } from '../../../../scripts/store';
-  
+  import { getVersion } from '@tauri-apps/api/app';
+import { useEffect, useState } from 'react';
+
   export default function ActionsPane() {
     const allFiles = useFileStore((state) => state.allFiles);
     const fingerprintQueue = useFingerprintQueueStore((state) => state.fingerprintQueue);
     const addToQueue = useFingerprintQueueStore((state) => state.addToQueue);
     const clearQueue = useFingerprintQueueStore((state) => state.clearQueue);
     const { cancelProcessing, resetCancellation } = useFingerprintCancellationStore.getState();
+    const [version, setVersion] = useState('');
 
+    useEffect(() => {
+      const fetchVersion = async () => {
+        const appVersion = await getVersion();
+        setVersion(appVersion);
+      };
+      fetchVersion();
+    }
+    , []);    
+
+    
     const handleProcessRepository = () => {
       if (fingerprintQueue.length > 0) {
         alert('Fingerprinting in progress! Please wait.');
@@ -166,7 +179,7 @@ import {
               <SymbolIcon />
               Check for Updates
             </h4>
-            <h5>Version: 0.1.6</h5>
+            <h5>Version: {version}</h5>
           </button>
           <h5
             style={{

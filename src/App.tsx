@@ -6,31 +6,34 @@
 import "./App.css";
 import FilePane from "./components/MainWindow/FileBrowser/FilePane";
 import WindowBar from "./components/Layout/WindowBar";
-import PropertiesPane from "./components/MainWindow/RightPanelContent/PropertiesPane/PropertiesPane";
+import PropertiesPane from "./components/MainWindow/TabComponents/PropertiesTab/PropertiesPane";
 import Popup from "./components/Layout/Popup";
 import { useEffect } from "react";
 import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store";
 import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
-import Settings from "./components/SettingsWindow/Settings";
+import Settings from "./components/MainWindow/TabComponents/SettingsTab/Settings";
 import { useTabStore } from "./scripts/store";
-import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
-import ActionsPane from "./components/MainWindow/RightPanelContent/ActionsPane/ActionsPane";
+import { Cross2Icon, DesktopIcon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
+import ActionsPane from "./components/MainWindow/TabComponents/ActionsTab/ActionsPane";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
+import ConsoleTab from "./components/MainWindow/TabComponents/ConsoleTab/ConsoleTab";
 
 
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
   'ActionsPane': ActionsPane,
   'Settings': () => Settings(true),
+  'Console': ConsoleTab,
   // Add other panes here
 };
 
 const IconMap: Record<string, React.ReactNode> = {
   'InfoCircledIcon': <InfoCircledIcon />,
   'RocketIcon': <RocketIcon />,
-  'GearIcon': <GearIcon />
+  'GearIcon': <GearIcon />,
+  'DesktopIcon': <DesktopIcon />,
   // Add other icons here
 };
 
@@ -112,9 +115,36 @@ function Home() {
 function TabBar() {
   const { tabs, activeTabId, closeTab, setActiveTab } = useTabStore();
 
+  // List of all potential additional tabs
+  const availableTabs = [
+    {
+      id: 'actions',
+      name: 'Actions',
+      iconName: 'RocketIcon',
+      componentId: 'ActionsPane',
+    },
+    {
+      id: 'console',
+      name: 'Console',
+      iconName: 'DesktopIcon',
+      componentId: 'Console',
+    },
+    {
+      id: 'settings',
+      name: 'Settings',
+      iconName: 'GearIcon',
+      componentId: 'Settings',
+    },
+    
+  ];
+
+  // Determine which of these tabs are not open
+  const openTabIds = new Set(tabs.map(tab => tab.id));
+  const closedTabs = availableTabs.filter(tab => !openTabIds.has(tab.id));
+
   return (
     <div className="tab-bar">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {tabs.map((tab) => (
           <motion.div
             key={tab.id}
@@ -148,46 +178,30 @@ function TabBar() {
         ))}
       </AnimatePresence>
 
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger className="tab-add" asChild>
-          <motion.div
-          >
-            <PlusIcon />
-          </motion.div>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content className="DropdownMenuContent" sideOffset={5}>
-            <DropdownMenu.Item
-              className="DropdownMenuItem Tab"
-              onSelect={() =>
-                useTabStore.getState().openTab({
-                  id: 'actions',
-                  name: 'Actions',
-                  iconName: 'RocketIcon',
-                  componentId: 'ActionsPane',
-                })
-              }
-            >
-              <RocketIcon />
-              Actions
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              className="DropdownMenuItem Tab"
-              onSelect={() =>
-                useTabStore.getState().openTab({
-                  id: 'settings',
-                  name: 'Settings',
-                  iconName: 'GearIcon',
-                  componentId: 'Settings',
-                })
-              }
-            >
-              <GearIcon />
-              Settings
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+      {/* Only show the plus (dropdown trigger) if there are tabs to add */}
+      {closedTabs.length > 0 && (
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger className="tab-add" asChild>
+            <motion.div>
+              <PlusIcon />
+            </motion.div>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content className="DropdownMenuContent" sideOffset={5}>
+              {closedTabs.map((tab) => (
+                <DropdownMenu.Item
+                  key={tab.id}
+                  className="DropdownMenuItem Tab"
+                  onSelect={() => useTabStore.getState().openTab(tab)}
+                >
+                  {IconMap[tab.iconName]}
+                  {tab.name}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      )}
     </div>
   );
 }

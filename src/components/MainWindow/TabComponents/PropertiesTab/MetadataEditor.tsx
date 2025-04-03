@@ -81,7 +81,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
       tags: customTags.trim() || null,
     };
 
-    const updatedFile: FileMetadata = { ...file, ...formData };
+    const updatedFile: FileMetadata = { ...file, ...formData, audio_fingerprint: file.audio_fingerprint || null };
 
     try {
       await invoke('update_file_command', { repoId, file: updatedFile });

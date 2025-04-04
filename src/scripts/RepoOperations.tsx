@@ -1,6 +1,6 @@
 // RepoOperations.tsx
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore, useFileStore } from './store';
+import { useRepositoryStore, useFileStore } from './store/store';
 import { Repository } from '../types/ObjectTypes';
 
 // Load repositories from backend and set the first repository as selected.

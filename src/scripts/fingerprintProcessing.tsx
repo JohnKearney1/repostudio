@@ -1,6 +1,6 @@
 // fingerprintProcessing.tsx
 import { fingerprintFileScript } from './FileOperations';
-import { useFingerprintQueueStore, useFingerprintCancellationStore } from './store';
+import { useFingerprintQueueStore, useFingerprintCancellationStore } from './store/store';
 import { Repository, FileMetadata } from '../types/ObjectTypes';
 
 /**

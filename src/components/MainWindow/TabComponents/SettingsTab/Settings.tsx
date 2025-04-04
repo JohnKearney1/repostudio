@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import WindowBar from '../Layout/WindowBar';
+import WindowBar from '../../../Layout/WindowBar';
 import './Settings.css';
 import STAbout from './Tabs/STAbout';
 import STGeneral from './Tabs/STGeneral';

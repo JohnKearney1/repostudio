@@ -23,10 +23,11 @@ import {
   usePopupContentStore, 
   useFingerprintQueueStore,
   useFingerprintCancellationStore
-} from '../../../scripts/store';
-import RepositorySelector from '../RepositoryBrowser/RepositorySelector';
+} from '../../../scripts/store/store';
+import RepositorySelector from '../RepositorySelector/RepositorySelector';
 import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
+import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
 
 const FilePane: React.FC = () => {
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
@@ -47,6 +48,7 @@ const FilePane: React.FC = () => {
   const [, setTrackedFolders] = useState<string[]>([]);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
   const processingCancelledRef = useFingerprintCancellationStore((state) => state.processingCancelled);
+  const { addEvent } = useEventLoggerStore();
 
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
@@ -116,23 +118,23 @@ const FilePane: React.FC = () => {
   }, [selectedRepository]);
   
   // Every 30 seconds, refresh the files in the selected repository.
-  useEffect(() => {
-    if (!selectedRepository) return;
-    const interval = setInterval(async () => {
-      console.log("Starting interval for repository:", selectedRepository);
+  // useEffect(() => {
+  //   if (!selectedRepository) return;
+  //   const interval = setInterval(async () => {
+  //     console.log("Starting interval for repository:", selectedRepository);
 
-      try {
-        await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
-        const preservedSelection = [...selectedFiles];
-        await loadFiles(preservedSelection);
-      } catch (error) {
-        console.error("Failed to refresh files for repository:", error);
-      }
-    }
-    , 30000);
-    return () => clearInterval(interval);
-  }
-  , []);
+  //     try {
+  //       await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+  //       const preservedSelection = [...selectedFiles];
+  //       await loadFiles(preservedSelection);
+  //     } catch (error) {
+  //       console.error("Failed to refresh files for repository:", error);
+  //     }
+  //   }
+  //   , 30000);
+  //   return () => clearInterval(interval);
+  // }
+  // , []);
 
   // Store previous repository for detecting changes.
   const prevRepositoryRef = useRef(selectedRepository);
@@ -176,6 +178,8 @@ const FilePane: React.FC = () => {
     repoInitialized.current = repoId;
 
     let cancelled = false;
+
+    
 
     const handleRepositoryInit = async () => {
       try {
@@ -222,6 +226,11 @@ const FilePane: React.FC = () => {
         newFiles.some((newFile) => newFile.id === file.id)
       );
       setSelectedFiles(preserved);
+      addEvent({
+          timestamp: new Date().toISOString(),
+          text: 'file-refresh',
+          description: `Files in repository ${repoId} have been refreshed.`,
+        });
     } catch (error) {
       console.error("Failed to load files:", error);
     }
@@ -441,7 +450,7 @@ const FilePane: React.FC = () => {
     },
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
-
+  
   return (
     <div className="file-pane">
       <div className="toolbar">

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@radix-ui/react-icons';
-import { useFileStore } from '../../../scripts/store';
+import { useFileStore } from '../../../scripts/store/store';
 import { readFile } from '@tauri-apps/plugin-fs';
 import './AudioPlayer.css';
 

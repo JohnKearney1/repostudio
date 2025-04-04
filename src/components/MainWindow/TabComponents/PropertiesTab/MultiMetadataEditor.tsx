@@ -4,7 +4,7 @@ import MultiInput from '../../../Layout/MultiInput';
 import './MetadataEditor.css';
 import { CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons';
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore, useFileStore } from '../../../../scripts/store';
+import { useRepositoryStore, useFileStore } from '../../../../scripts/store/store';
 import { loadFilesScript } from '../../../../scripts/FileOperations';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileMetadata } from '../../../../types/ObjectTypes';

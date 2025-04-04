@@ -23,10 +23,11 @@ import {
   usePopupContentStore, 
   useFingerprintQueueStore,
   useFingerprintCancellationStore
-} from '../../../scripts/store';
+} from '../../../scripts/store/store';
 import RepositorySelector from '../RepositorySelector/RepositorySelector';
 import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
+import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
 
 const FilePane: React.FC = () => {
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
@@ -47,6 +48,7 @@ const FilePane: React.FC = () => {
   const [, setTrackedFolders] = useState<string[]>([]);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
   const processingCancelledRef = useFingerprintCancellationStore((state) => state.processingCancelled);
+  const { addEvent } = useEventLoggerStore();
 
   const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
@@ -224,6 +226,11 @@ const FilePane: React.FC = () => {
         newFiles.some((newFile) => newFile.id === file.id)
       );
       setSelectedFiles(preserved);
+      addEvent({
+          timestamp: new Date().toISOString(),
+          text: 'file-refresh',
+          description: `Files in repository ${repoId} have been refreshed.`,
+        });
     } catch (error) {
       console.error("Failed to load files:", error);
     }

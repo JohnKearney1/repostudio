@@ -1,6 +1,5 @@
 import {
   BoxModelIcon,
-  CommitIcon,
   Component1Icon,
   CubeIcon,
   DownloadIcon,
@@ -13,13 +12,12 @@ import {
   UploadIcon,
 } from '@radix-ui/react-icons';
 import './ActionsPane.css';
-import { useFileStore, useFingerprintCancellationStore, useFingerprintQueueStore } from '../../../../scripts/store';
-
-// Import Tauri APIs for file operations and dialogs
-// import { invoke } from '@tauri-apps/api/tauri';
+import { useFileStore, useFingerprintCancellationStore, useFingerprintQueueStore } from '../../../../scripts/store/store';
+import { getVersion } from '@tauri-apps/api/app';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import { useEffect, useState } from 'react';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -27,6 +25,16 @@ export default function ActionsPane() {
   const addToQueue = useFingerprintQueueStore((state) => state.addToQueue);
   const clearQueue = useFingerprintQueueStore((state) => state.clearQueue);
   const { cancelProcessing, resetCancellation } = useFingerprintCancellationStore.getState();
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      const version = await getVersion();
+      setVersion(version);
+    };
+    fetchVersion();
+  }
+  , []);
 
   const handleProcessRepository = () => {
     if (fingerprintQueue.length > 0) {
@@ -210,17 +218,10 @@ export default function ActionsPane() {
         </button>
         <button className="actions-details-button">
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CommitIcon />
-            Event Log
-          </h4>
-          <h5>View Repository History</h5>
-        </button>
-        <button className="actions-details-button">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <SymbolIcon />
             Check for Updates
           </h4>
-          <h5>Version: 0.1.6</h5>
+          <h5>Version: {version}</h5>
         </button>
         <h5
           style={{

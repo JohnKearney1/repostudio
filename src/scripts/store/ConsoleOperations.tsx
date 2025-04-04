@@ -1,6 +1,5 @@
 // ConsoleOperations.tsx
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface ConsoleMessage {
   id: number;
@@ -15,15 +14,12 @@ interface ConsoleStore {
 }
 
 export const useConsoleStore = create<ConsoleStore, [["zustand/persist", ConsoleStore]]>(
-  persist(
     (set) => ({
       messages: [],
       addMessage: (message: ConsoleMessage) =>
         set((state) => ({ messages: [...state.messages, message] })),
       clearMessages: () => set({ messages: [] }),
-    }),
-    { name: 'console-messages' }
-  )
+    })
 );
 
 // Enhanced command processing logic

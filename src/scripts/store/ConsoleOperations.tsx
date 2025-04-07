@@ -14,16 +14,17 @@ interface ConsoleStore {
 }
 
 export const useConsoleStore = create<ConsoleStore, [["zustand/persist", ConsoleStore]]>(
-    (set) => ({
-      messages: [],
-      addMessage: (message: ConsoleMessage) =>
-        set((state) => ({ messages: [...state.messages, message] })),
-      clearMessages: () => set({ messages: [] }),
-    })
+  (set) => ({
+    messages: [],
+    addMessage: (message: ConsoleMessage) =>
+      set((state) => ({ messages: [...state.messages, message] })),
+    clearMessages: () => set({ messages: [] }),
+  })
 );
 
 // Enhanced command processing logic
-export const processCommand = (command: string): ConsoleMessage => {
+// Now returns ConsoleMessage or null (if no message should be added)
+export const processCommand = (command: string): ConsoleMessage | null => {
   // Trim leading/trailing spaces and split into tokens
   const trimmed = command.trim();
   const tokens = trimmed.split(/\s+/);
@@ -31,32 +32,26 @@ export const processCommand = (command: string): ConsoleMessage => {
 
   let output: string;
 
-  // Use the number of tokens to decide if extra arguments were provided
   switch (baseCommand) {
     case 'help':
-      // Only trigger "help" if it's the only token
       output = tokens.length === 1 
         ? 'Available commands: help, echo [text], time'
         : `Unknown command: ${command}`;
       break;
     case 'echo':
-      // Echo command: return everything after "echo"
       output = tokens.length > 1 
         ? tokens.slice(1).join(' ')
         : '';
       break;
     case 'time':
-      // Only trigger "time" if it's the only token
       output = tokens.length === 1 
         ? `The current time is ${new Date().toLocaleTimeString()}`
         : `Unknown command: ${command}`;
       break;
-
     case 'clear':
-      // clear all the messages from the store, then add a message indicating the console was cleared
+      // Clear all the messages and return null so no new message is added.
       useConsoleStore.getState().clearMessages();
-      output = ' ';
-      break;
+      return null;
     default:
       output = `Unknown command: ${command}`;
   }

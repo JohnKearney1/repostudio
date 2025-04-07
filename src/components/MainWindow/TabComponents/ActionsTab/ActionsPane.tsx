@@ -4,7 +4,6 @@ import {
   CubeIcon,
   DownloadIcon,
   EnvelopeClosedIcon,
-  FaceIcon,
   InputIcon,
   LightningBoltIcon,
   MixerHorizontalIcon,
@@ -137,13 +136,13 @@ export default function ActionsPane() {
           </button>
         )}
 
-        <button className="actions-details-button">
+        {/* <button className="actions-details-button">
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <CubeIcon width={'15px'} height={'15px'} />
             New Repo From Meta
           </h4>
           <h5>Creates and Populates a new Repository</h5>
-        </button>
+        </button> */}
         <h5
           style={{
             padding: '0.5rem',
@@ -182,7 +181,7 @@ export default function ActionsPane() {
           </h4>
           <h5>Add Prefix or Suffix to Filename(s)</h5>
         </button>
-        <h5
+        {/* <h5
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
@@ -198,7 +197,7 @@ export default function ActionsPane() {
             MailKit
           </h4>
           <h5>Automated Mailing Toolkit</h5>
-        </button>
+        </button> */}
         <h5
           style={{
             padding: '0.5rem',
@@ -209,13 +208,6 @@ export default function ActionsPane() {
         >
           System
         </h5>
-        <button className="actions-details-button">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <FaceIcon />
-            Stats
-          </h4>
-          <h5>Understand your Library</h5>
-        </button>
         <button className="actions-details-button">
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <SymbolIcon />

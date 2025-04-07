@@ -56,8 +56,7 @@ function App() {
     addEvent({
       timestamp: new Date().toISOString(),
       text: 'app-start',
-      description: "The application has started! we're setting up some important stuff like " +
-        "the viewport height and the default tab(s).",
+      description: "The main window has mounted! This usually means the app is ready to use.",
       status: 'info',
     });
 
@@ -235,7 +234,7 @@ function ActiveTabContent() {
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -10 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.1 }}
         >
           <ActiveComponent />
         </motion.div>

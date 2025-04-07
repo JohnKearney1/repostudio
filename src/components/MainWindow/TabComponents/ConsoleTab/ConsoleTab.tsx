@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import './ConsoleTab.css';
 import { ArrowRightIcon } from '@radix-ui/react-icons';
-import  { useConsoleStore, ConsoleMessage, processCommand } from '../../../../scripts/store/ConsoleOperations';
+import  { useConsoleStore, processCommand } from '../../../../scripts/store/ConsoleOperations';
 
 const ConsoleTab: React.FC = () => {
   const [inputValue, setInputValue] = useState<string>("");
@@ -26,9 +26,11 @@ const ConsoleTab: React.FC = () => {
     setCommandHistory((prev) => [...prev, inputValue]);
     setHistoryIndex(null);
 
-    // Process the command and add the response to the persistent store
-    const response: ConsoleMessage = processCommand(inputValue);
-    addMessage(response);
+    // Process the command and add the response to the persistent store if applicable
+    const response = processCommand(inputValue);
+    if (response !== null) {
+      addMessage(response);
+    }
 
     // Clear the input field
     setInputValue("");

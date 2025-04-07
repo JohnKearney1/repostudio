@@ -4,7 +4,7 @@ import MultiInput from '../../../Layout/MultiInput';
 import './MetadataEditor.css';
 import { CrossCircledIcon } from '@radix-ui/react-icons';
 import { invoke } from '@tauri-apps/api/core';
-import { useRepositoryStore, useFileStore } from '../../../../scripts/store';
+import { useRepositoryStore, useFileStore } from '../../../../scripts/store/store';
 import { loadFilesScript } from '../../../../scripts/FileOperations';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircledIcon } from '@radix-ui/react-icons'; // for success icon
@@ -81,7 +81,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
       tags: customTags.trim() || null,
     };
 
-    const updatedFile: FileMetadata = { ...file, ...formData };
+    const updatedFile: FileMetadata = { ...file, ...formData, audio_fingerprint: file.audio_fingerprint == null ? null : file.audio_fingerprint };
 
     try {
       await invoke('update_file_command', { repoId, file: updatedFile });

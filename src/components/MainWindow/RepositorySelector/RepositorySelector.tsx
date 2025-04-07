@@ -3,21 +3,20 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './RepositorySelector.css';
 import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react-icons';
-import { useRepositoryStore } from '../../../scripts/store';
+import { useRepositoryStore } from '../../../scripts/store/store';
 import { Repository } from '../../../types/ObjectTypes';
 import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
   const setSelectedRepository = useRepositoryStore((state) => state.setSelectedRepository);
   const { setRepositories: setRepoStore } = useRepositoryStore.getState();
-
   const [showSavedAlert, setShowSavedAlert] = useState(false);
   const alertTimeoutRef = useRef<number | null>(null);
-
-  // New state and ref for delete confirmation
+  const { addEvent } = useEventLoggerStore();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const confirmTimeoutRef = useRef<number | null>(null);
 
@@ -80,7 +79,24 @@ const RepositorySelector: React.FC = () => {
       newId = crypto.randomUUID();
     }
 
-    await createRepository(newId, 'New Repository', '');
+    try {
+      await createRepository(newId, 'New Repository', '');
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `new-repository`,
+        description: 'New repository created successfully: ' + newId,
+        status: 'success',
+      });
+    }
+    catch (err) {
+      console.error('Failed to create repository', err);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `new-repository`,
+        description: 'Failed to create new repository: ' + newId,
+        status: 'error',
+      });
+    }
   };
 
   // Original deletion function
@@ -90,8 +106,24 @@ const RepositorySelector: React.FC = () => {
       return;
     }
 
-    await deleteRepository(selectedRepository?.id || '');
-    // No need to manually call fetchRepositories()—handled by event listener
+    try {
+      await deleteRepository(selectedRepository?.id || '');
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `delete-repository`,
+        description: 'Repository deleted successfully: ' + selectedRepository?.id,
+        status: 'success',
+      });
+    }
+    catch (err) {
+      console.error('Failed to delete repository', err);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `delete-repository`,
+        description: 'Failed to delete repository: ' + selectedRepository?.id,
+        status: 'error',
+      });
+    }
   };
 
   // New handler for the delete button confirmation logic.

@@ -8,6 +8,9 @@
   ],
   "permissions": [
     "core:default",
+    "fs:allow-write",
+    "fs:allow-write-file",
+    "fs:allow-app-write",
     "opener:default",
     "dialog:default",
     "core:window:default",

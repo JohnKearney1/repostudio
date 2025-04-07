@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BorderSolidIcon, SizeIcon, Cross2Icon,  /* HamburgerMenuIcon */ } from '@radix-ui/react-icons';
 // import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import './WindowBar.css';
 import logo from '../../assets/img/64x64.png';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
 
 const WindowBar: React.FC = () => {
   const [appWindow, setAppWindow] = useState<WebviewWindow | null>(null);
@@ -18,59 +17,6 @@ const WindowBar: React.FC = () => {
     };
     init();
   }, []);
-
-  const handleNewWindow = useCallback(async (windowLabel: string) => {
-    const existingWindow = await WebviewWindow.getByLabel(windowLabel);
-    if (existingWindow) {
-      await existingWindow.show();
-      // Ensure the window is not minimized
-      if (await existingWindow.isMinimized()) {
-        await existingWindow.unminimize();
-      }
-      // Bring the window to the front
-      await existingWindow.setFocus();
-      return;
-    }
-
-    new WebviewWindow(windowLabel, {
-      url: 'index.html',
-      title: "Repo Studio",
-      resizable: true,
-      decorations: false
-    });
-  }, []);
-
-  const handleCtrlWShortcut = useCallback(() => {
-    handleNewWindow("main-2");
-  }, [handleNewWindow]);
-
-  useEffect(() => {
-    if (!appWindow || appWindow.label !== 'main') return;
-
-    const registerShortcuts = async () => {
-      try {
-        await register('CommandOrControl+W', handleCtrlWShortcut);
-      } catch (error) {
-        console.error("Error registering shortcuts", error);
-      }
-    };
-
-    const unregisterShortcuts = async () => {
-      try {
-        await unregister('CommandOrControl+W');
-        await unregister('CommandOrControl+,');
-      } catch (error) {
-        console.error("Error unregistering shortcuts", error);
-      }
-    };
-
-    registerShortcuts();
-
-    return () => {
-      unregisterShortcuts();
-    };
-  }, [appWindow, handleCtrlWShortcut]);
-  
 
   // Handle dragging and double-click to maximize/minimize.
   const handleTitleBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {

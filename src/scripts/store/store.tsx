@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Import Types
-import { FileMetadata, Repository } from '../types/ObjectTypes';
+import { FileMetadata, Repository } from '../../types/ObjectTypes';
 
 // ------------------------------------------------------------------- //
 

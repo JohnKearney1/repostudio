@@ -1,9 +1,9 @@
 import {
   BoxModelIcon,
   Component1Icon,
-  CubeIcon,
+  // CubeIcon,
   DownloadIcon,
-  EnvelopeClosedIcon,
+  // EnvelopeClosedIcon,
   InputIcon,
   LightningBoltIcon,
   MixerHorizontalIcon,
@@ -17,6 +17,9 @@ import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import { motion } from 'framer-motion';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -25,6 +28,7 @@ export default function ActionsPane() {
   const clearQueue = useFingerprintQueueStore((state) => state.clearQueue);
   const { cancelProcessing, resetCancellation } = useFingerprintCancellationStore.getState();
   const [version, setVersion] = useState<string | null>(null);
+  const [bundleProgress, setBundleProgress] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -34,6 +38,29 @@ export default function ActionsPane() {
     fetchVersion();
   }
   , []);
+
+  // Listen for bundling progress events from the backend.
+  useEffect(() => {
+    // Listener for progress updates.
+    const unlistenProgress = listen<any>("bundle_progress", (event) => {
+      // Update progress bar state based on the payload from the Rust event.
+      if (event.payload && typeof event.payload.progress === 'number') {
+        setBundleProgress(event.payload.progress);
+      }
+    });
+
+    // Listener for bundling completion.
+    const unlistenCompleted = listen("bundle_completed", () => {
+      setBundleProgress(100);
+      // Optionally clear the progress bar after a short delay.
+      setTimeout(() => setBundleProgress(null), 1500);
+    });
+
+    return () => {
+      unlistenProgress.then((f) => f());
+      unlistenCompleted.then((f) => f());
+    };
+  }, []);
 
   const handleProcessRepository = () => {
     if (fingerprintQueue.length > 0) {
@@ -96,6 +123,44 @@ export default function ActionsPane() {
     }
   };
 
+  // New handler for the Bundle button that uses base64 conversion.
+  const handleBundle = async () => {
+    const selectedFiles = useFileStore.getState().selectedFiles;
+    if (selectedFiles.length === 0) {
+      alert("Select one or more files to bundle! Nothing was selected this time.");
+      return;
+    }
+    try {
+      const filePaths = selectedFiles.map(file => file.path);
+      console.log("Selected files for bundling:", filePaths);
+
+      // Invoke the Rust command; note that it now returns a base64 string.
+      const base64Zip: string = await invoke("bundle_files_command", { filePaths });
+      
+      // Decode the base64 string into a binary Uint8Array.
+      const binaryString = atob(base64Zip);
+      const len = binaryString.length;
+      const zipData = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        zipData[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Prompt the user to choose a save location.
+      const savePath = await save({
+        title: "Save Bundled Archive",
+        defaultPath: "bundle.zip",
+        filters: [{ name: "Zip Archive", extensions: ["zip"] }],
+      });
+      if (savePath) {
+        await writeFile(savePath, zipData);
+        alert("Files bundled successfully!");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to bundle files: " + e);
+    }
+  };
+
   return (
     <div className="actions-pane">
       <div className="actions-details">
@@ -109,40 +174,37 @@ export default function ActionsPane() {
           Repository Actions
         </h5>
 
-        { fingerprintQueue.length > 0 ? (
-          <button
+        {fingerprintQueue.length > 0 ? (
+          <motion.button
             className="actions-details-button"
             onClick={() => {
-              clearQueue(); // Empties the fingerprint queue in your Zustand store.
-              cancelProcessing(); // Sets processingCancelled to true.
+              clearQueue();
+              cancelProcessing();
               console.log('Processing cancelled. Fingerprint queue cleared.');
-              // Optionally, reset the cancellation flag after a short delay if you want future processing to resume.
               setTimeout(() => resetCancellation(), 100);
             }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LightningBoltIcon width={'15px'} height={'15px'} />
               Pause Processing
             </h4>
             <h5>Clears the Processing Queue</h5>
-          </button>
+          </motion.button>
         ) : (
-          <button className="actions-details-button" onClick={handleProcessRepository}>
+          <motion.button
+            className="actions-details-button"
+            onClick={handleProcessRepository}
+            transition={{ type: 'spring', stiffness: 300 }}
+          >
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LightningBoltIcon width={'15px'} height={'15px'} />
               Process Repository
             </h4>
             <h5>Generates Fingerprints for all Files</h5>
-          </button>
+          </motion.button>
         )}
 
-        {/* <button className="actions-details-button">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CubeIcon width={'15px'} height={'15px'} />
-            New Repo From Meta
-          </h4>
-          <h5>Creates and Populates a new Repository</h5>
-        </button> */}
         <h5
           style={{
             padding: '0.5rem',
@@ -153,51 +215,61 @@ export default function ActionsPane() {
         >
           Selected Files
         </h5>
-        <button className="actions-details-button">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Component1Icon />
-            Bundle
-          </h4>
-          <h5>Generate a Folder / Archive</h5>
+        <button
+          className="actions-details-button"
+          onClick={handleBundle}
+          disabled={bundleProgress !== null}
+        >
+          {bundleProgress !== null ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Component1Icon />
+              <h4>
+                Bundling... {bundleProgress}%
+              </h4>
+            </div>
+          ) : (
+            <>
+              <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Component1Icon />
+                Bundle
+              </h4>
+              <h5>Generate a Folder / Archive</h5>
+            </>
+          )}
         </button>
-        <button className="actions-details-button">
+
+        {/* More buttons like Compress, Convert, Rename, etc. */}
+        <button
+          className="actions-details-button"
+          onClick={() => {}}
+        >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <BoxModelIcon />
             Compress
           </h4>
           <h5>Compress File Sizes</h5>
         </button>
-        <button className="actions-details-button">
+        <button
+          className="actions-details-button"
+          onClick={() => {}}
+        >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MixerHorizontalIcon />
             Convert
           </h4>
           <h5>Change Audio Encodings</h5>
         </button>
-        <button className="actions-details-button">
+        <button
+          className="actions-details-button"
+          onClick={() => {}}
+        >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <InputIcon />
             Rename
           </h4>
           <h5>Add Prefix or Suffix to Filename(s)</h5>
         </button>
-        {/* <h5
-          style={{
-            padding: '0.5rem',
-            fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
-          }}
-        >
-          Sharing
-        </h5>
-        <button className="actions-details-button">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <EnvelopeClosedIcon />
-            MailKit
-          </h4>
-          <h5>Automated Mailing Toolkit</h5>
-        </button> */}
+
         <h5
           style={{
             padding: '0.5rem',
@@ -208,13 +280,18 @@ export default function ActionsPane() {
         >
           System
         </h5>
-        <button className="actions-details-button">
+        <button
+          className="actions-details-button"
+          onClick={() => {}}
+        >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <SymbolIcon />
             Check for Updates
           </h4>
-          <h5>Version: {version}</h5>
+          <h5>RS {version}</h5>
         </button>
+
+
         <h5
           style={{
             padding: '0.5rem',
@@ -225,20 +302,28 @@ export default function ActionsPane() {
         >
           Advanced
         </h5>
-        <button className="actions-details-button" onClick={handleExportDatabase}>
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <DownloadIcon />
-            Export Database
-          </h4>
-          <h5>Backup Your Settings and Repositories</h5>
-        </button>
-        <button className="actions-details-button" onClick={handleImportDatabase}>
+
+        <button
+          className="actions-details-button"
+          onClick={handleExportDatabase}
+        >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <UploadIcon />
+            Export Database
+          </h4>
+          <h5>Export the SQLite Database</h5>
+        </button>
+        <button
+          className="actions-details-button"
+          onClick={handleImportDatabase}
+        >
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <DownloadIcon />
             Import Database
           </h4>
-          <h5>Import a Backup</h5>
+          <h5>Import a SQLite Database</h5>
         </button>
+        
       </div>
     </div>
   );

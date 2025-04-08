@@ -35,9 +35,8 @@ pub fn run() {
             commands::delete_file_command,
             commands::remove_duplicate_files_command,
             // Settings
-            commands::get_setting_command,
-            commands::update_setting_command,
-            commands::create_setting_command,
+            commands::get_app_settings_command,
+            commands::update_app_settings_command,
             // ---------------------------------- //
             //            file_ops.rs             //
             // ---------------------------------- //

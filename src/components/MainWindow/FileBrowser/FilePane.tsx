@@ -28,6 +28,7 @@ import RepositorySelector from '../RepositorySelector/RepositorySelector';
 import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
+// import { updateSelectedRepository } from '../../../scripts/RepoOperations';
 
 const FilePane: React.FC = () => {
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
@@ -54,6 +55,9 @@ const FilePane: React.FC = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
+
+
+  
 
   const reloadFiles = async () => {
     if (!selectedRepository) return;
@@ -141,6 +145,36 @@ const FilePane: React.FC = () => {
 
   const repoInitialized = useRef<string | null>(null);
 
+  useEffect(() => {
+    if (!selectedRepository) return;
+    reloadFiles();
+  }, [selectedRepository]);
+
+
+useEffect(() => {
+  const initializeRepository = async () => {
+      const currentSettings = await invoke("get_app_settings_command")as {
+        general_auto_fingerprint: boolean;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      const selectedRepoId = currentSettings.setup_selected_repository;
+
+      if (selectedRepoId) {
+          const repositories = useRepositoryStore.getState().repositories;
+          const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
+          if (selectedRepo) {
+              useRepositoryStore.getState().setSelectedRepository(selectedRepo);
+          }
+      }
+  };
+
+  if (!selectedRepository) {
+      initializeRepository();
+  }
+}, [selectedRepository]);
+
+  
   useEffect(() => {
     if (!selectedRepository) {
       setAllFiles([]);
@@ -456,6 +490,26 @@ const FilePane: React.FC = () => {
     },
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
+
+
+  useEffect(() => {
+    // Listen for changes in the selected repository from Zustand
+    const unsubscribe = useRepositoryStore.subscribe((state) => {
+      const newSelectedRepository = state.selectedRepository;
+  
+      if (newSelectedRepository) {
+        console.log("Detected repository change in FilePane. Reloading files for repo:", newSelectedRepository.id);
+        reloadFiles();
+      } else {
+        console.log("No repository selected. Clearing files.");
+        setAllFiles([]);
+        setSelectedFiles([]);
+      }
+    });
+  
+    return () => unsubscribe();
+  }, [setAllFiles, setSelectedFiles, reloadFiles]);
+
   
   return (
     <div className="file-pane">
@@ -465,7 +519,7 @@ const FilePane: React.FC = () => {
             <CubeIcon style={{ paddingRight: '0.75rem', width: '20px', height: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', textAlign: 'left' }}>
               <h4>{selectedRepository?.name || 'No Repository Selected'}</h4>
-              <h5>#{selectedRepository?.id.slice(-32) || 'Select a repository to view files'}</h5>
+              <h5>#{selectedRepository?.id.slice(0, 23)}...</h5>
             </div>
           </button>
         </div>

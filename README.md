@@ -15,9 +15,9 @@
 
 <p align="center">
   <p align="center">
-    <img src="https://img.shields.io/badge/Made%20with-Rust-ff0000?style=for-the-badge&logo=rust" alt="Rust Badge">
+    <img src="https://img.shields.io/badge/Backend-Rust-ff0000?style=for-the-badge&logo=rust" alt="Rust Badge">
     <img src="https://img.shields.io/badge/Frontend-React%20-00d8ff?style=for-the-badge&logo=react" alt="React Badge">
-    <img src="https://img.shields.io/badge/Backend-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
+    <img src="https://img.shields.io/badge/Made%20with-Tauri-FFC107?style=for-the-badge&logo=tauri" alt="Tauri Badge">
   </p>
 </p>
 

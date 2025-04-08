@@ -8,6 +8,7 @@ import { Repository } from '../../../types/ObjectTypes';
 import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
+import { updateSelectedRepository } from '../../../scripts/RepoOperations';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -26,31 +27,54 @@ const RepositorySelector: React.FC = () => {
       const repos = await invoke<Repository[]>('get_repositories_command');
       setRepositories(repos);
       setRepoStore(repos);
-
-      if (repos.length > 0) {
-        const existing = repos.find((repo) => repo.id === selectedRepository?.id);
-        setSelectedRepository(existing || repos[0]);
-      } else {
-        setSelectedRepository(null);
-      }
     } catch (err) {
-      console.error('Failed to fetch repositories', err);
+      console.error('Failed to load repositories', err);
     }
   };
 
   useEffect(() => {
-    fetchRepositories();
-
-    // Listen for repository creation and deletion events
+    const initializeRepositories = async () => {
+      await fetchRepositories();
+      await fetchSelectedRepository();  // This must be called AFTER fetchRepositories
+    };
+  
+    initializeRepositories();
+  
     const unlistenCreate = listen('create_repository_completed', () => fetchRepositories());
     const unlistenDelete = listen('delete_repository_completed', () => fetchRepositories());
-
+  
     return () => {
       unlistenCreate.then((unlisten) => unlisten());
       unlistenDelete.then((unlisten) => unlisten());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  
+  const fetchSelectedRepository = async () => {
+    try {
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+
+      console.log('fetching repository:', currentSettings);
+      
+      const selectedRepoId = currentSettings.setup_selected_repository;
+      if (!selectedRepoId) return; 
+  
+      const repo = repositories.find(r => r.id === selectedRepoId);
+      if (repo) {
+        setSelectedRepository(repo);  
+      }
+    } catch (err) {
+      console.error('Failed to load selected repository', err);
+    }
+  };
+  
+  
+
 
   const handleFieldChange = (updatedRepo: Repository) => {
     setSelectedRepository(updatedRepo);
@@ -97,9 +121,9 @@ const RepositorySelector: React.FC = () => {
         status: 'error',
       });
     }
+
   };
 
-  // Original deletion function
   const handleRemoveRepository = async () => {
     if (repositories.length <= 1) {
       alert('Whoops! Make a new repository before you delete this one.');
@@ -107,20 +131,53 @@ const RepositorySelector: React.FC = () => {
     }
 
     try {
-      await deleteRepository(selectedRepository?.id || '');
+      const deletedRepoId = selectedRepository?.id;
+      
+      if (!deletedRepoId) return;
+
+      // Determine the index of the repository being deleted
+      const deletedRepoIndex = repositories.findIndex(repo => repo.id === deletedRepoId);
+
+      // Remove the repository from the list
+      await deleteRepository(deletedRepoId);
+
       addEvent({
         timestamp: new Date().toISOString(),
         text: `delete-repository`,
-        description: 'Repository deleted successfully: ' + selectedRepository?.id,
+        description: `Repository deleted successfully: ${deletedRepoId}`,
         status: 'success',
       });
+
+      // Fetch updated repository list
+      await fetchRepositories();
+      
+      // Determine which repository to select next
+      let nextRepo: Repository | null = null;
+
+      if (repositories.length > 0) {
+        if (deletedRepoIndex < repositories.length - 1) {
+          // Select the next repository in the list
+          nextRepo = repositories[deletedRepoIndex + 1];
+        } else {
+          // Select the previous repository if no next exists
+          nextRepo = repositories[deletedRepoIndex - 1];
+        }
+      }
+
+      if (nextRepo) {
+        await updateSelectedRepository(nextRepo);
+        const { setSelectedRepository } = useRepositoryStore.getState();
+        setSelectedRepository(nextRepo);
+      } else {
+        setSelectedRepository(null); // No repositories left
+      }
     }
     catch (err) {
       console.error('Failed to delete repository', err);
       addEvent({
         timestamp: new Date().toISOString(),
         text: `delete-repository`,
-        description: 'Failed to delete repository: ' + selectedRepository?.id,
+        description: `Failed to delete repository: ${selectedRepository?.id}`,
         status: 'error',
       });
     }
@@ -239,15 +296,19 @@ const RepositorySelector: React.FC = () => {
       >
           {repositories.map((repository) => (
             <RepoButton
-              key={repository.id}
-              repository={repository}
-              isSelected={selectedRepository?.id === repository.id}
-              onClick={() => {
-                if (!selectedRepository || selectedRepository.id !== repository.id) {
+            key={repository.id}
+            repository={repository}
+            isSelected={selectedRepository?.id === repository.id}
+            onClick={() => {
+              if (!selectedRepository || selectedRepository.id !== repository.id) {
+                updateSelectedRepository(repository).then(() => {
+                  // Ensure the store is updated after the database operation
+                  const { setSelectedRepository } = useRepositoryStore.getState();
                   setSelectedRepository(repository);
-                }
-              }}
-            />
+                });
+              }
+            }}
+          />
           ))}
       </motion.div>
     </motion.div>

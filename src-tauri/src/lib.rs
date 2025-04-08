@@ -34,6 +34,7 @@ pub fn run() {
             commands::update_file_command,
             commands::delete_file_command,
             commands::remove_duplicate_files_command,
+            commands::bundle_files_command,
             // Settings
             commands::get_setting_command,
             commands::update_setting_command,

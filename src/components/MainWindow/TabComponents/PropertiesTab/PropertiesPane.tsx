@@ -86,14 +86,15 @@ const PropertiesPane: React.FC = () => {
         <div className="properties-details">
           <div className="file-info" style={{ padding: '0.5rem' }}>
             <div className="fileinfo-detail">
-              <h6>
-                Encodings: <h5>
+              <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                Encodings: 
+                <h5>
                   {uniqueEncodings.length} ({uniqueEncodings.join(", ")})
                 </h5>
-              </h6>
-              <h6>
-                Size on Disk: <h5>{totalSizeDisplay}</h5>
-              </h6>
+              </div>
+              <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <h6>Size on Disk: </h6><h5>{totalSizeDisplay}</h5>
+              </div>
             </div>
             {/* Render the multi‑file metadata editor */}
             <MultiMetadataEditor />

@@ -50,58 +50,63 @@ const FilePane: React.FC = () => {
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
   const processingCancelledRef = useFingerprintCancellationStore((state) => state.processingCancelled);
   const autoFingerprint = useStore(useAppSettingsStore, (state) => state.autoFingerprint);
-  const repoInitialized = useRef<string | null>(null);
   const prevRepositoryRef = useRef(selectedRepository);
   const ctrlKeyRef = useRef(false);
 
-  const handleOpenRepositorySelector = () => 
-  {
+  const handleOpenRepositorySelector = () => {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
 
-  useEffect(() =>
-    {
-      if (!selectedRepository) return;
-        reloadFiles();
+  // ----------------------------------------------------------------------------
+  // Consolidated refresh on repository change:
+  // When the selected repository changes, reload files.
+  // ----------------------------------------------------------------------------
+  useEffect(() => {
+    if (!selectedRepository) {
+      setAllFiles([]);
+      setSelectedFiles([]);
+      return;
     }
-  , [selectedRepository, allFiles]);
+    loadFiles([]);
+  }, [selectedRepository]);
 
   // ----------------------------------------------------------------------------
-  // HANDLES RELOADING ALL FILES IN THE REPOSITORY FROM BACKEND
+  // Refresh on file system events if fingerprinting is not in progress.
+  // This satisfies: "anytime the files in the repository change, and the fingerprint
+  // queue is not currently processing, the FilePane should refresh."
   // ----------------------------------------------------------------------------
-  const reloadFiles = async () => 
-  {
-    if (!selectedRepository) return;
-    try 
-    {
-      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
-      await loadFiles([...selectedFiles]);
-    } 
-    catch (error) 
-    {
-      console.error("Failed to reload files:", error);
-    }
-  };
+  useEffect(() => {
+    const onFileSystemEvent = async () => {
+      if (selectedRepository && !isFingerprinting) {
+        console.log("File system event triggered refresh");
+        await loadFiles([]);
+      }
+    };
+
+    const unlistenAdded = listen<string>("folder_file_added", onFileSystemEvent);
+    const unlistenRemoved = listen<string>("folder_file_removed", onFileSystemEvent);
+
+    return () => {
+      unlistenAdded.then((fn) => fn());
+      unlistenRemoved.then((fn) => fn());
+    };
+  }, [selectedRepository, isFingerprinting]);
 
   // ----------------------------------------------------------------------------
   // HANDLES FINGERPRINTING QUEUE
   // ----------------------------------------------------------------------------
-  useEffect(() => 
-  {
+  useEffect(() => {
     if (!selectedRepository) return;
     const newQueue = fingerprintQueue.filter((file) => !file.audio_fingerprint);
-    if (newQueue.length !== fingerprintQueue.length) 
-    {
+    if (newQueue.length !== fingerprintQueue.length) {
       console.log(`Removed ${fingerprintQueue.length - newQueue.length} files from the fingerprint queue.`);
       setFingerprintQueue(newQueue);
     }
-    if (newQueue.length === 0 && isFingerprinting) 
-    {
+    if (newQueue.length === 0 && isFingerprinting) {
       setIsFingerprinting(false);
     }
-    if (newQueue.length > 0) 
-    {
+    if (newQueue.length > 0) {
       setProgressItemMessage(`Fingerprinting ${newQueue.length} File(s)...`);
     }
   }, [fingerprintQueue, selectedRepository, setFingerprintQueue, isFingerprinting]);
@@ -109,80 +114,67 @@ const FilePane: React.FC = () => {
   // ---------------------------------------------------------------------------
   // HANDLES FINGERPRINTING QUEUE PROCESSING MESSAGE
   // ---------------------------------------------------------------------------
-  useEffect(() => 
-  {
+  useEffect(() => {
     if (!selectedRepository) return;
-    if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) 
-    {
+    if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) {
       setIsFingerprinting(true);
       setProgressItemMessage(`Fingerprinting ${fingerprintQueue.length} File(s)...`);
-      processFingerprintQueue(selectedRepository).then(() => 
-      {
+      processFingerprintQueue(selectedRepository).then(() => {
         setIsFingerprinting(false);
         setProgressItemMessage('Done!');
         setTimeout(() => setProgressItemMessage(''), 2000);
       });
-    } 
-    else if (fingerprintQueue.length === 0) 
-    {
+    } else if (fingerprintQueue.length === 0) {
       setIsFingerprinting(false);
     }
   }, [fingerprintQueue, selectedRepository, isFingerprinting, processingCancelledRef]);
 
   // ----------------------------------------------------------------------------
-  // HANDLES FILE LISTENING INSIDE OF FOLDERS ON SYSTEM
+  // FILE SYSTEM LISTENERS
   // ----------------------------------------------------------------------------
-  useEffect(() => 
-  {
-    const unlistenAdded = listen<string>("folder_file_added", async () => 
-    {
-      console.log("File added! Refreshing repo + files...");
-      await reloadFiles();
-    });
+  useEffect(() => {
+    const onFileSystemEvent = async () => {
+      if (selectedRepository && !isFingerprinting) {
+        console.log("File system event triggered refresh");
+        await loadFiles([]);
+      }
+    };
   
-    const unlistenRemoved = listen<string>("folder_file_removed", async () => 
-    {
-      console.log("File removed! Refreshing repo + files...");
-      await reloadFiles();
-    });
+    const unlistenAdded = listen<string>("folder_file_added", onFileSystemEvent);
+    const unlistenRemoved = listen<string>("folder_file_removed", onFileSystemEvent);
+    const unlistenMoved = listen<string>("folder_file_moved", onFileSystemEvent);
   
-    return () => 
-    {
+    return () => {
       unlistenAdded.then((fn) => fn());
       unlistenRemoved.then((fn) => fn());
+      unlistenMoved.then((fn) => fn());
     };
-  }, []);
-
+  }, [selectedRepository, isFingerprinting]);
+  
   // ----------------------------------------------------------------------------
-  // HANDLES REPOSITORY INITIALIZATION AND FILE LOADING
+  // HANDLES REPOSITORY INITIALIZATION AND FILE LOADING (retained)
   // ----------------------------------------------------------------------------
-  useEffect(() => 
-  {
+  useEffect(() => {
     const init = async () => {
-      const currentSettings = await invoke("get_app_settings_command") as
-          {
-            general_auto_fingerprint: boolean;
-            general_theme: string;
-            audio_autoplay: boolean;
-            setup_selected_repository: string;
-          };
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        general_theme: string;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
           
-      const refreshAndLoadFiles = async () => 
-      {
+      const refreshAndLoadFiles = async () => {
         if (!currentSettings.setup_selected_repository) return;
-        try 
-        {
+        try {
           await invoke("refresh_files_in_repository_command", { repoId: currentSettings.setup_selected_repository });
           const preservedSelection = [...selectedFiles];
           loadFiles(preservedSelection);
-        } catch (error) 
-        {
+        } catch (error) {
           console.error("Failed to refresh and load files:", error);
         }
       };
     
-      if (!isFingerprinting && prevRepositoryRef.current?.id !== currentSettings.setup_selected_repository) 
-      {
+      if (!isFingerprinting && prevRepositoryRef.current?.id !== currentSettings.setup_selected_repository) {
         prevRepositoryRef.current = selectedRepository;
         refreshAndLoadFiles();
       }
@@ -192,79 +184,33 @@ const FilePane: React.FC = () => {
   }, [selectedRepository, selectedFiles, isFingerprinting]);
 
   // ----------------------------------------------------------------------------
-  // LOADS THE LAST SELECTED REPOSITORY FROM THE DATABASE
+  // LOADS THE LAST SELECTED REPOSITORY FROM THE DATABASE (retained)
   // ----------------------------------------------------------------------------
-  useEffect(() => 
-  {
-    const initializeRepository = async () => 
-      {
-        const currentSettings = await invoke("get_app_settings_command") as 
-        {
-          general_auto_fingerprint: boolean;
-          general_theme: string;
-          audio_autoplay: boolean;
-          setup_selected_repository: string;
-        };
-
-        const selectedRepoId = currentSettings.setup_selected_repository;
-
-        if (selectedRepoId) 
-        {
-          console.warn("Loading last selected repository from settings as per 218-useeffect ", selectedRepoId);
-          const repositories = useRepositoryStore.getState().repositories;
-          const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
-          if (selectedRepo) 
-          {
-            useRepositoryStore.getState().setSelectedRepository(selectedRepo);
-          }
-        } 
+  useEffect(() => {
+    const initializeRepository = async () => {
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        general_theme: string;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
       };
-      if (!selectedRepository) 
-      {
-        initializeRepository();
-      }
-  }, [selectedRepository]);
 
-  useEffect(() => 
-  {
-    if (!selectedRepository) 
-    {
-      setAllFiles([]);
-      setSelectedFiles([]);
-      setTrackedFolders([]);
-      repoInitialized.current = null;
-      return;
-    }
-    const repoId = selectedRepository.id;
-    if (repoInitialized.current === repoId) 
-    {
-      return;
-    }
-    repoInitialized.current = repoId;
-    let cancelled = false;
-    const handleRepositoryInit = async () => {
-      try {
-        await invoke("refresh_files_in_repository_command", { repoId });
-        const preservedSelection = [...selectedFiles];
-        await loadFiles(preservedSelection);
-        const folders: string[] = await invoke("get_tracked_folders_command", { repoId });
-        if (!cancelled) {
-          setTrackedFolders(folders);
+      const selectedRepoId = currentSettings.setup_selected_repository;
+      if (selectedRepoId) {
+        console.warn("Loading last selected repository from settings:", selectedRepoId);
+        const repositories = useRepositoryStore.getState().repositories;
+        const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
+        if (selectedRepo) {
+          useRepositoryStore.getState().setSelectedRepository(selectedRepo);
         }
-      } catch (error) {
-        console.error(`Failed to initialize repository ${repoId}:`, error);
       }
     };
-
-    handleRepositoryInit();
-
-    return () => {
-      cancelled = true;
-    };
+    if (!selectedRepository) {
+      initializeRepository();
+    }
   }, [selectedRepository]);
 
-  const filteredFiles = useMemo(() => 
-  {
+  const filteredFiles = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
     return allFiles.filter((file) => {
       const nameMatch = file.name.toLowerCase().includes(lowerQuery);
@@ -273,20 +219,15 @@ const FilePane: React.FC = () => {
     });
   }, [allFiles, searchQuery]);
 
-  const loadFiles = async (preservedSelection: FileMetadata[]) => 
-  {
+  const loadFiles = async (preservedSelection: FileMetadata[]) => {
     const repoId = selectedRepository?.id;
-    if (!repoId) 
-    {
+    if (!repoId) {
       setAllFiles([]);
       setSelectedFiles([]);
       return;
     }
-    try 
-    {
-      
-      const currentSettings = await invoke("get_app_settings_command") as
-      {
+    try {
+      const currentSettings = await invoke("get_app_settings_command") as {
         general_auto_fingerprint: boolean;
         general_theme: string;
         audio_autoplay: boolean;
@@ -295,29 +236,23 @@ const FilePane: React.FC = () => {
       await invoke("refresh_files_in_repository_command", { repoId: currentSettings.setup_selected_repository });
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       setAllFiles(newFiles);
-      const preserved = preservedSelection.filter((file) => newFiles.some((newFile) => newFile.id === file.id));
+      const preserved = preservedSelection.filter((file) =>
+        newFiles.some((newFile) => newFile.id === file.id)
+      );
       setSelectedFiles(preserved);
-    }
-    catch (error) 
-    {
+    } catch (error) {
       console.error("Failed to load files:", error);
     }
   };
 
-  const sortedFiles = useMemo(() => 
-  {
-    const sorted = [...filteredFiles].sort((a, b) => 
-    {
+  const sortedFiles = useMemo(() => {
+    const sorted = [...filteredFiles].sort((a, b) => {
       let comp = 0;
-      switch (sortOption) 
-      {
+      switch (sortOption) {
         case 'alphabetical':
-        {
           comp = a.name.localeCompare(b.name);
           break;
-        }
-        case 'dateCreated': 
-        {
+        case 'dateCreated': {
           const matchA = a.date_created.match(/intervals:\s*(\d+)/);
           const matchB = b.date_created.match(/intervals:\s*(\d+)/);
           const numA = matchA ? parseInt(matchA[1], 10) : 0;
@@ -325,8 +260,7 @@ const FilePane: React.FC = () => {
           comp = numA - numB;
           break;
         }
-        case 'dateModified': 
-        {
+        case 'dateModified': {
           const matchA = a.date_modified.match(/intervals:\s*(\d+)/);
           const matchB = b.date_modified.match(/intervals:\s*(\d+)/);
           const numA = matchA ? parseInt(matchA[1], 10) : 0;
@@ -335,32 +269,23 @@ const FilePane: React.FC = () => {
           break;
         }
         case 'encoding':
-        {
           comp = a.encoding.localeCompare(b.encoding);
           break;
-        }
-
         default:
-        {
           comp = 0;
-        }
       }
       return sortOrder === 'asc' ? comp : -comp;
     });
     return sorted;
   }, [filteredFiles, sortOption, sortOrder]);
 
-  const handleFileAdd = async () => 
-  {
-    try 
-    {
-      if (!selectedRepository) 
-      {
+  const handleFileAdd = async () => {
+    try {
+      if (!selectedRepository) {
         console.warn("No repository selected!");
         return;
       }
-      const selected = await open
-      ({
+      const selected = await open({
         multiple: false,
         filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'] }],
       });
@@ -370,31 +295,23 @@ const FilePane: React.FC = () => {
       await fileAddScript(selectedRepository, filePath);
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
-    } 
-    catch (error) 
-    {
+    } catch (error) {
       console.error("Failed to add file:", error);
       setProgressItemMessage('');
     }
   };
 
-  const getAllAudioFilesRecursively = async (directory: string): Promise<string[]> => 
-  {
+  const getAllAudioFilesRecursively = async (directory: string): Promise<string[]> => {
     const entries = await readDir(directory);
     const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
     const files: string[] = [];
-    for (const entry of entries) 
-    {
-      if ('children' in entry && (entry as any).children && (entry as any).children.length > 0) 
-      {
+    for (const entry of entries) {
+      if ('children' in entry && (entry as any).children && (entry as any).children.length > 0) {
         const nestedFiles = await getAllAudioFilesRecursively(`${directory}/${entry.name}`);
         files.push(...nestedFiles);
-      } 
-      else if (entry.name) 
-      {
+      } else if (entry.name) {
         const ext = entry.name.split('.').pop()?.toLowerCase();
-        if (ext && audioExtensions.includes(ext)) 
-        {
+        if (ext && audioExtensions.includes(ext)) {
           files.push(`${directory}/${entry.name}`);
         }
       }
@@ -402,17 +319,13 @@ const FilePane: React.FC = () => {
     return files;
   };
 
-  const handleFolderAdd = async () => 
-  {
-    try
-    {
-      if (!selectedRepository) 
-      {
+  const handleFolderAdd = async () => {
+    try {
+      if (!selectedRepository) {
         console.warn("No repository selected!");
         return;
       }
-      const selectedDir = await open
-      ({
+      const selectedDir = await open({
         directory: true,
         multiple: false,
         recursive: true,
@@ -420,73 +333,51 @@ const FilePane: React.FC = () => {
       if (!selectedDir) return;
       const audioFiles = await getAllAudioFilesRecursively(selectedDir);
       setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
-      for (const filePath of audioFiles) 
-      {
+      for (const filePath of audioFiles) {
         await fileAddScript(selectedRepository, filePath);
       }
   
-      await invoke("watch_folder_command", 
-      {
+      await invoke("watch_folder_command", {
         repoId: selectedRepository.id,
         folderPath: selectedDir
       });
       
-      const folders: string[] = await invoke("get_tracked_folders_command", 
-      {
+      const folders: string[] = await invoke("get_tracked_folders_command", {
         repoId: selectedRepository.id
       });
       setTrackedFolders(folders);
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
-  
-    }
-    catch (error) 
-    {
+    } catch (error) {
       console.error("Failed to add folder:", error);
       setProgressItemMessage('');
     }
   };
   
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => 
-  {
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     ctrlKeyRef.current = e.ctrlKey || e.metaKey;
   }, []);
 
   const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => 
-      {
-      setSelectedFiles((prevSelected) => 
-        {
+    (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => {
+      setSelectedFiles((prevSelected) => {
         let newSelection: FileMetadata[] = [];
-        if (e.shiftKey) 
-          {
+        if (e.shiftKey) {
           const currentAnchor = anchorIndex !== null ? anchorIndex : index;
           setAnchorIndex(currentAnchor);
           setLastSelectedIndex(index);
-          newSelection = sortedFiles.slice
-          (
-            Math.min(currentAnchor, index),
-            Math.max(currentAnchor, index) + 1
-          );
-        } 
-        else if (ctrlKeyRef.current) 
-        {
-          if (prevSelected.some((f) => f.id === file.id))
-          {
+          newSelection = sortedFiles.slice(Math.min(currentAnchor, index), Math.max(currentAnchor, index) + 1);
+        } else if (ctrlKeyRef.current) {
+          if (prevSelected.some((f) => f.id === file.id)) {
             newSelection = prevSelected.filter((f) => f.id !== file.id);
-          }
-          else
-          {
+          } else {
             newSelection = [...prevSelected, file];
-            if (prevSelected.length === 0) 
-            {
+            if (prevSelected.length === 0) {
               setAnchorIndex(index);
             }
           }
           setLastSelectedIndex(index);
-        }
-        else
-        {
+        } else {
           setAnchorIndex(index);
           setLastSelectedIndex(index);
           newSelection = [file];
@@ -494,17 +385,14 @@ const FilePane: React.FC = () => {
         return newSelection;
       });
       ctrlKeyRef.current = false;
-      // This is the logic that controls the fingerprinting queue when a file is clicked
+      // Handle adding file to fingerprint queue on click if auto fingerprinting is enabled
       if (!autoFingerprint) return;
-      if (!file.accessible) 
-      {
+      if (!file.accessible) {
         console.warn(`Skipping fingerprinting for inaccessible file: ${file.name}`);
         return;
       }
-      if (!file.audio_fingerprint && selectedRepository)
-      {
-        if (fingerprintQueue.some((queuedFile) => queuedFile.id === file.id))
-        {
+      if (!file.audio_fingerprint && selectedRepository) {
+        if (fingerprintQueue.some((queuedFile) => queuedFile.id === file.id)) {
           console.warn(`File ${file.name} is already in the fingerprint queue.`);
           return;
         }
@@ -514,28 +402,22 @@ const FilePane: React.FC = () => {
     [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]
   );
 
-  const truncateFileName = (fileName: string): string => 
-  {
+  const truncateFileName = (fileName: string): string => {
     const lastDotIndex = fileName.lastIndexOf('.');
     const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.slice(0, lastDotIndex);
-    return nameWithoutExtension.length > 35
-      ? nameWithoutExtension.slice(0, 35) + '…'
-      : nameWithoutExtension;
+    return nameWithoutExtension.length > 35 ? nameWithoutExtension.slice(0, 35) + '…' : nameWithoutExtension;
   };
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => 
-    {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') 
-      {
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault();
         setSelectedFiles(sortedFiles);
         setAnchorIndex(0);
         setLastSelectedIndex(sortedFiles.length - 1);
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') 
-      {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         setSelectedFiles([]);
         return;
@@ -546,31 +428,23 @@ const FilePane: React.FC = () => {
       e.preventDefault();
       let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
       let newIndex = currentIndex;
-      if (e.key === 'ArrowDown') 
-      {
+      if (e.key === 'ArrowDown') {
         newIndex = Math.min(sortedFiles.length - 1, currentIndex + 1);
-      } else if (e.key === 'ArrowUp') 
-      {
+      } else if (e.key === 'ArrowUp') {
         newIndex = Math.max(0, currentIndex - 1);
       }
-      if (e.shiftKey) 
-      {
-        if (anchorIndex === null) 
-        {
+      if (e.shiftKey) {
+        if (anchorIndex === null) {
           setAnchorIndex(newIndex);
           setLastSelectedIndex(newIndex);
           setSelectedFiles([sortedFiles[newIndex]]);
-        }
-        else 
-        {
+        } else {
           const start = Math.min(anchorIndex, newIndex);
           const end = Math.max(anchorIndex, newIndex);
           setLastSelectedIndex(newIndex);
           setSelectedFiles(sortedFiles.slice(start, end + 1));
         }
-      }
-      else
-      {
+      } else {
         setAnchorIndex(newIndex);
         setLastSelectedIndex(newIndex);
         setSelectedFiles([sortedFiles[newIndex]]);
@@ -579,26 +453,6 @@ const FilePane: React.FC = () => {
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
 
-  useEffect(() => 
-  {
-    const unsubscribe = useRepositoryStore.subscribe((state) => 
-    {
-      const newSelectedRepository = state.selectedRepository;
-      if (newSelectedRepository) 
-      {
-        console.warn("Repository changed! Reloading files... FP-LN598-USEEFFECT" , newSelectedRepository.id);
-        reloadFiles();
-      } 
-      else
-      {
-        setAllFiles([]);
-        setSelectedFiles([]);
-      }
-    });
-  
-    return () => unsubscribe();
-  }, [setAllFiles, setSelectedFiles, reloadFiles]);
-  
   return (
     <div className="file-pane">
       <div className="toolbar">
@@ -623,9 +477,8 @@ const FilePane: React.FC = () => {
           </button>
         </div>
       </div>
-
+  
       <div className="sort-options">
-        
         <select className="dropdown-menu" value={sortOption} onChange={(e) => setSortOption(e.target.value as any)}>
           <option value="alphabetical">Alphabetical</option>
           <option value="dateCreated">Date Created</option>
@@ -644,8 +497,6 @@ const FilePane: React.FC = () => {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
-  
-      
   
       <div className="file-view" tabIndex={0} onKeyDown={handleKeyDown}>
         {sortedFiles.length > 0 ? (
@@ -725,5 +576,5 @@ const FilePane: React.FC = () => {
       </div>
     </div>
   );
-}
+};
 export default FilePane;

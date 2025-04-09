@@ -1,0 +1,53 @@
+name-template: "Repo Studio v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+template: |
+  <p align="center">
+    <img src="https://raw.githubusercontent.com/JohnKearney1/repostudio/refs/heads/main/app-icon.png" alt="Repo Studio Icon" width="100"/>
+  </p>
+
+  <h1 align="center">📦 Repo Studio v$RESOLVED_VERSION</h1>
+
+  > A Git-like desktop app for managing and versioning audio files, built for musicians.
+
+  Repo Studio is a Windows and macOS desktop application that enables audio professionals to efficiently organize, version, and manage audio files. Files are grouped into **Repositories**, tracking individual files or entire directories without duplicating data—making it a fast and space-efficient tool for managing sample packs or audio libraries.
+
+  This release includes various improvements, enhancements, and fixes:
+
+  $CHANGES
+
+  ## 💾 Install Instructions
+
+  | Platform | File | Notes |
+  |----------|------|-------|
+  | **macOS (Apple Silicon)** | `Repo.Studio_${{resolved_version}}_aarch64.dmg` or `Repo.Studio_aarch64.app.tar.gz` | Use the `.dmg` for typical installs or `.tar.gz` if you prefer CLI extraction |
+  | **Windows (x64)** | `Repo.Studio_${{resolved_version}}_x64-setup.exe` or `Repo.Studio_${{resolved_version}}_x64_en-US.msi` | Use `.exe` for easy install or `.msi` for enterprise deployments |
+
+  > ⚠️ **Warning: Unsigned Code**
+  >
+  > Repo Studio is not code-signed yet. You may receive a **SmartScreen warning** on Windows or a **Gatekeeper warning** on macOS when opening the installer. This is expected.
+  >
+  > You can bypass the warning by choosing **"Run anyway"** on Windows, or **"Open Anyway"** via System Preferences → Security & Privacy → General on macOS.
+  >
+  > Always verify installations carefully. This software is in active development and is provided as-is!
+
+  ---
+
+  Enjoy Repo Studio? Found a bug or have feedback?  
+  Open an issue or star the project on [GitHub](https://github.com/JohnKearney1/repostudio/releases).
+
+version-resolver:
+  major:
+    labels:
+      - "major"
+  minor:
+    labels:
+      - "feature"
+      - "enhancement"
+      - "optimization"
+  patch:
+    labels:
+      - "bugfix"
+      - "performance"
+      - "fix"
+
+change-template: "- $TITLE (#$NUMBER)"

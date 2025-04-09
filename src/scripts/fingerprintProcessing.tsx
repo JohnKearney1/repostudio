@@ -35,6 +35,7 @@ export async function getAutoFingerprintSetting(): Promise<boolean> {
   try {
     const settings = await invoke("get_app_settings_command") as {
       general_auto_fingerprint: boolean;
+      general_theme: string;
       audio_autoplay: boolean;
       setup_selected_repository: string;
     };
@@ -49,12 +50,14 @@ export async function setAutoFingerprintSetting(value: boolean): Promise<void> {
   try {
     const currentSettings = await invoke("get_app_settings_command") as {
       general_auto_fingerprint: boolean;
+      general_theme: string;
       audio_autoplay: boolean;
       setup_selected_repository: string;
     };
     await invoke("update_app_settings_command", {
       args: {
         general_auto_fingerprint: value,
+        general_theme: currentSettings.general_theme,
         audio_autoplay: currentSettings.audio_autoplay,
         setup_selected_repository: currentSettings.setup_selected_repository,
       }

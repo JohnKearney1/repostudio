@@ -4,12 +4,13 @@
 // It also loads the repositories when the app starts.
 
 import "./App.css";
+import './Themes.css';
 import FilePane from "./components/MainWindow/FileBrowser/FilePane";
 import WindowBar from "./components/Layout/WindowBar";
 import PropertiesPane from "./components/MainWindow/TabComponents/PropertiesTab/PropertiesPane";
 import Popup from "./components/Layout/Popup";
 import { useEffect } from "react";
-import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store/store";
+import { usePopupStore, usePopupContentStore, useRightPanelContentStore, useThemeStore } from "./scripts/store/store";
 import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
 import Settings from "./components/MainWindow/TabComponents/SettingsTab/Settings";
@@ -20,6 +21,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import ConsoleTab from "./components/MainWindow/TabComponents/ConsoleTab/ConsoleTab";
 import EventLogTab from "./components/MainWindow/TabComponents/EventLog/EventLogTab";
+import { invoke } from "@tauri-apps/api/core";
 
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
@@ -49,7 +51,21 @@ function App() {
     });
     useTabStore.getState().setActiveTab('properties');
   }, []);
-  
+
+  useEffect(() => {
+    async function fetchSettings() {
+      // Get the current theme from the database
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        general_theme: string;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      document.body.className = currentSettings.general_theme;
+      useThemeStore.setState({ theme: currentSettings.general_theme });
+    }
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     const setVh = () => {

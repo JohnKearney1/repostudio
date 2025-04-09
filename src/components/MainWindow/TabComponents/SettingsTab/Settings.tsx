@@ -9,7 +9,7 @@ import STAudio from './Tabs/STAudio';
 import STAdvanced from './Tabs/STAdvanced';
 
 function Settings(headless: boolean) {
-    const [activeTab, setActiveTab] = useState('About');
+    const [activeTab, setActiveTab] = useState('General');
 
     const tabs = [
         'About',

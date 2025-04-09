@@ -103,7 +103,7 @@ const AudioPlayer: React.FC = () => {
           value={currentTime}
           onChange={handleSeek}
           style={{
-            background: `linear-gradient(to right,rgb(144, 214, 255) 0%, #00a2ff ${progress}%, #444 ${progress}%, #444 100%)`
+            background: `linear-gradient(to right, var(--accent-2) 0%, var(--accent-1) ${progress}%, var(--border-color) ${progress}%, var(--border-color) 100%)`
           }}
         />
 

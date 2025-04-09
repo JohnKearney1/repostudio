@@ -3,12 +3,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './RepositorySelector.css';
 import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react-icons';
-import { useRepositoryStore } from '../../../scripts/store/store';
-import { Repository } from '../../../types/ObjectTypes';
-import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
+import { useRepositoryStore } from '../../../../scripts/store/store';
+import { Repository } from '../../../../types/ObjectTypes';
+import { deleteRepository, createRepository } from '../../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEventLoggerStore } from '../../../scripts/EventLogger';
-import { updateSelectedRepository } from '../../../scripts/RepoOperations';
+import { useEventLoggerStore } from '../../../../scripts/EventLogger';
+import { updateSelectedRepository } from '../../../../scripts/RepoOperations';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -192,7 +192,7 @@ const RepositorySelector: React.FC = () => {
     >
       <motion.div
         className='repo-btn-container'
-        style={{ borderBottom: '1px solid #333', justifyContent: 'center', alignItems: 'center' }}
+        style={{ borderBottom: '1px solid var(--border-color)', justifyContent: 'center', alignItems: 'center' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -261,7 +261,7 @@ const RepositorySelector: React.FC = () => {
           <motion.button
             onClick={handleDeleteButtonClick}
             className='repo-btn'
-            animate={{ backgroundColor: confirmDelete ? '#ff0000' : '#1a1a1a'}}
+            animate={{ backgroundColor: confirmDelete ? '#ff0000' : 'var(--colorDark)'}}
             transition={{ duration: 0.3 }}
           >
             <TrashIcon />

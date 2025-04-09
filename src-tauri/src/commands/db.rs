@@ -41,6 +41,7 @@ pub fn establish_connection() -> Result<Connection> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS AppSettings (
              general_auto_fingerprint INTEGER NOT NULL,
+             general_theme TEXT NOT NULL,
              audio_autoplay INTEGER NOT NULL,
              setup_selected_repository TEXT
          )",
@@ -64,9 +65,9 @@ pub fn establish_connection() -> Result<Connection> {
     )?;
     if !app_settings_exists {
         conn.execute(
-            "INSERT INTO AppSettings (general_auto_fingerprint, audio_autoplay, setup_selected_repository)
-             VALUES (?1, ?2, ?3)",
-            rusqlite::params![0, 0, "default"],
+            "INSERT INTO AppSettings (general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository)
+             VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![0, "theme-dark", 0, "default"],
         )?;
     }
 
@@ -121,15 +122,17 @@ pub fn ensure_files_table(conn: &Connection, repo_id: &str) -> Result<()> {
 pub fn get_app_settings() -> Result<AppSettings> {
     let conn = establish_connection()?;
     let mut stmt = conn.prepare(
-        "SELECT general_auto_fingerprint, audio_autoplay, setup_selected_repository
+        "SELECT general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository
          FROM AppSettings LIMIT 1",
     )?;
     let settings = stmt.query_row([], |row| {
         let general_flag: i32 = row.get(0)?;
-        let autoplay_flag: i32 = row.get(1)?;
-        let repo_id: String = row.get(2)?;
+        let general_theme: String = row.get(1)?;
+        let autoplay_flag: i32 = row.get(2)?;
+        let repo_id: String = row.get(3)?;
         Ok(AppSettings {
             general_auto_fingerprint: general_flag != 0,
+            general_theme,
             audio_autoplay: autoplay_flag != 0,
             setup_selected_repository: repo_id,
         })
@@ -140,6 +143,7 @@ pub fn get_app_settings() -> Result<AppSettings> {
 // Updates the app settings row with the provided values.
 pub fn update_app_settings(
     general_auto_fingerprint: bool,
+    general_theme: String,
     audio_autoplay: bool,
     setup_selected_repository: &str,
 ) -> Result<()> {
@@ -147,14 +151,16 @@ pub fn update_app_settings(
     conn.execute(
         "UPDATE AppSettings
          SET general_auto_fingerprint = ?1,
-             audio_autoplay = ?2,
-             setup_selected_repository = ?3",
+                general_theme = ?2,
+                audio_autoplay = ?3,
+                setup_selected_repository = ?4", 
         params![
             if general_auto_fingerprint { 1 } else { 0 },
+            general_theme,
             if audio_autoplay { 1 } else { 0 },
             setup_selected_repository,
         ],
-    )?;
+    )?; 
     Ok(())
 }
 
@@ -891,8 +897,10 @@ pub async fn update_app_settings_command(
     tauri::async_runtime::spawn_blocking(move || {
         update_app_settings(
             args.general_auto_fingerprint,
+            args.general_theme,
             args.audio_autoplay,
             &args.setup_selected_repository,
+
         )
         .map_err(|e| e.to_string())
     })

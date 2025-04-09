@@ -1,0 +1,96 @@
+.theme-dark {
+    --colorDark: #1a1a1a;
+    --colorMid: #202020;
+    --colorLight: #2a2a2a;
+    --colorText: white;
+    --colorSubtitle: rgb(121, 121, 121);
+    --border-color: #333333;
+    --accent-1: #00a2ff;
+    --accent-2: #b3e3ff;
+}
+
+.theme-light {
+    --colorDark: #cccccc;
+    --colorMid: #e0e0e0;
+    --colorLight: #ffffff;
+    --colorText: black;
+    --colorSubtitle: rgb(53, 53, 53);
+    --border-color: #aaaaaa;
+    --accent-1: #00a2ff;
+    --accent-2: #b3e3ff;
+}
+
+.theme-medium {
+    --colorDark: #2b2b2b;
+    --colorMid: #363636;
+    --colorLight: #424242;
+    --colorText: #e4e4e4;
+    --colorSubtitle: rgb(158, 158, 158);
+    --border-color: #1f1f1f;
+    --accent-1: #00a2ff;
+    --accent-2: #b3e3ff;
+}
+
+
+.theme-rouge {
+    --colorDark: #110011;
+    --colorMid: #230c24;
+    --colorLight: #7a007e;
+    --colorText: #c2c2c2;
+    --colorSubtitle: rgb(221, 149, 221);
+    --border-color: #867386;
+    --accent-1: #ff00ff;
+    --accent-2: #ff99ff;
+}
+
+
+/* Ocean-Inspired Theme */
+.theme-ocean {
+    --colorDark: #000911;       /* Deep navy blue */
+    --colorMid: #06111a;        /* Bright medium blue */
+    --colorLight: #00364b6e;      /* Light, airy blue */
+    --colorText: white;
+    --colorSubtitle: rgb(145, 187, 212);
+    --border-color: #102027;
+    --accent-1: #034444;       /* Teal accent */
+    --accent-2: #3D9970;       /* Soft green accent */
+}
+
+
+/* Sunset-Inspired Theme */
+.theme-sunset {
+    --colorDark: #2e1300;       /* Rich, deep orange-brown */
+    --colorMid: #302a28;        /* Vibrant coral */
+    --colorLight: #703a0b;      /* Soft peach */
+    --colorText: #ffdbbe;
+    --colorSubtitle: rgb(223, 80, 44);
+    --border-color: #3d2308;
+    --accent-1: #ff4500;       /* Bright orange accent */
+    --accent-2: #ff7b64;       /* Tomato red accent */
+}
+
+
+/* Forest-Inspired Theme */
+.theme-forest {
+    --colorDark: #000000;       /* Deep, natural green */
+    --colorMid: #010202;        /* Lush medium green */
+    --colorLight: #016947;      /* Refreshing light green */
+    --colorText: white;
+    --colorSubtitle: rgb(150, 200, 150);
+    --border-color: #0e0606;
+    --accent-1: #228B22;       /* Forest green accent */
+    --accent-2: #98FB98;       /* Pale green accent */
+}
+
+
+/* Violet-Inspired Theme */
+.theme-violet {
+    --colorDark: #332735;       /* Intense, dark violet */
+    --colorMid: #3a263a;        /* Rich medium violet */
+    --colorLight: #572657;      /* Soft light purple */
+    --colorText: white;
+    --colorSubtitle: rgb(224, 185, 255);
+    --border-color: #0d0316;
+    --accent-1: #8A2BE2;       /* Blue violet accent */
+    --accent-2: #DA70D6;       /* Orchid accent */
+}

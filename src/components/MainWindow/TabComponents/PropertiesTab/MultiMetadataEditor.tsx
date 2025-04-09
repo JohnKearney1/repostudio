@@ -167,7 +167,7 @@ const MultiMetadataEditor: React.FC = () => {
             ? { backgroundColor: '#00ff00' }
             : status === 'error'
             ? { backgroundColor: '#ff0000' }
-            : { backgroundColor: '#2a2a2a' }
+            : { backgroundColor: 'var(--colorMid)' }
         }
         transition={{ duration: 0.3 }}
       >

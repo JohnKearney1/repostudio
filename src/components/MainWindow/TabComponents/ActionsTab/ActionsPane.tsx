@@ -193,7 +193,7 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
           }}>
           Repository Actions
         </h5>
@@ -232,8 +232,8 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           Selected Files
@@ -295,8 +295,8 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           System
@@ -316,8 +316,8 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           Advanced

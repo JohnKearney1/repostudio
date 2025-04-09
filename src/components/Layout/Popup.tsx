@@ -26,7 +26,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
     };
 
     const popupStyle: React.CSSProperties = {
-        backgroundColor: '#202020',
+        backgroundColor: 'var(--colorLight',
         borderRadius: '8px',
         boxShadow: '0 2px 10px rgba(0,0,0,1)',
         maxHeight: '80%',

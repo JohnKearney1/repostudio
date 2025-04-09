@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppSettings {
     pub general_auto_fingerprint: bool,
+    pub general_theme: String,
     pub audio_autoplay: bool,
     pub setup_selected_repository: String,
+
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

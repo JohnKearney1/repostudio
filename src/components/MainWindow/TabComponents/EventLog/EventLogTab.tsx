@@ -57,15 +57,15 @@ export default function EventLogTab() {
                             exit="exit"
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             onClick={() => setExpanded(prev => ({ ...prev, [index]: !prev[index] }))}
-                            style={{ cursor: 'pointer', backgroundColor: expanded[index] ? '#1a1a1a' : 'transparent', gap: '0.5rem' }}
-                            whileHover={{ backgroundColor: '#1a1a1a'}}
+                            style={{ cursor: 'pointer', backgroundColor: expanded[index] ? 'var(--colorDark)' : 'transparent', gap: '0.5rem' }}
+                            whileHover={{ backgroundColor: 'var(--colorDark)'}}
                             whileTap={{ scale: 0.97 }}
                         >
                             <div className="event-item-content">
                                 <h4 className="event-title">
                                     {
                                         expanded[index] ? <ChevronDownIcon /> : <ChevronRightIcon />
-                                    } <div style={{color: "grey"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
+                                    } <div style={{color: "var(--border-color)"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
                                 </h4>
                                 <div className="event-status-icon">
                                     {event.status === "success" && <CheckCircledIcon color="limegreen"/>}

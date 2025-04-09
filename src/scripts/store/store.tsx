@@ -12,6 +12,22 @@ import { FileMetadata, Repository } from '../../types/ObjectTypes';
 
 // ------------------------------------------------------------------- //
 
+// Theme store
+
+export interface ThemeStore {
+  theme: string;
+  setTheme: (theme: string) => void;
+}
+
+export const useThemeStore = create<ThemeStore>((set) => ({
+  theme: 'theme-dark',
+  setTheme: (theme: string) => set({ theme }),
+}));
+
+
+
+// ------------------------------------------------------------------- //
+
 export interface AppSettings {
   autoFingerprint: boolean;
   audioAutoplay: boolean;

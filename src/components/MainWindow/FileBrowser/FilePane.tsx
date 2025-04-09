@@ -25,7 +25,7 @@ import {
   useFingerprintCancellationStore,
   useAppSettingsStore
 } from '../../../scripts/store/store';
-import RepositorySelector from '../RepositorySelector/RepositorySelector';
+import RepositorySelector from '../PopupComponents/RepositorySelector/RepositorySelector';
 import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import { useStore } from 'zustand';
@@ -560,7 +560,7 @@ const FilePane: React.FC = () => {
   return (
     <div className="file-pane">
       <div className="toolbar">
-        <div style={{ display: 'flex', flexDirection: 'row', width: '100%', borderBottom: '1px solid black' }}>
+        <div className="repo-toolbar">
           <button className="repo-toolbar-button" onClick={handleOpenRepositorySelector}>
             <CubeIcon style={{ paddingRight: '0.75rem', width: '20px', height: '20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', textAlign: 'left' }}>
@@ -570,8 +570,8 @@ const FilePane: React.FC = () => {
           </button>
         </div>
   
-        <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-          <button onClick={handleFolderAdd} className="toolbar-button" style={{ borderRight: '1px solid black' }}>
+        <div className='repo-buttons'>
+          <button onClick={handleFolderAdd} className="toolbar-button" style={{ borderRight: '1px solid var(--border-color)' }}>
             <LayersIcon style={{ paddingRight: '0.5rem', minWidth: '17px', minHeight: '17px' }} />
             <h6>Folder</h6>
           </button>

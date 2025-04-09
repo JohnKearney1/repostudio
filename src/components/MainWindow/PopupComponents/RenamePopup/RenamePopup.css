@@ -1,0 +1,51 @@
+.ActionPopup {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 1rem;
+    gap: 1rem;
+}
+
+.RenamePopupForm {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.rename-input  {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--colorDark);
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+.rename-input:focus {
+    outline: none;
+}
+
+.rename-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--colorMid);
+    color: var(--color-text);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.rename-button:hover {
+    background-color: var(--colorLight);
+    color: var(--accent-1);
+}

@@ -43,3 +43,4 @@ jobs:
           tagName: v__VERSION__             # Auto uses your tauri.conf.json version
           releaseName: "Repo Studio v__VERSION__"
           releaseDraft: true                # Change to true if you want drafts
+          updaterJsonKeepUniversal: true

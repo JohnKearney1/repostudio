@@ -1,5 +1,4 @@
 import {
-  BoxModelIcon,
   Component1Icon,
   // CubeIcon,
   DownloadIcon,
@@ -10,6 +9,8 @@ import {
   SymbolIcon,
   UploadIcon,
 } from '@radix-ui/react-icons';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import './ActionsPane.css';
 import { useFileStore,
   useFingerprintCancellationStore,
@@ -20,9 +21,12 @@ import { getVersion } from '@tauri-apps/api/app';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { usePopupContentStore, usePopupStore } from '../../../../scripts/store/store';
+import ConvertPopup from '../../PopupComponents/ConvertPopup/ConvertPopup';
+import RenamePopup from '../../PopupComponents/RenamePopup/RenamePopup';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -33,6 +37,7 @@ export default function ActionsPane() {
   const [version, setVersion] = useState<string | null>(null);
   const [bundleProgress, setBundleProgress] = useState<number | null>(null);
   const addEvent = useEventLoggerStore((state) => state.addEvent);
+  const { setContent } = usePopupContentStore();
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -50,6 +55,7 @@ export default function ActionsPane() {
       }
     });
 
+
     const unlistenCompleted = listen("bundle_completed", () => {
       setBundleProgress(100);
       setTimeout(() => setBundleProgress(null), 1500);
@@ -60,6 +66,11 @@ export default function ActionsPane() {
       unlistenCompleted.then((f) => f());
     };
   }, []);
+
+  const handleShowPopup = (content: ReactElement) => {
+    usePopupStore.setState({ isVisible: true });
+    setContent(content);
+  }
 
   const handleProcessRepository = () => {
     if (fingerprintQueue.length > 0) {
@@ -186,6 +197,29 @@ export default function ActionsPane() {
     }
   };
 
+  const handleCheckForUpdates = async () => {
+    try {
+      const update = await check();
+      if (update) {
+        await update.downloadAndInstall();
+        const shouldRelaunch = confirm("An update is available! Do you want to restart and apply the update?");
+        if (shouldRelaunch) {
+          await relaunch();
+        }
+      } else {
+        alert("No updates available.");
+      }
+    } catch (error) {
+      console.error("Error checking for updates:", error);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Check for Updates",
+        description: "Failed to check for updates. Here's the info we have: " + error,
+        status: "error"
+      });
+    }
+  };
+
   return (
     <div className="actions-pane">
       <div className="actions-details">
@@ -204,7 +238,6 @@ export default function ActionsPane() {
             onClick={() => {
               clearQueue();
               cancelProcessing();
-              console.log('Processing cancelled. Fingerprint queue cleared.');
               setTimeout(() => resetCancellation(), 100);
             }}
           >
@@ -262,17 +295,9 @@ export default function ActionsPane() {
         </button>
         <button
           className="actions-details-button"
-          onClick={() => {}}
-        >
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BoxModelIcon />
-            Compress
-          </h4>
-          <h5>Compress File Sizes</h5>
-        </button>
-        <button
-          className="actions-details-button"
-          onClick={() => {}}
+          onClick={() => {
+            handleShowPopup(<ConvertPopup />);
+          }}
         >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MixerHorizontalIcon />
@@ -282,7 +307,9 @@ export default function ActionsPane() {
         </button>
         <button
           className="actions-details-button"
-          onClick={() => {}}
+          onClick={() => {
+            handleShowPopup(<RenamePopup />);
+          }}
         >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <InputIcon />
@@ -301,16 +328,13 @@ export default function ActionsPane() {
         >
           System
         </h5>
-        <button
-          className="actions-details-button"
-          onClick={() => {}}
-        >
+        <button className="actions-details-button" onClick={handleCheckForUpdates}>
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <SymbolIcon />
-            Check for Updates
+            <SymbolIcon /> Check for Updates
           </h4>
           <h5>RS {version}</h5>
         </button>
+
 
         <h5
           style={{

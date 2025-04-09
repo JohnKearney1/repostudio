@@ -93,7 +93,7 @@
   }
 
 .actions-details-button:hover {
-    color: #3a9ed8;
+    color: var(--accent-1);
     background-color: var(--colorMid);
 }
 

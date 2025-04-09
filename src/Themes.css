@@ -48,7 +48,7 @@
 .theme-ocean {
     --colorDark: #000911;       /* Deep navy blue */
     --colorMid: #06111a;        /* Bright medium blue */
-    --colorLight: #00364b6e;      /* Light, airy blue */
+    --colorLight: #00364b;      /* Light, airy blue */
     --colorText: white;
     --colorSubtitle: rgb(145, 187, 212);
     --border-color: #102027;

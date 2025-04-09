@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getAutoFingerprintSetting, setAutoFingerprintSetting } from "../../../../../scripts/FingerprintProcessing";
+import { getAutoFingerprintSetting, setAutoFingerprintSetting } from "../../../../../scripts/fingerprintProcessing";
 import { useAppSettingsStore } from "../../../../../scripts/store/store";
 
 export default function STGeneral() {

@@ -66,7 +66,7 @@ const FilePane: React.FC = () => {
     try 
     {
       await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
-      await loadFiles([]);
+      await loadFiles([...selectedFiles]);
     } 
     catch (error) 
     {
@@ -620,8 +620,8 @@ const FilePane: React.FC = () => {
                   style={{
                     position: 'sticky',
                     top: 0,
-                    backgroundColor: '#1a1a1a',
-                    borderBottom: '1px solid black',
+                    backgroundColor: 'var(--colorDark)',
+                    borderBottom: '1px solid var(--border-color)',
                     justifyContent: 'flex-start',
                     gap: '0rem',
                   }}

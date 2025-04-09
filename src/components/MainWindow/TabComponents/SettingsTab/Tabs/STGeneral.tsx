@@ -111,13 +111,13 @@ export default function STGeneral() {
         }}
         >
           <option value="theme-light">Light</option>
+          <option value="theme-medium">Greyscale</option>
           <option value="theme-dark">Dark</option>
-          <option value="theme-medium">Low Contrast</option>
-          <option value="theme-rouge">Rouge</option>
-          <option value="theme-ocean">Ocean</option>
-          <option value="theme-sunset">Sunset</option>
-          <option value="theme-forest">Forest</option>
-          <option value="theme-violet">Violet</option>
+          <option value="theme-rouge">Neon Twilight</option>
+          <option value="theme-ocean">Deep Ocean</option>
+          <option value="theme-sunset">Desert Sunset</option>
+          <option value="theme-forest">Dark Forest</option>
+          <option value="theme-violet">Muted Violet</option>
         </select>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import {
-  BoxModelIcon,
   Component1Icon,
   // CubeIcon,
   DownloadIcon,
@@ -20,9 +19,12 @@ import { getVersion } from '@tauri-apps/api/app';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { usePopupContentStore, usePopupStore } from '../../../../scripts/store/store';
+import ConvertPopup from '../../PopupComponents/ConvertPopup/ConvertPopup';
+import RenamePopup from '../../PopupComponents/RenamePopup/RenamePopup';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -33,6 +35,7 @@ export default function ActionsPane() {
   const [version, setVersion] = useState<string | null>(null);
   const [bundleProgress, setBundleProgress] = useState<number | null>(null);
   const addEvent = useEventLoggerStore((state) => state.addEvent);
+  const { setContent } = usePopupContentStore();
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -50,6 +53,7 @@ export default function ActionsPane() {
       }
     });
 
+
     const unlistenCompleted = listen("bundle_completed", () => {
       setBundleProgress(100);
       setTimeout(() => setBundleProgress(null), 1500);
@@ -60,6 +64,11 @@ export default function ActionsPane() {
       unlistenCompleted.then((f) => f());
     };
   }, []);
+
+  const handleShowPopup = (content: ReactElement) => {
+    usePopupStore.setState({ isVisible: true });
+    setContent(content);
+  }
 
   const handleProcessRepository = () => {
     if (fingerprintQueue.length > 0) {
@@ -204,7 +213,6 @@ export default function ActionsPane() {
             onClick={() => {
               clearQueue();
               cancelProcessing();
-              console.log('Processing cancelled. Fingerprint queue cleared.');
               setTimeout(() => resetCancellation(), 100);
             }}
           >
@@ -262,17 +270,9 @@ export default function ActionsPane() {
         </button>
         <button
           className="actions-details-button"
-          onClick={() => {}}
-        >
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BoxModelIcon />
-            Compress
-          </h4>
-          <h5>Compress File Sizes</h5>
-        </button>
-        <button
-          className="actions-details-button"
-          onClick={() => {}}
+          onClick={() => {
+            handleShowPopup(<ConvertPopup />);
+          }}
         >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MixerHorizontalIcon />
@@ -282,7 +282,9 @@ export default function ActionsPane() {
         </button>
         <button
           className="actions-details-button"
-          onClick={() => {}}
+          onClick={() => {
+            handleShowPopup(<RenamePopup />);
+          }}
         >
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <InputIcon />

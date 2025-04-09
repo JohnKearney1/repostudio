@@ -84,7 +84,7 @@
 }
 
 .repo-btn2 {
-    background-color: var(--colorLight);
+    background-color: var(--colorDark);
     color: var(--colorText);
     border: none;
     cursor: pointer;
@@ -103,11 +103,11 @@
 }
 
 .repo-btn2:hover {
-    background-color: var(--colorDark);
+    background-color: var(--colorLight);
 }
 
 .repo-btn2.selected {
-    color: rgb(43, 228, 43);
+    color: var(--accent-1);
     background-color: var(--colorMid);
 }
 

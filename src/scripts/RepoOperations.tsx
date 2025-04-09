@@ -117,6 +117,7 @@ export const updateSelectedRepository = async (repo: Repository) => {
   try {
     const currentSettings = await invoke("get_app_settings_command") as {
       general_auto_fingerprint: boolean;
+      general_theme: string;
       audio_autoplay: boolean;
       setup_selected_repository: string;
     };
@@ -124,6 +125,7 @@ export const updateSelectedRepository = async (repo: Repository) => {
     await invoke('update_app_settings_command', { 
       args: {
         general_auto_fingerprint: currentSettings.general_auto_fingerprint,
+        general_theme: currentSettings.general_theme,
         audio_autoplay: currentSettings.audio_autoplay,
         setup_selected_repository: repo.id,
       }

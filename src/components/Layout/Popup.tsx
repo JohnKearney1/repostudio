@@ -23,10 +23,11 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
+        backdropFilter: 'blur(5px)',
     };
 
     const popupStyle: React.CSSProperties = {
-        backgroundColor: 'var(--colorLight',
+        backgroundColor: 'var(--colorDark)',
         borderRadius: '8px',
         boxShadow: '0 2px 10px rgba(0,0,0,1)',
         maxHeight: '80%',

@@ -65,7 +65,7 @@ export default function EventLogTab() {
                                 <h4 className="event-title">
                                     {
                                         expanded[index] ? <ChevronDownIcon /> : <ChevronRightIcon />
-                                    } <div style={{color: "var(--border-color)"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
+                                    } <div style={{color: "var(--colorSubtitle)"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
                                 </h4>
                                 <div className="event-status-icon">
                                     {event.status === "success" && <CheckCircledIcon color="limegreen"/>}

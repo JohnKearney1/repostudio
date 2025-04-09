@@ -60,6 +60,16 @@ const FilePane: React.FC = () => {
     setVisible(true);
   };
 
+  useEffect(() =>
+    {
+      if (!selectedRepository) return;
+        reloadFiles();
+    }
+  , [selectedRepository, allFiles]);
+
+  // ----------------------------------------------------------------------------
+  // HANDLES RELOADING ALL FILES IN THE REPOSITORY FROM BACKEND
+  // ----------------------------------------------------------------------------
   const reloadFiles = async () => 
   {
     if (!selectedRepository) return;
@@ -74,6 +84,9 @@ const FilePane: React.FC = () => {
     }
   };
 
+  // ----------------------------------------------------------------------------
+  // HANDLES FINGERPRINTING QUEUE
+  // ----------------------------------------------------------------------------
   useEffect(() => 
   {
     if (!selectedRepository) return;
@@ -93,6 +106,9 @@ const FilePane: React.FC = () => {
     }
   }, [fingerprintQueue, selectedRepository, setFingerprintQueue, isFingerprinting]);
 
+  // ---------------------------------------------------------------------------
+  // HANDLES FINGERPRINTING QUEUE PROCESSING MESSAGE
+  // ---------------------------------------------------------------------------
   useEffect(() => 
   {
     if (!selectedRepository) return;
@@ -113,6 +129,9 @@ const FilePane: React.FC = () => {
     }
   }, [fingerprintQueue, selectedRepository, isFingerprinting, processingCancelledRef]);
 
+  // ----------------------------------------------------------------------------
+  // HANDLES FILE LISTENING INSIDE OF FOLDERS ON SYSTEM
+  // ----------------------------------------------------------------------------
   useEffect(() => 
   {
     const unlistenAdded = listen<string>("folder_file_added", async () => 
@@ -132,37 +151,49 @@ const FilePane: React.FC = () => {
       unlistenAdded.then((fn) => fn());
       unlistenRemoved.then((fn) => fn());
     };
-  }, [selectedRepository]);
+  }, []);
 
+  // ----------------------------------------------------------------------------
+  // HANDLES REPOSITORY INITIALIZATION AND FILE LOADING
+  // ----------------------------------------------------------------------------
   useEffect(() => 
   {
-    const refreshAndLoadFiles = async () => 
-    {
-      if (!selectedRepository) return;
-      try 
+    const init = async () => {
+      const currentSettings = await invoke("get_app_settings_command") as
+          {
+            general_auto_fingerprint: boolean;
+            general_theme: string;
+            audio_autoplay: boolean;
+            setup_selected_repository: string;
+          };
+          
+      const refreshAndLoadFiles = async () => 
       {
-        await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
-        const preservedSelection = [...selectedFiles];
-        loadFiles(preservedSelection);
-      } catch (error) 
+        if (!currentSettings.setup_selected_repository) return;
+        try 
+        {
+          await invoke("refresh_files_in_repository_command", { repoId: currentSettings.setup_selected_repository });
+          const preservedSelection = [...selectedFiles];
+          loadFiles(preservedSelection);
+        } catch (error) 
+        {
+          console.error("Failed to refresh and load files:", error);
+        }
+      };
+    
+      if (!isFingerprinting && prevRepositoryRef.current?.id !== currentSettings.setup_selected_repository) 
       {
-        console.error("Failed to refresh and load files:", error);
+        prevRepositoryRef.current = selectedRepository;
+        refreshAndLoadFiles();
       }
     };
-  
-    if (!isFingerprinting && prevRepositoryRef.current?.id !== selectedRepository?.id) 
-    {
-      prevRepositoryRef.current = selectedRepository;
-      refreshAndLoadFiles();
-    }
+    
+    init();
   }, [selectedRepository, selectedFiles, isFingerprinting]);
 
-  useEffect(() => 
-  {
-    if (!selectedRepository) return;
-    reloadFiles();
-  }, [selectedRepository]);
-
+  // ----------------------------------------------------------------------------
+  // LOADS THE LAST SELECTED REPOSITORY FROM THE DATABASE
+  // ----------------------------------------------------------------------------
   useEffect(() => 
   {
     const initializeRepository = async () => 
@@ -170,6 +201,7 @@ const FilePane: React.FC = () => {
         const currentSettings = await invoke("get_app_settings_command") as 
         {
           general_auto_fingerprint: boolean;
+          general_theme: string;
           audio_autoplay: boolean;
           setup_selected_repository: string;
         };
@@ -178,6 +210,7 @@ const FilePane: React.FC = () => {
 
         if (selectedRepoId) 
         {
+          console.warn("Loading last selected repository from settings as per 218-useeffect ", selectedRepoId);
           const repositories = useRepositoryStore.getState().repositories;
           const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
           if (selectedRepo) 
@@ -251,7 +284,15 @@ const FilePane: React.FC = () => {
     }
     try 
     {
-      await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
+      
+      const currentSettings = await invoke("get_app_settings_command") as
+      {
+        general_auto_fingerprint: boolean;
+        general_theme: string;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      await invoke("refresh_files_in_repository_command", { repoId: currentSettings.setup_selected_repository });
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       setAllFiles(newFiles);
       const preserved = preservedSelection.filter((file) => newFiles.some((newFile) => newFile.id === file.id));
@@ -545,6 +586,7 @@ const FilePane: React.FC = () => {
       const newSelectedRepository = state.selectedRepository;
       if (newSelectedRepository) 
       {
+        console.warn("Repository changed! Reloading files... FP-LN598-USEEFFECT" , newSelectedRepository.id);
         reloadFiles();
       } 
       else

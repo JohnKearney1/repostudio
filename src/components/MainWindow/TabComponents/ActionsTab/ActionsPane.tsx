@@ -9,6 +9,8 @@ import {
   SymbolIcon,
   UploadIcon,
 } from '@radix-ui/react-icons';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import './ActionsPane.css';
 import { useFileStore,
   useFingerprintCancellationStore,
@@ -195,6 +197,29 @@ export default function ActionsPane() {
     }
   };
 
+  const handleCheckForUpdates = async () => {
+    try {
+      const update = await check();
+      if (update) {
+        await update.downloadAndInstall();
+        const shouldRelaunch = confirm("An update is available! Do you want to restart and apply the update?");
+        if (shouldRelaunch) {
+          await relaunch();
+        }
+      } else {
+        alert("No updates available.");
+      }
+    } catch (error) {
+      console.error("Error checking for updates:", error);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Check for Updates",
+        description: "Failed to check for updates. Here's the info we have: " + error,
+        status: "error"
+      });
+    }
+  };
+
   return (
     <div className="actions-pane">
       <div className="actions-details">
@@ -303,16 +328,13 @@ export default function ActionsPane() {
         >
           System
         </h5>
-        <button
-          className="actions-details-button"
-          onClick={() => {}}
-        >
+        <button className="actions-details-button" onClick={handleCheckForUpdates}>
           <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <SymbolIcon />
-            Check for Updates
+            <SymbolIcon /> Check for Updates
           </h4>
           <h5>RS {version}</h5>
         </button>
+
 
         <h5
           style={{

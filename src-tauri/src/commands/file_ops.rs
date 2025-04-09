@@ -1,22 +1,25 @@
-use std::error::Error;
-use std::fs;
-use std::path::Path;
-use serde_json::json;
 use lofty::config::WriteOptions;
 use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::*;
+use serde_json::json;
+use std::error::Error;
+use std::fs;
+use std::path::Path;
 
+use crate::commands::structures::FileMetadata;
+use base64::{engine::general_purpose, Engine as _};
+use std::io::Cursor;
 use tauri::Emitter;
 use tauri::Window;
-use std::io::Cursor;
 use zip::write::SimpleFileOptions;
 use zip::CompressionMethod;
-use base64::{engine::general_purpose, Engine as _};
-use crate::commands::structures::FileMetadata;
 
 #[tauri::command]
-pub async fn bundle_files_command(window: Window, file_paths: Vec<String>) -> Result<String, String> {
+pub async fn bundle_files_command(
+    window: Window,
+    file_paths: Vec<String>,
+) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let total_files = file_paths.len();
         if total_files == 0 {
@@ -25,17 +28,23 @@ pub async fn bundle_files_command(window: Window, file_paths: Vec<String>) -> Re
 
         let mut buffer = Cursor::new(Vec::<u8>::new());
 
-        { // Scope for ZipWriter
+        {
+            // Scope for ZipWriter
             let mut zip = zip::ZipWriter::new(&mut buffer);
 
             for (i, path_str) in file_paths.iter().enumerate() {
                 // Emit progress update
                 let progress_percentage = ((i + 1) as f64 / total_files as f64) * 100.0;
-                window.emit("bundle_progress", json!({
-                    "progress": progress_percentage,
-                    "file_index": i + 1,
-                    "total": total_files,
-                })).ok();
+                window
+                    .emit(
+                        "bundle_progress",
+                        json!({
+                            "progress": progress_percentage,
+                            "file_index": i + 1,
+                            "total": total_files,
+                        }),
+                    )
+                    .ok();
 
                 let path_obj = Path::new(path_str);
                 if !path_obj.exists() {
@@ -47,46 +56,63 @@ pub async fn bundle_files_command(window: Window, file_paths: Vec<String>) -> Re
                     continue;
                 }
 
-                let extension = path_obj.extension()
-                                     .and_then(|os_str| os_str.to_str())
-                                     .map(|s| s.to_lowercase());
+                let extension = path_obj
+                    .extension()
+                    .and_then(|os_str| os_str.to_str())
+                    .map(|s| s.to_lowercase());
                 let compression_method = match extension.as_deref() {
                     Some("wav") => CompressionMethod::Deflated,
-                    Some("mp3") | Some("flac") | Some("ogg") | Some("aac") => CompressionMethod::Stored,
+                    Some("mp3") | Some("flac") | Some("ogg") | Some("aac") => {
+                        CompressionMethod::Stored
+                    }
                     _ => CompressionMethod::Stored,
                 };
 
-                println!("Processing file: '{}', Using Compression: {:?}", path_str, compression_method);
+                println!(
+                    "Processing file: '{}', Using Compression: {:?}",
+                    path_str, compression_method
+                );
 
                 let options = SimpleFileOptions::default()
                     .compression_method(compression_method)
                     .unix_permissions(0o755);
 
                 let mut file = match std::fs::File::open(path_obj) {
-                     Ok(f) => f,
-                     Err(e) => {
-                         eprintln!("Error: Failed to open file '{}': {}. Skipping.", path_str, e);
-                         continue;
-                     }
+                    Ok(f) => f,
+                    Err(e) => {
+                        eprintln!(
+                            "Error: Failed to open file '{}': {}. Skipping.",
+                            path_str, e
+                        );
+                        continue;
+                    }
                 };
 
-                let base_name = path_obj.file_name()
-                                     .and_then(|s| s.to_str())
-                                     .unwrap_or("unknown_file");
+                let base_name = path_obj
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown_file");
                 let name_in_archive = format!("{:03}_{}", i, base_name);
 
                 if let Err(e) = zip.start_file(&name_in_archive, options) {
-                    eprintln!("Error: Failed to start file '{}' in zip: {}. Skipping.", name_in_archive, e);
+                    eprintln!(
+                        "Error: Failed to start file '{}' in zip: {}. Skipping.",
+                        name_in_archive, e
+                    );
                     continue;
                 }
 
                 if let Err(e) = std::io::copy(&mut file, &mut zip) {
-                     eprintln!("Error: Failed to copy data for file '{}' to zip: {}. Skipping.", name_in_archive, e);
-                     continue;
+                    eprintln!(
+                        "Error: Failed to copy data for file '{}' to zip: {}. Skipping.",
+                        name_in_archive, e
+                    );
+                    continue;
                 }
             }
 
-            zip.finish().map_err(|e| format!("Failed to finalize zip archive: {}", e))?;
+            zip.finish()
+                .map_err(|e| format!("Failed to finalize zip archive: {}", e))?;
         }
 
         // Emit completion event
@@ -95,7 +121,9 @@ pub async fn bundle_files_command(window: Window, file_paths: Vec<String>) -> Re
         // Encode the raw zip data as a base64 string before returning.
         let zip_bytes = buffer.into_inner();
         Ok(general_purpose::STANDARD.encode(&zip_bytes))
-    }).await.map_err(|join_error| format!("Async task failed: {}", join_error))?
+    })
+    .await
+    .map_err(|join_error| format!("Async task failed: {}", join_error))?
 }
 
 pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn Error>> {

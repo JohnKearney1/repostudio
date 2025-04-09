@@ -1,7 +1,7 @@
 // src/commands/db.rs
 //! This module handles all reads and writes to the SQLite database,
 //! including operations on repositories, file metadata, and settings.
-use crate::commands::structures::{FileMetadata, Repository, TrackedFolder, AppSettings};
+use crate::commands::structures::{AppSettings, FileMetadata, Repository, TrackedFolder};
 use chrono::{DateTime, FixedOffset, Utc};
 use once_cell::sync::OnceCell;
 use regex::Regex;
@@ -45,7 +45,7 @@ pub fn establish_connection() -> Result<Connection> {
              audio_autoplay INTEGER NOT NULL,
              setup_selected_repository TEXT
          )",
-         [],
+        [],
     )?;
 
     // Create TrackedFolders table (call in `establish_connection`)
@@ -58,11 +58,10 @@ pub fn establish_connection() -> Result<Connection> {
         [],
     )?;
 
-    let app_settings_exists: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM AppSettings)",
-        [],
-        |row| row.get(0),
-    )?;
+    let app_settings_exists: bool =
+        conn.query_row("SELECT EXISTS(SELECT 1 FROM AppSettings)", [], |row| {
+            row.get(0)
+        })?;
     if !app_settings_exists {
         conn.execute(
             "INSERT INTO AppSettings (general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository)
@@ -153,14 +152,14 @@ pub fn update_app_settings(
          SET general_auto_fingerprint = ?1,
                 general_theme = ?2,
                 audio_autoplay = ?3,
-                setup_selected_repository = ?4", 
+                setup_selected_repository = ?4",
         params![
             if general_auto_fingerprint { 1 } else { 0 },
             general_theme,
             if audio_autoplay { 1 } else { 0 },
             setup_selected_repository,
         ],
-    )?; 
+    )?;
     Ok(())
 }
 
@@ -559,7 +558,6 @@ pub fn get_tracked_folders() -> Result<Vec<TrackedFolder>> {
     Ok(folders)
 }
 
-
 // ---------------------------------------------------------------------------
 // Tauri command wrappers (using spawn_blocking)
 // These functions are exposed to the frontend via `invoke`.
@@ -749,7 +747,6 @@ pub async fn delete_file_command(
     .map_err(|e| e.to_string())?
 }
 
-
 #[tauri::command]
 pub async fn remove_duplicate_files_command(window: Window, repo_id: String) -> Result<(), String> {
     let emit_window = window.clone();
@@ -880,27 +877,21 @@ pub async fn get_file_command(
     result.map_err(|e| e.to_string())?
 }
 
-
 #[tauri::command]
 pub async fn get_app_settings_command() -> Result<AppSettings, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        get_app_settings().map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || get_app_settings().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn update_app_settings_command(
-    args: AppSettings
-) -> Result<(), String> {
+pub async fn update_app_settings_command(args: AppSettings) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         update_app_settings(
             args.general_auto_fingerprint,
             args.general_theme,
             args.audio_autoplay,
             &args.setup_selected_repository,
-
         )
         .map_err(|e| e.to_string())
     })

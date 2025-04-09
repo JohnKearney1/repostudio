@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -46,7 +47,18 @@
   },
   "plugins": {
     "updater": {
-      "active": true
+      "windows": {
+        "installMode": "passive"
+      },
+      "dialog": {
+        "title": "Update Available",
+        "description": "A new version of Repo Studio is available. Would you like to update?",
+        "okLabel": "Update",
+        "cancelLabel": "Later"
+      },
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE0RjlEQTE4NDBGRUY5NUUKUldSZStmNUFHTnI1cEd1M1o4SEsrSjRZOGg0K0F0NzZFaUtUNDJTTjRmcGJrWjNSeHp5MXprazkK",
+      "endpoints": [ "https://github.com/JohnKearney1/repostudio/releases/latest/download/latest.json" ]
     }
   }
 }

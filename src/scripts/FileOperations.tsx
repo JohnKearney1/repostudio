@@ -131,16 +131,10 @@ export const fingerprintFileScript = async (
   }
 
   try {
-    console.log("Starting fingerprint generation for file:", file.name);
-
     await invoke("generate_audio_fingerprint_for_file_command", {
       repoId: selectedRepository.id,
       file: file,
     });
-
-    console.log("Fingerprint generated successfully for file:", file.name);
-
-    // Optional: Refresh the files list to get the updated fingerprint
     await loadFilesScript();
   } catch (error) {
     console.error("Failed to generate fingerprint for file:", error);

@@ -23,13 +23,9 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
   const [metaGenre, setMetaGenre] = useState(file.meta_genre || '');
   const [customTags, setCustomTags] = useState(file.tags || '');
   const repoId = useRepositoryStore((state) => state.selectedRepository?.id);
-
-  // Updated status type to include 'error'
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  // Flag to hide unsaved changes message after a save attempt
   const [justSaved, setJustSaved] = useState(false);
 
-  // Determine if there are unsaved changes by comparing current state to file metadata
   const unsavedChanges =
     (file.meta_title || '') !== metaTitle ||
     (file.meta_comment || '') !== metaComment ||
@@ -39,7 +35,6 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
     (file.meta_genre || '') !== metaGenre ||
     (file.tags || '') !== customTags;
 
-  // Reset state when a new file is selected
   useEffect(() => {
     setMetaTitle(file.meta_title || '');
     setMetaComment(file.meta_comment || '');
@@ -50,14 +45,12 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
     setCustomTags(file.tags || '');
   }, [file]);
 
-  // Clear the justSaved flag if there are no pending changes
   useEffect(() => {
     if (!unsavedChanges) {
       setJustSaved(false);
     }
   }, [unsavedChanges]);
 
-  // Auto-reset status (both 'success' and 'error') to 'idle' after 2 seconds
   useEffect(() => {
     if (status === 'success' || status === 'error') {
       const timer = setTimeout(() => {
@@ -86,14 +79,10 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
     try {
       await invoke('update_file_command', { repoId, file: updatedFile });
       console.log("Metadata updated successfully in database.");
-
       await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });
       console.log("Metadata written to file successfully.");
-
       onSave(formData);
-
       await loadFilesScript();
-
       setStatus('success');
       setJustSaved(true);
     } catch (error) {
@@ -157,7 +146,6 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
           value={metaTrackNumber}
           onChange={(e) => {
             const value = e.target.value;
-            // Allow empty input or only digits
             if (value === '' || /^[0-9]+$/.test(value)) {
               setMetaTrackNumber(value);
             }
@@ -184,7 +172,7 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
             ? { backgroundColor: '#00ff00' }
             : status === 'error'
             ? { backgroundColor: '#ff0000' }
-            : { backgroundColor: '#2a2a2a' }
+            : { backgroundColor: 'var(--colorMid)' }
         }
         transition={{ duration: 0.3 }}
       >
@@ -225,7 +213,6 @@ const MetadataEditor: React.FC<MetadataEditorProps> = ({ onSave }) => {
         </AnimatePresence>
       </motion.button>
 
-      {/* Animated unsaved changes message; remains visible until the user applies changes or the values match */}
       <AnimatePresence>
         {unsavedChanges && !justSaved && (
           <motion.h5

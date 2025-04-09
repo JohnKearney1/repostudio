@@ -12,7 +12,7 @@
     align-items: center;
     justify-content: flex-start;
     padding: 0.25rem;
-    background-color: #1a1a1a;
+    background-color: var(--colorLight);
 }
 
 .metadata-item-title {
@@ -22,17 +22,17 @@
 .metadata-item-input {
     flex: 1;
     padding: 0.25rem;
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorLight);
+    color: var(--colorText);
     border: none;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
     transition: all 0.3s;
     resize: none;
 }
 
 .metadata-item-input:focus {
     outline: none;
-    border-bottom: 1px solid #666;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .metadata-btn {
@@ -40,8 +40,8 @@
     justify-content: center;
     align-items: center;
     padding: 0.25rem 0.5rem;
-    background-color: #202020;
-    color: white;
+    background-color: var(--colorMid);
+    color: var(--colorText);
     border: none;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -51,6 +51,4 @@
     font-size: 0.8rem;
 }
 
-.metadata-btn:hover {
-    background-color: #303030;
-}
+

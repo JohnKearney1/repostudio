@@ -1,6 +1,6 @@
 .file-pane {
-    background-color: #1a1a1a;
-    border: black solid 1px;
+    background-color: var(--colorDark);
+    border: var(--border-color) solid 1px;
     border-top: none;
     min-width: 300px;
     max-width: 25vw;
@@ -14,8 +14,23 @@
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    background-color: #2a2a2a;
-    color: white;
+    background-color: var(--colorLight);
+    color: var(--colorText);
+}
+
+.repo-toolbar {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.repo-buttons {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
 }
 
 .repo-toolbar-button {
@@ -23,9 +38,9 @@
     justify-content: flex-start;
     padding: 0.5rem 0.75rem;
     align-items: center;
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
     width: 100%;
-    color: white;
+    color: var(--colorText);
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -37,9 +52,9 @@
     justify-content: center;
     padding: 0.5rem 0.75rem;
     align-items: center;
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
     width: 100%;
-    color: white;
+    color: var(--colorText);
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -50,13 +65,13 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
     padding: 0.5rem 0.75rem;
-    color: white;
+    color: var(--colorText);
     border: none;
     border-radius: 0;
-    border-top: black solid 1px;
-    border-bottom: black solid 1px;
+    border-top: var(--border-color) solid 1px;
+    border-bottom: var(--border-color) solid 1px;
     user-select: none;
 }
 
@@ -78,23 +93,23 @@
 .file-list {
     display: flex;
     flex-wrap: wrap;
-    background-color: #202020;
+    background-color: var(--colorMid);
     border-radius: 0.5rem;
 }
 
 .list-item {
-    background-color: #202020;
+    background-color: var(--colorMid);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem;
     font-size: 0.75rem;
     width: 100%;
-    color: white;
+    color: var(--colorText);
     cursor: pointer;
     transition: background-color 0.2s;
     user-select: none;
-    border-top: black solid 1px;
+    border-top: var(--border-color) solid 1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -108,37 +123,37 @@
 
 
 .list-item:hover {
-    background-color: #2a2a2a;
+    background-color: var(--border-color);
 }
 
 .selected {
-    background-color: #3a3a3a;
+    background-color: var(--border-color);
     /* Green left border */
     border-left: 3px solid #00ff00;
 }
 
 .inaccessible {
-    background-color: #202020;
+    background-color: var(--colorMid);
     border-left: 3px solid #fbff00;
 }
 
 .list-item.inaccessible.selected {
-    background-color: #3a3a3a;
+    background-color: var(--border-color);
 }
 
 .progress-item {
-    background-color: #202020;
+    background-color: var(--colorMid);
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem;
     font-size: 0.75rem;
     width: 100%;
-    color: white;
+    color: var(--colorText);
     cursor: pointer;
     transition: background-color 0.2s;
     user-select: none;
-    border-top: black solid 1px;
+    border-top: var(--border-color) solid 1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -148,14 +163,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
-    border-top: black solid 1px;
+    color: var(--colorText);
+    border-top: var(--border-color) solid 1px;
 }
 
 /* Dropdown menu styling */
 .dropdown-menu {
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorDark);
+    color: var(--colorText);
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
     font-size: 0.75rem;
@@ -171,14 +186,14 @@
   /* When focused, darken the background slightly */
   .dropdown-menu:focus,
   .dropdown-menu:hover {
-    background-color: #2a2a2a;
+    background-color: var(--colorLight);
     outline: none;
   }
   
   /* Ascending/descending toggle button styling */
   .sort-toggle-button {
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorDark);
+    color: var(--colorText);
     padding: 0.5rem;
     border: none;
     font-size: 0.75rem;
@@ -189,6 +204,6 @@
   
   /* Hover effect for the toggle button */
   .sort-toggle-button:hover {
-    background-color: #2a2a2a;
+    background-color: var(--colorLight);
   }
   

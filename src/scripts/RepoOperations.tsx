@@ -3,9 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { useRepositoryStore, useFileStore } from './store/store';
 import { Repository } from '../types/ObjectTypes';
 
-// Load repositories from backend and set the first repository as selected.
 export const loadRepositoriesScript = async () => {
-  const { setRepositories, setSelectedRepository } = useRepositoryStore.getState();
+  const { setRepositories, setSelectedRepository, selectedRepository } = useRepositoryStore.getState();
 
   try {
     let repos: Repository[] = await invoke("get_repositories_command");
@@ -22,11 +21,32 @@ export const loadRepositoriesScript = async () => {
     }
 
     setRepositories(repos);
-    setSelectedRepository(repos[0] || null);
+
+    // Check if there's a selected repository already set, avoid overwriting it
+    if (!selectedRepository) {
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      const selectedRepoId = currentSettings.setup_selected_repository;
+
+      if (selectedRepoId) {
+        const repoToSelect = repos.find(repo => repo.id === selectedRepoId);
+        if (repoToSelect) {
+          setSelectedRepository(repoToSelect);
+        } else {
+          setSelectedRepository(repos[0] || null);
+        }
+      } else {
+        setSelectedRepository(repos[0] || null);
+      }
+    }
   } catch (error) {
     console.error("Failed to load repositories:", error);
   }
 };
+
 
 // Create a new repository
 export const createRepository = async (id: string, name: string, description: string) => {
@@ -89,3 +109,29 @@ export const refreshRepositoryFiles = async (repoId: string) => {
     console.error("Failed to refresh repository files:", error);
   }
 };
+
+
+// RepoOperations.tsx
+export const updateSelectedRepository = async (repo: Repository) => {
+  const { setSelectedRepository } = useRepositoryStore.getState();
+  try {
+    const currentSettings = await invoke("get_app_settings_command") as {
+      general_auto_fingerprint: boolean;
+      audio_autoplay: boolean;
+      setup_selected_repository: string;
+    };
+     
+    await invoke('update_app_settings_command', { 
+      args: {
+        general_auto_fingerprint: currentSettings.general_auto_fingerprint,
+        audio_autoplay: currentSettings.audio_autoplay,
+        setup_selected_repository: repo.id,
+      }
+    });
+
+    setSelectedRepository(repo); 
+  } catch (err) {
+    console.error('Failed to update selected repository', err);
+  }
+};
+

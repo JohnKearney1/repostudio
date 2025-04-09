@@ -9,9 +9,7 @@ interface MultiInputProps {
 }
 
 const MultiInput: React.FC<MultiInputProps> = ({ value = '', onChange, onEnterPress }) => {
-  // Derive items directly from the value prop.
   const items = value.split(',').map(item => item.trim()).filter(item => item.length > 0);
-  // Local state for the current input
   const [inputValue, setInputValue] = useState('');
 
   const updateItems = (newItems: string[]) => {
@@ -21,7 +19,6 @@ const MultiInput: React.FC<MultiInputProps> = ({ value = '', onChange, onEnterPr
   };
 
   const addItemsFromInput = (input: string) => {
-    // Split on comma and treat every part except the last as complete items.
     const parts = input.split(',');
     const newItems = parts.slice(0, -1)
       .map(item => item.trim())
@@ -29,7 +26,6 @@ const MultiInput: React.FC<MultiInputProps> = ({ value = '', onChange, onEnterPr
     if (newItems.length > 0) {
       updateItems([...items, ...newItems]);
     }
-    // Keep the last part in the input (it might be incomplete)
     setInputValue(parts[parts.length - 1]);
   };
 
@@ -63,11 +59,10 @@ const MultiInput: React.FC<MultiInputProps> = ({ value = '', onChange, onEnterPr
   return (
     <div className="multi-input-container">
       {items.map((item, index) => (
-        <div
-          key={index}
+        <div 
+        key={index}
           className="multi-input-item"
-          onClick={() => handleRemoveItem(index)}
-        >
+          onClick={() => handleRemoveItem(index)}>
           <h5>{item}</h5>
           <Cross2Icon height="12px" width="12px" color="white" />
         </div>

@@ -11,7 +11,7 @@
     align-items: center;
     justify-content: center;
     padding: 0.25rem 0.5rem;
-    background-color: #2a2a2a;
+    background-color: var(--colorMid);
     cursor: pointer;
     gap: 0.25rem;
     border-radius: 0.25rem;
@@ -20,15 +20,15 @@
 .multi-input-input {
     flex: 1;
     padding: 0.25rem;
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorLight);
+    color: var(--colorText);
     border: none;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
     transition: all 0.3s;
     resize: none;
 }
 
 .multi-input-input:focus {
     outline: none;
-    border-bottom: 1px solid #666;
+    border-bottom: 1px solid var(--border-color);
 }

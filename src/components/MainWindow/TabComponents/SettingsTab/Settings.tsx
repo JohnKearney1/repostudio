@@ -9,13 +9,12 @@ import STAudio from './Tabs/STAudio';
 import STAdvanced from './Tabs/STAdvanced';
 
 function Settings(headless: boolean) {
-    const [activeTab, setActiveTab] = useState('About');
+    const [activeTab, setActiveTab] = useState('General');
 
     const tabs = [
         'About',
         'General',
         'Audio',
-        // 'Connected Apps',
         'Advanced'
     ];
 
@@ -36,7 +35,6 @@ function Settings(headless: boolean) {
         }
     };
 
-    // Variants for content animations
     const contentVariants = {
         initial: { opacity: 0, x: 50 },
         animate: { opacity: 1, x: 0 },
@@ -48,7 +46,6 @@ function Settings(headless: boolean) {
             { !headless && <WindowBar /> }
             <div className="settings-container">
                 <div className="settings-sidebar"
-                    // if headless is true, remove the border
                     style={headless ? { borderTop: 'none' } : {}}
                 >
                     {tabs.map(tab => (

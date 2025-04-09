@@ -1,11 +1,10 @@
 // src/commands/db.rs
 //! This module handles all reads and writes to the SQLite database,
 //! including operations on repositories, file metadata, and settings.
-use crate::commands::structures::{FileMetadata, Repository, Settings, TrackedFolder};
+use crate::commands::structures::{FileMetadata, Repository, TrackedFolder, AppSettings};
 use chrono::{DateTime, FixedOffset, Utc};
 use once_cell::sync::OnceCell;
 use regex::Regex;
-use rusqlite::OptionalExtension;
 use rusqlite::{params, Connection, Result};
 use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
@@ -38,6 +37,17 @@ pub fn establish_connection() -> Result<Connection> {
         [],
     )?;
 
+    // Create the AppSettings table.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS AppSettings (
+             general_auto_fingerprint INTEGER NOT NULL,
+             general_theme TEXT NOT NULL,
+             audio_autoplay INTEGER NOT NULL,
+             setup_selected_repository TEXT
+         )",
+         [],
+    )?;
+
     // Create TrackedFolders table (call in `establish_connection`)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS TrackedFolders (
@@ -48,27 +58,16 @@ pub fn establish_connection() -> Result<Connection> {
         [],
     )?;
 
-    // Create the Settings table.
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS Settings (
-            id      TEXT PRIMARY KEY,
-            setting TEXT NOT NULL,
-            value   TEXT NOT NULL
-        )",
-        [],
-    )?;
-
-    // Insert a default setting for autoplay if it doesn't exist.
-    let autoplay_exists: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM Settings WHERE setting = 'autoplay')",
+    let app_settings_exists: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM AppSettings)",
         [],
         |row| row.get(0),
     )?;
-    if !autoplay_exists {
-        let default_id = Uuid::new_v4().to_string();
+    if !app_settings_exists {
         conn.execute(
-            "INSERT INTO Settings (id, setting, value) VALUES (?1, ?2, ?3)",
-            params![default_id, "autoplay", "true"],
+            "INSERT INTO AppSettings (general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository)
+             VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![0, "theme-dark", 0, "default"],
         )?;
     }
 
@@ -116,6 +115,52 @@ pub fn ensure_files_table(conn: &Connection, repo_id: &str) -> Result<()> {
         ),
         [],
     )?;
+    Ok(())
+}
+
+// Retrieves the app settings from the AppSettings table.
+pub fn get_app_settings() -> Result<AppSettings> {
+    let conn = establish_connection()?;
+    let mut stmt = conn.prepare(
+        "SELECT general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository
+         FROM AppSettings LIMIT 1",
+    )?;
+    let settings = stmt.query_row([], |row| {
+        let general_flag: i32 = row.get(0)?;
+        let general_theme: String = row.get(1)?;
+        let autoplay_flag: i32 = row.get(2)?;
+        let repo_id: String = row.get(3)?;
+        Ok(AppSettings {
+            general_auto_fingerprint: general_flag != 0,
+            general_theme,
+            audio_autoplay: autoplay_flag != 0,
+            setup_selected_repository: repo_id,
+        })
+    })?;
+    Ok(settings)
+}
+
+// Updates the app settings row with the provided values.
+pub fn update_app_settings(
+    general_auto_fingerprint: bool,
+    general_theme: String,
+    audio_autoplay: bool,
+    setup_selected_repository: &str,
+) -> Result<()> {
+    let conn = establish_connection()?;
+    conn.execute(
+        "UPDATE AppSettings
+         SET general_auto_fingerprint = ?1,
+                general_theme = ?2,
+                audio_autoplay = ?3,
+                setup_selected_repository = ?4", 
+        params![
+            if general_auto_fingerprint { 1 } else { 0 },
+            general_theme,
+            if audio_autoplay { 1 } else { 0 },
+            setup_selected_repository,
+        ],
+    )?; 
     Ok(())
 }
 
@@ -514,46 +559,6 @@ pub fn get_tracked_folders() -> Result<Vec<TrackedFolder>> {
     Ok(folders)
 }
 
-// ---------------------------------------------------------------------------
-// Settings operations
-// ---------------------------------------------------------------------------
-
-/// Retrieves a setting by its name.
-pub fn get_setting(setting_name: &str) -> Result<Option<Settings>> {
-    let conn = establish_connection()?;
-    let mut stmt = conn.prepare("SELECT id, setting, value FROM Settings WHERE setting = ?1")?;
-    let setting = stmt
-        .query_row(params![setting_name], |row| {
-            Ok(Settings {
-                id: row.get(0)?,
-                setting: row.get(1)?,
-                value: row.get(2)?,
-            })
-        })
-        .optional()?;
-    Ok(setting)
-}
-
-/// Updates the value of a setting.
-pub fn update_setting(setting_name: &str, new_value: &str) -> Result<()> {
-    let conn = establish_connection()?;
-    conn.execute(
-        "UPDATE Settings SET value = ?1 WHERE setting = ?2",
-        params![new_value, setting_name],
-    )?;
-    Ok(())
-}
-
-/// Inserts a new setting.
-pub fn create_setting(setting_name: &str, value: &str) -> Result<()> {
-    let conn = establish_connection()?;
-    let id = Uuid::new_v4().to_string();
-    conn.execute(
-        "INSERT INTO Settings (id, setting, value) VALUES (?1, ?2, ?3)",
-        params![id, setting_name, value],
-    )?;
-    Ok(())
-}
 
 // ---------------------------------------------------------------------------
 // Tauri command wrappers (using spawn_blocking)
@@ -744,61 +749,6 @@ pub async fn delete_file_command(
     .map_err(|e| e.to_string())?
 }
 
-#[tauri::command]
-pub async fn update_setting_command(
-    window: Window,
-    setting_name: String,
-    new_value: String,
-) -> Result<(), String> {
-    let emit_window = window.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let result = update_setting(&setting_name, &new_value);
-
-        let payload = match &result {
-            Ok(_) => format!("Setting '{}' updated to '{}'.", setting_name, new_value),
-            Err(e) => format!("Failed to update setting '{}': {}", setting_name, e),
-        };
-
-        emit_window
-            .emit("update_setting_completed", payload)
-            .unwrap_or_else(|e| {
-                println!("Failed to emit update_setting_completed event: {}", e);
-            });
-
-        result.map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-pub async fn create_setting_command(
-    window: Window,
-    setting_name: String,
-    value: String,
-) -> Result<(), String> {
-    let emit_window = window.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let result = create_setting(&setting_name, &value);
-
-        let payload = match &result {
-            Ok(_) => format!("Setting '{}' created with value '{}'.", setting_name, value),
-            Err(e) => format!("Failed to create setting '{}': {}", setting_name, e),
-        };
-
-        emit_window
-            .emit("create_setting_completed", payload)
-            .unwrap_or_else(|e| {
-                println!("Failed to emit create_setting_completed event: {}", e);
-            });
-
-        result.map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
 
 #[tauri::command]
 pub async fn remove_duplicate_files_command(window: Window, repo_id: String) -> Result<(), String> {
@@ -930,26 +880,30 @@ pub async fn get_file_command(
     result.map_err(|e| e.to_string())?
 }
 
+
 #[tauri::command]
-pub async fn get_setting_command(
-    window: Window,
-    setting_name: String,
-) -> Result<Option<Settings>, String> {
-    let emit_window = window.clone();
-
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        get_setting(&setting_name).map_err(|e| e.to_string())
+pub async fn get_app_settings_command() -> Result<AppSettings, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        get_app_settings().map_err(|e| e.to_string())
     })
-    .await;
+    .await
+    .map_err(|e| e.to_string())?
+}
 
-    if let Ok(Ok(Some(setting))) = &result {
-        emit_window
-            .emit(
-                "get_setting_completed",
-                format!("Setting '{}' loaded successfully.", setting.setting),
-            )
-            .unwrap_or_else(|e| println!("Failed to emit get_setting_completed event: {}", e));
-    }
+#[tauri::command]
+pub async fn update_app_settings_command(
+    args: AppSettings
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        update_app_settings(
+            args.general_auto_fingerprint,
+            args.general_theme,
+            args.audio_autoplay,
+            &args.setup_selected_repository,
 
-    result.map_err(|e| e.to_string())?
+        )
+        .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

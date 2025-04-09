@@ -33,9 +33,11 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
             // File changed! Reload full metadata
             let new_file_metadata = get_audio_metadata_from_file(&file.path)?;
             let updated_file = FileMetadata {
-                id: file.id.clone(),
-                ..new_file_metadata
-            };
+                    id: file.id.clone(),
+                    tags: file.tags.clone(),
+                    audio_fingerprint: file.audio_fingerprint.clone(),
+                    ..new_file_metadata
+                };
             println!("Updating metadata for '{}'", updated_file.name);
             update_file(repo_id, &updated_file)?;
         } else if !file.accessible {

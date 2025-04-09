@@ -49,7 +49,6 @@ export const processCommand = (command: string): ConsoleMessage | null => {
         : `Unknown command: ${command}`;
       break;
     case 'clear':
-      // Clear all the messages and return null so no new message is added.
       useConsoleStore.getState().clearMessages();
       return null;
     default:

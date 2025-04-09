@@ -2,6 +2,7 @@
 import { fingerprintFileScript } from './FileOperations';
 import { useFingerprintQueueStore, useFingerprintCancellationStore } from './store/store';
 import { Repository, FileMetadata } from '../types/ObjectTypes';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Processes the fingerprint queue for the given repository.
@@ -15,25 +16,50 @@ export async function processFingerprintQueue(selectedRepository: Repository | n
     console.warn("No repository selected for fingerprinting.");
     return;
   }
-
-  // Loop until the queue is empty or processing is cancelled
   while (
     useFingerprintQueueStore.getState().fingerprintQueue.length > 0 &&
     !useFingerprintCancellationStore.getState().processingCancelled
   ) {
-    // Always get the latest queue state to ensure accuracy
     const queue: FileMetadata[] = useFingerprintQueueStore.getState().fingerprintQueue;
     const file = queue[0];
-
     try {
-      console.log(`Starting fingerprint generation for file: ${file.name}`);
       await fingerprintFileScript(selectedRepository, file);
-      console.log(`Fingerprint generated for file: ${file.name}`);
     } catch (error) {
       console.error(`Error fingerprinting file ${file.name}:`, error);
     }
-
-    // Remove the processed file from the queue
     useFingerprintQueueStore.getState().setQueue((currentQueue) => currentQueue.slice(1));
+  }
+}
+
+export async function getAutoFingerprintSetting(): Promise<boolean> {
+  try {
+    const settings = await invoke("get_app_settings_command") as {
+      general_auto_fingerprint: boolean;
+      audio_autoplay: boolean;
+      setup_selected_repository: string;
+    };
+    return settings.general_auto_fingerprint;
+  } catch (error) {
+    console.error("Failed to load app settings:", error);
+    return false;
+  }
+}
+
+export async function setAutoFingerprintSetting(value: boolean): Promise<void> {
+  try {
+    const currentSettings = await invoke("get_app_settings_command") as {
+      general_auto_fingerprint: boolean;
+      audio_autoplay: boolean;
+      setup_selected_repository: string;
+    };
+    await invoke("update_app_settings_command", {
+      args: {
+        general_auto_fingerprint: value,
+        audio_autoplay: currentSettings.audio_autoplay,
+        setup_selected_repository: currentSettings.setup_selected_repository,
+      }
+    });
+  } catch (error) {
+    console.error("Failed to update app settings:", error);
   }
 }

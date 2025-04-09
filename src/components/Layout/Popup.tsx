@@ -1,6 +1,4 @@
 // Popup.tsx
-// This component displays a modal popup that can contain any content.
-// It uses the Framer Motion library for animations.
 
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -28,7 +26,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
     };
 
     const popupStyle: React.CSSProperties = {
-        backgroundColor: '#202020',
+        backgroundColor: 'var(--colorLight',
         borderRadius: '8px',
         boxShadow: '0 2px 10px rgba(0,0,0,1)',
         maxHeight: '80%',
@@ -38,9 +36,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
     };
 
     return (
-        <motion.div style={overlayStyle} onClick={
-            () => setVisible(false)
-        }
+        <motion.div style={overlayStyle} onClick={() => setVisible(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

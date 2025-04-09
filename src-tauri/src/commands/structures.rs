@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AppSettings {
+    pub general_auto_fingerprint: bool,
+    pub general_theme: String,
+    pub audio_autoplay: bool,
+    pub setup_selected_repository: String,
+
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackedFolder {
     pub id: String,
     pub repo_id: String,
@@ -41,12 +50,4 @@ pub struct Repository {
     pub id: String,
     pub name: String,
     pub description: String,
-}
-
-// Data model for a single setting in the settings table
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Settings {
-    pub id: String,
-    pub setting: String,
-    pub value: String,
 }

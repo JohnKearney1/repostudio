@@ -7,7 +7,6 @@
     padding-left: 1rem;
     padding-right: 1rem;
     padding-bottom: 1rem;
-
 }
 
 .repo-info {
@@ -18,20 +17,20 @@
     gap: 1rem;
     padding: 1rem 0rem;
     padding-bottom: 0;
-    background-color: #202020;
+    background-color: var(--colorLight);
     border: none;
-    color: white;
+    color: var(--colorText);
     border-radius: 0.5rem;
 }
 
 .repo-desc {
-    background-color: #202020;
+    background-color: var(--colorLight);
     border: none;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    color: white;
+    color: var(--colorText);
     border-radius: 0.5rem;
     transition: background-color 0.3s;
     resize: none;
@@ -51,7 +50,7 @@
     position: sticky;
     top: 0;
     width: 100%;
-    background-color: #202020;
+    background-color: var(--colorLight);
     z-index: 1;
     padding: 1rem;
 }
@@ -69,8 +68,8 @@
     margin: 0;
     padding: 0.75rem;
     border: none;
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorDark);
+    color: var(--colorText);
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -85,8 +84,8 @@
 }
 
 .repo-btn2 {
-    background-color: #202020;
-    color: white;
+    background-color: var(--colorLight);
+    color: var(--colorText);
     border: none;
     cursor: pointer;
     width: 90%;
@@ -104,18 +103,18 @@
 }
 
 .repo-btn2:hover {
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
 }
 
 .repo-btn2.selected {
     color: rgb(43, 228, 43);
-    background-color: #2a2a2a;
+    background-color: var(--colorMid);
 }
 
 .repo-name-input {
-    background-color: #202020;
+    background-color: var(--colorLight);
     border: none;
-    color: white;
+    color: var(--colorText);
     border-radius: 0.5rem;
     width: 70%;
     font-size: 1.5rem;
@@ -133,7 +132,7 @@
     flex-direction: column;
     width: 100%;
     gap: 1rem;
-    background-color: #202020;
+    background-color: var(--colorLight);
     user-select: none;
   }
   
@@ -147,7 +146,7 @@
     right: 0%; 
     transform: translateY(-50%);
     background-color: #4caf50;
-    color: white;
+    color: var(--colorText);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;

@@ -1,7 +1,6 @@
 .ConsoleTab {
     display: flex;
     flex-direction: column;
-    /* width: 100%; */
     height: calc((var(--vh, 1vh) * 100) - 135px);
 }
 
@@ -20,22 +19,21 @@
     align-items: flex-start;
     padding: 0.5rem 0.25rem;
     gap: 0.5rem;
-    /* background-color: #1a1a1a; */
-    color: white;
+    color: var(--colorText);
     border-radius: 5px;
 }
 
 .message-timestamp {
     display: flex;
     font-size: 0.8rem;
-    color: #888;
+    color: var(--border-color);
     text-wrap: nowrap;
 }
 
 .message-text {
     flex: 1;
     font-size: 0.8rem;
-    color: white;
+    color: var(--colorText);
     
 }
 
@@ -51,8 +49,8 @@
     flex: 1;
     padding: 0.5rem;
     font-size: 0.8rem;
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorDark);
+    color: var(--colorText);
     border: none;
     border-radius: 0.5rem 0rem 0rem 0.5rem;
     outline: none;
@@ -64,8 +62,8 @@
     align-items: center;
     justify-content: center;
     padding: 0.5rem 0.5rem;
-    background-color: #1a1a1a;
-    color: white;
+    background-color: var(--colorDark);
+    color: var(--colorText);
     border: none;
     font-size: 0.8rem;
     cursor: pointer;
@@ -74,5 +72,5 @@
 }
 
 .console-send-button:hover {
-    background-color: #333;
+    background-color: var(--border-color);
 }

@@ -4,23 +4,24 @@
 // It also loads the repositories when the app starts.
 
 import "./App.css";
+import './Themes.css';
 import FilePane from "./components/MainWindow/FileBrowser/FilePane";
 import WindowBar from "./components/Layout/WindowBar";
 import PropertiesPane from "./components/MainWindow/TabComponents/PropertiesTab/PropertiesPane";
 import Popup from "./components/Layout/Popup";
 import { useEffect } from "react";
-import { usePopupStore, usePopupContentStore, useRightPanelContentStore } from "./scripts/store/store";
+import { usePopupStore, usePopupContentStore, useRightPanelContentStore, useThemeStore } from "./scripts/store/store";
 import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
 import Settings from "./components/MainWindow/TabComponents/SettingsTab/Settings";
 import { useTabStore } from "./scripts/store/store";
-import { CommitIcon, Cross2Icon, DesktopIcon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon } from "@radix-ui/react-icons";
+import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon, CounterClockwiseClockIcon, CodeIcon } from "@radix-ui/react-icons";
 import ActionsPane from "./components/MainWindow/TabComponents/ActionsTab/ActionsPane";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import ConsoleTab from "./components/MainWindow/TabComponents/ConsoleTab/ConsoleTab";
-import { useEventLoggerStore } from "./scripts/store/EventLogger";
 import EventLogTab from "./components/MainWindow/TabComponents/EventLog/EventLogTab";
+import { invoke } from "@tauri-apps/api/core";
 
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
@@ -33,17 +34,14 @@ const ComponentMap: Record<string, React.FC> = {
 
 const IconMap: Record<string, React.ReactNode> = {
   'InfoCircledIcon': <InfoCircledIcon />,
-  'RocketIcon': <RocketIcon />,
-  'GearIcon': <GearIcon />,
-  'DesktopIcon': <DesktopIcon />,
-  'CommitIcon': <CommitIcon />,
+  'ActionsIcon': <RocketIcon />,
+  'SettingsIcon': <GearIcon />,
+  'ConsoleIcon': <CodeIcon />,
+  'HistoryIcon': <CounterClockwiseClockIcon />,
   // Add other icons here
 };
 
 function App() {
-
-  const { addEvent } = useEventLoggerStore();
-
   useEffect(() => {
     useTabStore.getState().openTab({
       id: 'properties',
@@ -52,16 +50,22 @@ function App() {
       componentId: 'PropertiesPane'
     });
     useTabStore.getState().setActiveTab('properties');
-
-    addEvent({
-      timestamp: new Date().toISOString(),
-      text: 'app-start',
-      description: "The main window has mounted! This usually means the app is ready to use.",
-      status: 'info',
-    });
-
   }, []);
-  
+
+  useEffect(() => {
+    async function fetchSettings() {
+      // Get the current theme from the database
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        general_theme: string;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      document.body.className = currentSettings.general_theme;
+      useThemeStore.setState({ theme: currentSettings.general_theme });
+    }
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     const setVh = () => {
@@ -78,23 +82,17 @@ function App() {
   return <Home />;
 }
 
-
-
-
 function Home() {
   const { isVisible: isRepoSelectorVisible} = usePopupStore();
   const { content: popupContent } = usePopupContentStore();
   const { content: rightPanelContent, setContent } = useRightPanelContentStore();
 
-  
   useEffect(() => {
     if (!rightPanelContent) {
       setContent(<PropertiesPane />);
     }
     loadRepositoriesScript();
   }, []);
-
-  
 
   return (
     <div className="app">
@@ -120,34 +118,32 @@ function Home() {
 
 function TabBar() {
   const { tabs, activeTabId, closeTab, setActiveTab } = useTabStore();
-
   // List of all potential additional tabs
   const availableTabs = [
     {
       id: 'actions',
       name: 'Actions',
-      iconName: 'RocketIcon',
+      iconName: 'ActionsIcon',
       componentId: 'ActionsPane',
     },
     {
       id: 'console',
       name: 'Console',
-      iconName: 'DesktopIcon',
+      iconName: 'ConsoleIcon',
       componentId: 'Console',
+    },
+    {
+      id: 'event-log',
+      name: 'History',
+      iconName: 'HistoryIcon',
+      componentId: 'EventLog',
     },
     {
       id: 'settings',
       name: 'Settings',
-      iconName: 'GearIcon',
+      iconName: 'SettingsIcon',
       componentId: 'Settings',
-    },
-    {
-      id: 'event-log',
-      name: 'Event Log',
-      iconName: 'CommitIcon',
-      componentId: 'EventLog',
-    },
-    
+    }
   ];
 
   // Determine which of these tabs are not open

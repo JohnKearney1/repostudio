@@ -6,11 +6,11 @@
     align-items: center;
     flex-direction: column;
     gap: 0rem;
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
     padding: 0.5rem 0 0.5rem;
     width: 100%;
     user-select: none;
-    border-top: black 1px solid;
+    border-top: var(--border-color) 1px solid;
   }
   
 .audio-controls {
@@ -41,7 +41,7 @@
     border: none;
     border-radius: 100%;
     padding: 0.35rem;
-    color: #fff;
+    color: var(--colorText);
     cursor: pointer;
     transition: color 0.3s;
 
@@ -54,7 +54,7 @@
   }
   
   .audio-player button:hover {
-    color: #00a2ff;
+    color: var(--accent-1);
   }
 
   .audio-player button:active, .audio-player button:focus {
@@ -65,7 +65,7 @@
     -webkit-appearance: none;
     width: 100%;
     height: 8px;
-    background: #444;
+    background: var(--border-color);
     border-radius: 2px;
     outline: none;
     transition: background 0.3s;
@@ -77,7 +77,7 @@
     -webkit-appearance: none;
     width: 15px;
     height: 8px;
-    background: #00a2ff;
+    background: var(--accent-1);
     border-radius: 2px;
     cursor: pointer;
     transition: all 0.5s ease;
@@ -85,7 +85,7 @@
   
   .audio-player input[type="range"]::-webkit-slider-thumb:hover {
     -webkit-appearance: none;
-    background: white;
+    background: var(--accent-2);
     cursor: pointer;
     transition: all 0.2s ease;
   }
@@ -95,7 +95,7 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #3a9ed8;
+    background: var(--accent-1);
     cursor: pointer;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     transition: background 0.3s;
@@ -107,7 +107,7 @@
     text-wrap: nowrap;
     flex-direction: row;
     font-size: 0.75rem;
-    color: #ccc;
+    color: var(--colorText);
     min-width: 80px;
     text-align: right;
   }

@@ -6,24 +6,19 @@ import MetadataEditor from './MetadataEditor';
 import MultiMetadataEditor from './MultiMetadataEditor';
 
 const PropertiesPane: React.FC = () => {
-  
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
-
   interface IParseSystemTime {
     (str: string): Date | null;
   }
-
   const parseSystemTime: IParseSystemTime = (str: string): Date | null => {
     const match: RegExpMatchArray | null = str.match(/intervals:\s*(\d+)/);
     if (!match) return null;
     const fileTime: number = parseInt(match[1], 10);
-    // Convert Windows FILETIME to Unix timestamp (in ms)
     const unixTime: number = fileTime / 10000 - 11644473600000;
     return new Date(unixTime);
   };
   
-  // Usage:
   const createdDate = singleSelected ? parseSystemTime(singleSelected.date_created) : null;
   const modifiedDate = singleSelected ? parseSystemTime(singleSelected.date_modified) : null;
   
@@ -63,9 +58,6 @@ const PropertiesPane: React.FC = () => {
       </div>
     );
   }
-
-    // For multiple file selection:
-  // Compute unique encodings and the total combined size
   const uniqueEncodings = Array.from(
     new Set(selectedFiles.map(file => file.encoding).filter(Boolean))
   );
@@ -74,7 +66,6 @@ const PropertiesPane: React.FC = () => {
     0
   );
 
-  // Format the total size: display in MB if less than 1024 MB; otherwise, use GB.
   const totalSizeMB = totalSizeBytes / (1024 * 1024);
   const totalSizeDisplay = totalSizeMB < 1024 
     ? totalSizeMB.toFixed(2) + " MB" 
@@ -96,7 +87,6 @@ const PropertiesPane: React.FC = () => {
                 <h6>Size on Disk: </h6><h5>{totalSizeDisplay}</h5>
               </div>
             </div>
-            {/* Render the multi‑file metadata editor */}
             <MultiMetadataEditor />
           </div>
         </div>
@@ -106,21 +96,10 @@ const PropertiesPane: React.FC = () => {
 
   return (
     <div className="properties-pane">
-        {/* <div className="properties-header">
-          <div className="properties-header-icon">
-              <InfoCircledIcon width="20px" height="20px" />
-              <div className="properties-header-icon-bg">
-                <h4>Properties</h4>
-                <h5 style={{ overflow: 'hidden' }}>
-                  No files selected
-                </h5>
-              </div>
-            </div>
-        </div> */}
-        <div className="no-selection">
-          <h4 style={{ marginBottom: '0.5rem'}}>Nothing Selected...</h4>
-          <h5>Select a file from the list to view its properties</h5>
-        </div>
+      <div className="no-selection">
+        <h4 style={{ marginBottom: '0.5rem'}}>Nothing Selected...</h4>
+        <h5>Select a file from the list to view its properties</h5>
+      </div>
     </div>
   )
 };

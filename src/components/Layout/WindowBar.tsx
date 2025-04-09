@@ -9,7 +9,6 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 const WindowBar: React.FC = () => {
   const [appWindow, setAppWindow] = useState<WebviewWindow | null>(null);
 
-  // Initialize the current window
   useEffect(() => {
     const init = async () => {
       const currentWindow = getCurrentWebviewWindow();
@@ -18,7 +17,6 @@ const WindowBar: React.FC = () => {
     init();
   }, []);
 
-  // Handle dragging and double-click to maximize/minimize.
   const handleTitleBarMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.detail === 2 && appWindow) {
       appWindow.toggleMaximize();
@@ -27,7 +25,6 @@ const WindowBar: React.FC = () => {
     }
   };
 
-  // Window control button handlers
   const handleMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     appWindow?.minimize();
@@ -53,33 +50,6 @@ const WindowBar: React.FC = () => {
         <button className='window-title-container'>
           <img src={logo} alt='logo' className='windowbar-icon'/>
         </button>
-        {/* { appWindow?.label === 'main' && (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger
-              className='window-title-container'
-              onMouseDown={(e) => e.stopPropagation()}
-              asChild
-            >
-              <HamburgerMenuIcon color='white'/>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                onMouseDown={(e) => e.stopPropagation()}
-                sideOffset={11}
-                className='DropdownMenuContent'
-              >
-                <DropdownMenu.Item
-                  className='DropdownMenuItem'
-                  onSelect={() => handleNewWindow("main-2")}
-                >
-                  New Window
-                  <div className="RightSlot">⌘+W</div>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        )} */}
-
       </div>
       <div className='window-controls' style={{ gap: '0' }}>
         <div

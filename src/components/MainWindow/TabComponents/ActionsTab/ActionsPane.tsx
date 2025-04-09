@@ -11,7 +11,11 @@ import {
   UploadIcon,
 } from '@radix-ui/react-icons';
 import './ActionsPane.css';
-import { useFileStore, useFingerprintCancellationStore, useFingerprintQueueStore } from '../../../../scripts/store/store';
+import { useFileStore,
+  useFingerprintCancellationStore,
+  useFingerprintQueueStore
+} from '../../../../scripts/store/store';
+import { useEventLoggerStore } from '../../../../scripts/EventLogger';
 import { getVersion } from '@tauri-apps/api/app';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
@@ -19,7 +23,6 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { motion } from 'framer-motion';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -29,6 +32,7 @@ export default function ActionsPane() {
   const { cancelProcessing, resetCancellation } = useFingerprintCancellationStore.getState();
   const [version, setVersion] = useState<string | null>(null);
   const [bundleProgress, setBundleProgress] = useState<number | null>(null);
+  const addEvent = useEventLoggerStore((state) => state.addEvent);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -39,20 +43,15 @@ export default function ActionsPane() {
   }
   , []);
 
-  // Listen for bundling progress events from the backend.
   useEffect(() => {
-    // Listener for progress updates.
     const unlistenProgress = listen<any>("bundle_progress", (event) => {
-      // Update progress bar state based on the payload from the Rust event.
       if (event.payload && typeof event.payload.progress === 'number') {
         setBundleProgress(event.payload.progress);
       }
     });
 
-    // Listener for bundling completion.
     const unlistenCompleted = listen("bundle_completed", () => {
       setBundleProgress(100);
-      // Optionally clear the progress bar after a short delay.
       setTimeout(() => setBundleProgress(null), 1500);
     });
 
@@ -75,15 +74,11 @@ export default function ActionsPane() {
     console.log(`Added ${allFiles.length} files to the fingerprint queue.`);
   };
 
-  // Export Database: reads the current db file and saves it to a user chosen location
   const handleExportDatabase = async () => {
     try {
       const appData = await appDataDir();
-      // Construct the path to your database file
       const dbPath = `${appData}/RepoStudio_AppData/db.sqlite`;
-      // Read the database as binary
       const data = await readFile(dbPath);
-      // Open a save dialog so the user can choose where to export the file
       const savePath = await save({
         title: "Export Database",
         defaultPath: "db.sqlite",
@@ -91,53 +86,74 @@ export default function ActionsPane() {
       });
       if (savePath) {
         await writeFile(savePath, data);
+        addEvent({
+          timestamp: new Date().toISOString(),
+          text: "Export Database",
+          description: "Exported the SQLite Database successfully to: " + savePath,
+          status: "success"
+        });
         alert("Database exported successfully!");
       }
     } catch (e) {
       console.error(e);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Export Database",
+        description: "Something went wrong... Here's the info we have: " + e,
+        status: "error"
+      });
       alert("Failed to export database: " + e);
     }
   };
 
-  // Import Database: lets the user select a db file and then overwrites the current db file
   const handleImportDatabase = async () => {
     try {
-      // Open a file selection dialog
       const selected = await open({
         title: "Import Database",
         filters: [{ name: "SQLite Database", extensions: ["sqlite"] }],
         multiple: false,
       });
       if (selected && typeof selected === "string") {
-        // Read the selected file as binary
         const importedData = await readFile(selected);
         const appData = await appDataDir();
         const dbPath = `${appData}/RepoStudio_AppData/db.sqlite`;
-        // Overwrite the existing database with the imported data
+        addEvent({
+          timestamp: new Date().toISOString(),
+          text: "Import Database",
+          description: "Imported the database successfully! Might want to restart, just in case.",
+          status: "success"
+        });
         await writeFile(dbPath, importedData);
         alert("Database imported successfully! Please restart the application.");
       }
+      
     } catch (e) {
       console.error(e);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Import Database",
+        description: "Whoops... The database wasn't imported for some reason. Here's the info we have: " + e,
+        status: "error"
+      });
       alert("Failed to import database: " + e);
     }
   };
 
-  // New handler for the Bundle button that uses base64 conversion.
   const handleBundle = async () => {
     const selectedFiles = useFileStore.getState().selectedFiles;
     if (selectedFiles.length === 0) {
-      alert("Select one or more files to bundle! Nothing was selected this time.");
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Bundle Selected Files",
+        description: "Looks like no files were selected when you clicked the Bundle button. Select some files to bundle them!",
+        status: "warning"
+      });
       return;
     }
     try {
       const filePaths = selectedFiles.map(file => file.path);
       console.log("Selected files for bundling:", filePaths);
-
-      // Invoke the Rust command; note that it now returns a base64 string.
       const base64Zip: string = await invoke("bundle_files_command", { filePaths });
-      
-      // Decode the base64 string into a binary Uint8Array.
       const binaryString = atob(base64Zip);
       const len = binaryString.length;
       const zipData = new Uint8Array(len);
@@ -145,7 +161,6 @@ export default function ActionsPane() {
         zipData[i] = binaryString.charCodeAt(i);
       }
       
-      // Prompt the user to choose a save location.
       const savePath = await save({
         title: "Save Bundled Archive",
         defaultPath: "bundle.zip",
@@ -153,11 +168,21 @@ export default function ActionsPane() {
       });
       if (savePath) {
         await writeFile(savePath, zipData);
-        alert("Files bundled successfully!");
+        addEvent({
+          timestamp: new Date().toISOString(),
+          text: "Bundle Selected Files",
+          description: "Files bundled successfully!",
+          status: "success"
+        });
       }
     } catch (e: any) {
       console.error(e);
-      alert("Failed to bundle files: " + e);
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: "Bundle Selected Files",
+        description: "Failed to bundle files. Here's the info we have: " + e.message,
+        status: "error"
+      });
     }
   };
 
@@ -168,14 +193,13 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-          }}
-        >
+            borderBottom: '1px solid var(--border-color)',
+          }}>
           Repository Actions
         </h5>
 
         {fingerprintQueue.length > 0 ? (
-          <motion.button
+          <button
             className="actions-details-button"
             onClick={() => {
               clearQueue();
@@ -183,34 +207,33 @@ export default function ActionsPane() {
               console.log('Processing cancelled. Fingerprint queue cleared.');
               setTimeout(() => resetCancellation(), 100);
             }}
-            transition={{ type: 'spring', stiffness: 300 }}
           >
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LightningBoltIcon width={'15px'} height={'15px'} />
               Pause Processing
             </h4>
             <h5>Clears the Processing Queue</h5>
-          </motion.button>
+          </button>
         ) : (
-          <motion.button
+          <button
             className="actions-details-button"
             onClick={handleProcessRepository}
-            transition={{ type: 'spring', stiffness: 300 }}
+            disabled={allFiles.length === 0 || fingerprintQueue.length > 0}
           >
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LightningBoltIcon width={'15px'} height={'15px'} />
               Process Repository
             </h4>
             <h5>Generates Fingerprints for all Files</h5>
-          </motion.button>
+          </button>
         )}
 
         <h5
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           Selected Files
@@ -237,8 +260,6 @@ export default function ActionsPane() {
             </>
           )}
         </button>
-
-        {/* More buttons like Compress, Convert, Rename, etc. */}
         <button
           className="actions-details-button"
           onClick={() => {}}
@@ -274,8 +295,8 @@ export default function ActionsPane() {
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           System
@@ -291,13 +312,12 @@ export default function ActionsPane() {
           <h5>RS {version}</h5>
         </button>
 
-
         <h5
           style={{
             padding: '0.5rem',
             fontSize: '0.8rem',
-            borderBottom: '1px solid #2a2a2a',
-            borderTop: '1px solid #2a2a2a',
+            borderBottom: '1px solid var(--border-color)',
+            borderTop: '1px solid var(--border-color)',
           }}
         >
           Advanced

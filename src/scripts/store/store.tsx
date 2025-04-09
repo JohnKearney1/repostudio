@@ -9,6 +9,41 @@ import { persist } from 'zustand/middleware';
 // Import Types
 import { FileMetadata, Repository } from '../../types/ObjectTypes';
 
+
+// ------------------------------------------------------------------- //
+
+// Theme store
+
+export interface ThemeStore {
+  theme: string;
+  setTheme: (theme: string) => void;
+}
+
+export const useThemeStore = create<ThemeStore>((set) => ({
+  theme: 'theme-dark',
+  setTheme: (theme: string) => set({ theme }),
+}));
+
+
+
+// ------------------------------------------------------------------- //
+
+export interface AppSettings {
+  autoFingerprint: boolean;
+  audioAutoplay: boolean;
+  setupSelectedRepository: string;
+}
+export const useAppSettingsStore = create<AppSettings>((set) => ({
+  autoFingerprint: false,
+  audioAutoplay: false,
+  setupSelectedRepository: '',
+
+  setAutoFingerprint: (value: boolean) => set({ autoFingerprint: value }),
+  setAudioAutoplay: (value: boolean) => set({ audioAutoplay: value }),
+  setSetupSelectedRepository: (value: string) => set({ setupSelectedRepository: value }),
+}));
+
+
 // ------------------------------------------------------------------- //
 
 export interface Tab {

@@ -10,29 +10,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileMetadata } from '../../../../types/ObjectTypes';
 
 const MultiMetadataEditor: React.FC = () => {
-  // Get all selected files (for multi-edit)
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const repoId = useRepositoryStore((state) => state.selectedRepository?.id);
-
-  // Form fields – note: title and track number are intentionally omitted.
   const [metaComment, setMetaComment] = useState('');
   const [metaAlbumArtist, setMetaAlbumArtist] = useState('');
   const [metaAlbum, setMetaAlbum] = useState('');
   const [metaGenre, setMetaGenre] = useState('');
   const [customTags, setCustomTags] = useState('');
-
-  // Store initial common values so we can compare for unsaved changes.
   const [initialMetaComment, setInitialMetaComment] = useState('');
   const [initialMetaAlbumArtist, setInitialMetaAlbumArtist] = useState('');
   const [initialMetaAlbum, setInitialMetaAlbum] = useState('');
   const [initialMetaGenre, setInitialMetaGenre] = useState('');
   const [initialCustomTags, setInitialCustomTags] = useState('');
-
-  // Status and flag for displaying unsaved changes message
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [justSaved, setJustSaved] = useState(false);
 
-  // When selectedFiles change, pre-populate form fields if all files share the same metadata.
   useEffect(() => {
     if (selectedFiles.length === 0) {
       setMetaComment('');
@@ -74,15 +66,12 @@ const MultiMetadataEditor: React.FC = () => {
     setInitialCustomTags(newCustomTags);
   }, [selectedFiles]);
 
-  // Show unsaved changes only if a field differs from its initial value.
-  const unsavedChanges =
-    metaComment !== initialMetaComment ||
+  const unsavedChanges = metaComment !== initialMetaComment ||
     metaAlbumArtist !== initialMetaAlbumArtist ||
     metaAlbum !== initialMetaAlbum ||
     metaGenre !== initialMetaGenre ||
     customTags !== initialCustomTags;
 
-  // Auto-reset status (both 'success' and 'error') to 'idle' after 2 seconds
   useEffect(() => {
     if (status === 'success' || status === 'error') {
       const timer = setTimeout(() => {
@@ -92,7 +81,6 @@ const MultiMetadataEditor: React.FC = () => {
     }
   }, [status]);
 
-  // Clear the justSaved flag if there are no pending unsaved changes
   useEffect(() => {
     if (!unsavedChanges) {
       setJustSaved(false);
@@ -111,7 +99,6 @@ const MultiMetadataEditor: React.FC = () => {
     };
 
     try {
-      // Update each selected file with the new metadata
       for (const file of selectedFiles) {
         const updatedFile: FileMetadata = { ...file, ...formData };
         await invoke('update_file_command', { repoId, file: updatedFile });
@@ -180,7 +167,7 @@ const MultiMetadataEditor: React.FC = () => {
             ? { backgroundColor: '#00ff00' }
             : status === 'error'
             ? { backgroundColor: '#ff0000' }
-            : { backgroundColor: '#2a2a2a' }
+            : { backgroundColor: 'var(--colorMid)' }
         }
         transition={{ duration: 0.3 }}
       >

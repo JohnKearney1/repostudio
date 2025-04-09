@@ -3,11 +3,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './RepositorySelector.css';
 import { CubeIcon, PlusIcon, TrashIcon, CheckCircledIcon } from '@radix-ui/react-icons';
-import { useRepositoryStore } from '../../../scripts/store/store';
-import { Repository } from '../../../types/ObjectTypes';
-import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
+import { useRepositoryStore } from '../../../../scripts/store/store';
+import { Repository } from '../../../../types/ObjectTypes';
+import { deleteRepository, createRepository } from '../../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
+import { useEventLoggerStore } from '../../../../scripts/EventLogger';
+import { updateSelectedRepository } from '../../../../scripts/RepoOperations';
 
 const RepositorySelector: React.FC = () => {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -20,37 +21,53 @@ const RepositorySelector: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const confirmTimeoutRef = useRef<number | null>(null);
 
-  // Fetch repositories from backend and sync state/store.
   const fetchRepositories = async () => {
     try {
       const repos = await invoke<Repository[]>('get_repositories_command');
       setRepositories(repos);
       setRepoStore(repos);
-
-      if (repos.length > 0) {
-        const existing = repos.find((repo) => repo.id === selectedRepository?.id);
-        setSelectedRepository(existing || repos[0]);
-      } else {
-        setSelectedRepository(null);
-      }
     } catch (err) {
-      console.error('Failed to fetch repositories', err);
+      console.error('Failed to load repositories', err);
     }
   };
 
   useEffect(() => {
-    fetchRepositories();
-
-    // Listen for repository creation and deletion events
+    const initializeRepositories = async () => {
+      await fetchRepositories();
+      await fetchSelectedRepository();  // This must be called AFTER fetchRepositories
+    };
+  
+    initializeRepositories();
+  
     const unlistenCreate = listen('create_repository_completed', () => fetchRepositories());
     const unlistenDelete = listen('delete_repository_completed', () => fetchRepositories());
-
+  
     return () => {
       unlistenCreate.then((unlisten) => unlisten());
       unlistenDelete.then((unlisten) => unlisten());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  
+  const fetchSelectedRepository = async () => {
+    try {
+      const currentSettings = await invoke("get_app_settings_command") as {
+        general_auto_fingerprint: boolean;
+        audio_autoplay: boolean;
+        setup_selected_repository: string;
+      };
+      const selectedRepoId = currentSettings.setup_selected_repository;
+      if (!selectedRepoId) return; 
+  
+      const repo = repositories.find(r => r.id === selectedRepoId);
+      if (repo) {
+        setSelectedRepository(repo);  
+      }
+    } catch (err) {
+      console.error('Failed to load selected repository', err);
+    }
+  };
 
   const handleFieldChange = (updatedRepo: Repository) => {
     setSelectedRepository(updatedRepo);
@@ -83,7 +100,7 @@ const RepositorySelector: React.FC = () => {
       await createRepository(newId, 'New Repository', '');
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `new-repository`,
+        text: `Create Repository`,
         description: 'New repository created successfully: ' + newId,
         status: 'success',
       });
@@ -92,50 +109,71 @@ const RepositorySelector: React.FC = () => {
       console.error('Failed to create repository', err);
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `new-repository`,
+        text: `Create Repository`,
         description: 'Failed to create new repository: ' + newId,
         status: 'error',
       });
     }
   };
 
-  // Original deletion function
   const handleRemoveRepository = async () => {
     if (repositories.length <= 1) {
-      alert('Whoops! Make a new repository before you delete this one.');
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `Delete Repository`,
+        description: 'Cannot delete the last repository. Make another before you do!',
+        status: 'warning',
+      });
       return;
     }
 
     try {
-      await deleteRepository(selectedRepository?.id || '');
+      const deletedRepoId = selectedRepository?.id;
+      if (!deletedRepoId) return;
+      const deletedRepoIndex = repositories.findIndex(repo => repo.id === deletedRepoId);
+      await deleteRepository(deletedRepoId);
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `delete-repository`,
-        description: 'Repository deleted successfully: ' + selectedRepository?.id,
+        text: `Delete Repository`,
+        description: `Repository deleted successfully: ${deletedRepoId}`,
         status: 'success',
       });
+      await fetchRepositories();
+      let nextRepo: Repository | null = null;
+      if (repositories.length > 0) {
+        if (deletedRepoIndex < repositories.length - 1) {
+          nextRepo = repositories[deletedRepoIndex + 1];
+        } else {
+          nextRepo = repositories[deletedRepoIndex - 1];
+        }
+      }
+
+      if (nextRepo) {
+        await updateSelectedRepository(nextRepo);
+        const { setSelectedRepository } = useRepositoryStore.getState();
+        setSelectedRepository(nextRepo);
+      } else {
+        setSelectedRepository(null);
+      }
     }
     catch (err) {
       console.error('Failed to delete repository', err);
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `delete-repository`,
-        description: 'Failed to delete repository: ' + selectedRepository?.id,
+        text: `Delete Repository`,
+        description: `Failed to delete repository: ${selectedRepository?.id}`,
         status: 'error',
       });
     }
   };
 
-  // New handler for the delete button confirmation logic.
   const handleDeleteButtonClick = () => {
     if (!confirmDelete) {
       setConfirmDelete(true);
-      // Set a 2-second timer to reset the button
       confirmTimeoutRef.current = window.setTimeout(() => {
         setConfirmDelete(false);
       }, 2000);
     } else {
-      // User confirmed deletion by clicking again within 2 seconds
       if (confirmTimeoutRef.current) {
         clearTimeout(confirmTimeoutRef.current);
         confirmTimeoutRef.current = null;
@@ -154,7 +192,7 @@ const RepositorySelector: React.FC = () => {
     >
       <motion.div
         className='repo-btn-container'
-        style={{ borderBottom: '1px solid #333', justifyContent: 'center', alignItems: 'center' }}
+        style={{ borderBottom: '1px solid var(--border-color)', justifyContent: 'center', alignItems: 'center' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -223,7 +261,7 @@ const RepositorySelector: React.FC = () => {
           <motion.button
             onClick={handleDeleteButtonClick}
             className='repo-btn'
-            animate={{ backgroundColor: confirmDelete ? '#ff0000' : '#1a1a1a'}}
+            animate={{ backgroundColor: confirmDelete ? '#ff0000' : 'var(--colorDark)'}}
             transition={{ duration: 0.3 }}
           >
             <TrashIcon />
@@ -239,15 +277,18 @@ const RepositorySelector: React.FC = () => {
       >
           {repositories.map((repository) => (
             <RepoButton
-              key={repository.id}
-              repository={repository}
-              isSelected={selectedRepository?.id === repository.id}
-              onClick={() => {
-                if (!selectedRepository || selectedRepository.id !== repository.id) {
+            key={repository.id}
+            repository={repository}
+            isSelected={selectedRepository?.id === repository.id}
+            onClick={() => {
+              if (!selectedRepository || selectedRepository.id !== repository.id) {
+                updateSelectedRepository(repository).then(() => {
+                  const { setSelectedRepository } = useRepositoryStore.getState();
                   setSelectedRepository(repository);
-                }
-              }}
-            />
+                });
+              }
+            }}
+          />
           ))}
       </motion.div>
     </motion.div>

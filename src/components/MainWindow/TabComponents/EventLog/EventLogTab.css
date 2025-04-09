@@ -19,7 +19,7 @@
     flex-direction: column;
     padding: 0.5rem;
     border-radius: 0.5rem;
-    background-color: #202020;
+    background-color: var(--colorLight);
 }
 
 .event-item-content {
@@ -29,12 +29,12 @@
 }
 
 .event-item:hover {
-    background-color: #1a1a1a;
+    background-color: var(--colorDark);
 }
 
 .clear-log-btn {
     background-color: #ff4d4d;
-    color: white;
+    color: var(--colorText);
     border: none;
     padding: 0.5rem;
     border-radius: 0.5rem;

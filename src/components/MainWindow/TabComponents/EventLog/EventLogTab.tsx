@@ -1,21 +1,22 @@
 import { CheckCircledIcon, ChevronDownIcon, ChevronRightIcon, CrossCircledIcon, ExclamationTriangleIcon, InfoCircledIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons"
 import { motion, AnimatePresence } from "framer-motion"
-import { useEventLoggerStore } from "../../../../scripts/store/EventLogger"
+import { useEventLoggerStore } from "../../../../scripts/EventLogger"
 import { useState } from "react"
 import './EventLogTab.css'
 
 export default function EventLogTab() {
     const { events } = useEventLoggerStore()
-    // Store expanded state for each event using its index as key
     const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-
-    // Helper function to format ISO timestamp to hh:mm:ss
     const formatTime = (timestamp: string | number | Date) => {
         const date = new Date(timestamp);
-        return date.toTimeString().split(' ')[0]; // returns hh:mm:ss
+        return date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
     };
 
-    // Animation variants for event items
     const itemVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 },
@@ -56,22 +57,21 @@ export default function EventLogTab() {
                             exit="exit"
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             onClick={() => setExpanded(prev => ({ ...prev, [index]: !prev[index] }))}
-                            style={{ cursor: 'pointer', backgroundColor: expanded[index] ? '#1a1a1a' : 'transparent', gap: '0.5rem' }}
-                            whileHover={{ backgroundColor: '#1a1a1a'}}
+                            style={{ cursor: 'pointer', backgroundColor: expanded[index] ? 'var(--colorDark)' : 'transparent', gap: '0.5rem' }}
+                            whileHover={{ backgroundColor: 'var(--colorDark)'}}
                             whileTap={{ scale: 0.97 }}
                         >
                             <div className="event-item-content">
                                 <h4 className="event-title">
                                     {
                                         expanded[index] ? <ChevronDownIcon /> : <ChevronRightIcon />
-                                    } <div style={{color: "grey"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
+                                    } <div style={{color: "var(--border-color)"}}>{formatTime(event.timestamp)}</div> {event.text.toUpperCase()}
                                 </h4>
                                 <div className="event-status-icon">
                                     {event.status === "success" && <CheckCircledIcon color="limegreen"/>}
                                     {event.status === "error" && <CrossCircledIcon color="red" />}
                                     {event.status === "warning" && <ExclamationTriangleIcon color="orange" />}
                                     {event.status === "info" && <InfoCircledIcon color="teal" />}
-                                    {/* If event status is null, or anything else, show QuestionmarkCircledIcon */}
                                     {event.status === undefined && <QuestionMarkCircledIcon color="gray" />}
 
                                 </div>

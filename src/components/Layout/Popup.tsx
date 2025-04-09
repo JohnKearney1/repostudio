@@ -25,7 +25,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
-        backdropFilter: 'blur(5px)',
+        backdropFilter: 'blur(2px)',
     };
 
     const popupStyle: React.CSSProperties = {
@@ -36,6 +36,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
         overflowY: 'auto',
         padding: 0,
         margin: 0,
+        overflowX: 'hidden'
     };
 
     const windowBarStyle: React.CSSProperties = {

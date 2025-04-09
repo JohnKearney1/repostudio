@@ -205,7 +205,7 @@ export default function ActionsPane() {
           await relaunch();
         }
       } else {
-        alert("No updates available.");
+        alert("Hooray! You're already on the latest version: " + version);
       }
     } catch (error) {
       console.error("Error checking for updates:", error);

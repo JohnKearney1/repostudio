@@ -1,0 +1,101 @@
+.ConvertPopup {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.ConvertPopupContainer {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.25rem;
+}
+
+.list-item-popup {
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--colorDark);
+    padding: 0.25rem;
+    gap: 0.5rem;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.list-item-popup:hover {
+    background-color: var(--colorMid);
+    color: rgb(255, 53, 53);
+}
+
+.ConvertPopupDropdownContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.ConvertPopupDropdown {
+    width: 100%;
+    background-color: var(--colorDark);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    color: var(--colorText);
+    transition: all 0.2s ease-in-out;
+    border: 1px solid var(--border-color);
+}
+
+.ConvertPopupDropdown:hover {
+    background-color: var(--colorMid);
+    color: var(--colorText);
+}
+
+.ConvertPopupDropdown:focus {
+    outline: none;
+    background-color: var(--colorMid);
+    border: 1px solid var(--border-color);
+}
+
+.ConvertPopupButton {
+    background-color: var(--colorDark);
+    color: var(--colorText);
+    text-align: center;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: none;
+    font-size: 0.8rem;
+    gap: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ConvertPopupButton:hover {
+    background-color: var(--colorMid);
+}
+
+.ConvertPopupInput  {
+    background-color: var(--colorDark);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    color: var(--colorText);
+    transition: all 0.2s ease-in-out;
+    border: 1px solid var(--border-color);
+    width: 100%;
+}
+
+.ConvertPopupInput:hover {
+    background-color: var(--colorMid);
+    color: var(--colorText);
+}
+
+.ConvertPopupInput:focus {
+    outline: none;
+    background-color: var(--colorMid);
+    border: 1px solid var(--border-color);
+}

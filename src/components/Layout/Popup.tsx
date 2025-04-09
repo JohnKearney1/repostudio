@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import WindowBar from './WindowBar';
 
 interface PopupProps {
     isVisible: boolean;
@@ -20,6 +21,7 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
         height: '100%',
         backgroundColor: 'rgba(0,0,0,0.5)',
         display: 'flex',
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
@@ -36,16 +38,31 @@ const Popup: React.FC<PopupProps> = ({ isVisible, setVisible, children }) => {
         margin: 0,
     };
 
+    const windowBarStyle: React.CSSProperties = {
+        display: 'flex',
+        flex: 1,
+        zIndex: 1001,
+        width: '100%',
+        position: 'absolute',
+        top: 0,
+    };
+
     return (
-        <motion.div style={overlayStyle} onClick={() => setVisible(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-        >
-            <div style={popupStyle} onClick={(e) => e.stopPropagation()}>
-                {children}
+        <>
+            <div style={windowBarStyle}>
+                <WindowBar />
             </div>
-        </motion.div>
+            <motion.div style={overlayStyle} onClick={() => setVisible(false)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+            >
+
+                    <div style={popupStyle} onClick={(e) => e.stopPropagation()}>
+                        {children}
+                    </div>
+            </motion.div>
+        </>
     );
 };
 

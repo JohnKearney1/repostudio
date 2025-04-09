@@ -73,6 +73,7 @@
   background-color: var(--colorDark);
   color: var(--colorText);
   border-bottom: 1px solid var(--border-color);
+  width: 100%;
 }
 
 .window-title {

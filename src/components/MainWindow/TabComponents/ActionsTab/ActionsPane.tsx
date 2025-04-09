@@ -82,7 +82,6 @@ export default function ActionsPane() {
         addToQueue(file);
       }
     });
-    console.log(`Added ${allFiles.length} files to the fingerprint queue.`);
   };
 
   const handleExportDatabase = async () => {
@@ -163,7 +162,6 @@ export default function ActionsPane() {
     }
     try {
       const filePaths = selectedFiles.map(file => file.path);
-      console.log("Selected files for bundling:", filePaths);
       const base64Zip: string = await invoke("bundle_files_command", { filePaths });
       const binaryString = atob(base64Zip);
       const len = binaryString.length;

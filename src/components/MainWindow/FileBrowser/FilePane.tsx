@@ -26,7 +26,7 @@ import {
   useAppSettingsStore
 } from '../../../scripts/store/store';
 import RepositorySelector from '../RepositorySelector/RepositorySelector';
-import { processFingerprintQueue } from '../../../scripts/FingerprintProcessing';
+import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
 import { useStore } from 'zustand';
 

@@ -31,7 +31,6 @@ export async function processFingerprintQueue(selectedRepository: Repository | n
   }
 }
 
-
 export async function getAutoFingerprintSetting(): Promise<boolean> {
   try {
     const settings = await invoke("get_app_settings_command") as {

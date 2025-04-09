@@ -22,13 +22,13 @@ import {
   useRepositoryStore, 
   usePopupContentStore, 
   useFingerprintQueueStore,
-  useFingerprintCancellationStore
+  useFingerprintCancellationStore,
+  useAppSettingsStore
 } from '../../../scripts/store/store';
 import RepositorySelector from '../RepositorySelector/RepositorySelector';
-import { processFingerprintQueue } from '../../../scripts/fingerprintProcessing';
+import { processFingerprintQueue } from '../../../scripts/FingerprintProcessing';
 import { FileMetadata } from '../../../types/ObjectTypes';
-import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
-// import { updateSelectedRepository } from '../../../scripts/RepoOperations';
+import { useStore } from 'zustand';
 
 const FilePane: React.FC = () => {
   const selectedRepository = useRepositoryStore((state) => state.selectedRepository);
@@ -49,153 +49,166 @@ const FilePane: React.FC = () => {
   const [, setTrackedFolders] = useState<string[]>([]);
   const [isFingerprinting, setIsFingerprinting] = useState<boolean>(false);
   const processingCancelledRef = useFingerprintCancellationStore((state) => state.processingCancelled);
-  const { addEvent } = useEventLoggerStore();
+  const autoFingerprint = useStore(useAppSettingsStore, (state) => state.autoFingerprint);
+  const repoInitialized = useRef<string | null>(null);
+  const prevRepositoryRef = useRef(selectedRepository);
+  const ctrlKeyRef = useRef(false);
 
-  const handleOpenRepositorySelector = () => {
+  const handleOpenRepositorySelector = () => 
+  {
     setContent(<RepositorySelector />);
     setVisible(true);
   };
 
-
-  
-
-  const reloadFiles = async () => {
+  const reloadFiles = async () => 
+  {
     if (!selectedRepository) return;
-  
-    try {
-      // Refresh accessibility status before loading files
+    try 
+    {
       await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
-  
-      // Then reload files from the backend
       await loadFiles([]);
-    } catch (error) {
+    } 
+    catch (error) 
+    {
       console.error("Failed to reload files:", error);
     }
   };
 
-  // Keep the fingerprint queue in sync and update status messages
-  useEffect(() => {
+  useEffect(() => 
+  {
     if (!selectedRepository) return;
     const newQueue = fingerprintQueue.filter((file) => !file.audio_fingerprint);
-    if (newQueue.length !== fingerprintQueue.length) {
+    if (newQueue.length !== fingerprintQueue.length) 
+    {
       console.log(`Removed ${fingerprintQueue.length - newQueue.length} files from the fingerprint queue.`);
       setFingerprintQueue(newQueue);
     }
-    if (newQueue.length === 0 && isFingerprinting) {
+    if (newQueue.length === 0 && isFingerprinting) 
+    {
       setIsFingerprinting(false);
     }
-    if (newQueue.length > 0) {
+    if (newQueue.length > 0) 
+    {
       setProgressItemMessage(`Fingerprinting ${newQueue.length} File(s)...`);
     }
   }, [fingerprintQueue, selectedRepository, setFingerprintQueue, isFingerprinting]);
 
-  useEffect(() => {
+  useEffect(() => 
+  {
     if (!selectedRepository) return;
-    if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) {
+    if (fingerprintQueue.length > 0 && !isFingerprinting && !processingCancelledRef) 
+    {
       setIsFingerprinting(true);
       setProgressItemMessage(`Fingerprinting ${fingerprintQueue.length} File(s)...`);
-      processFingerprintQueue(selectedRepository).then(() => {
+      processFingerprintQueue(selectedRepository).then(() => 
+      {
         setIsFingerprinting(false);
         setProgressItemMessage('Done!');
         setTimeout(() => setProgressItemMessage(''), 2000);
       });
-    } else if (fingerprintQueue.length === 0) {
+    } 
+    else if (fingerprintQueue.length === 0) 
+    {
       setIsFingerprinting(false);
     }
   }, [fingerprintQueue, selectedRepository, isFingerprinting, processingCancelledRef]);
 
-  useEffect(() => {
-    const unlistenAdded = listen<string>("folder_file_added", async () => {
+  useEffect(() => 
+  {
+    const unlistenAdded = listen<string>("folder_file_added", async () => 
+    {
       console.log("File added! Refreshing repo + files...");
       await reloadFiles();
     });
   
-    const unlistenRemoved = listen<string>("folder_file_removed", async () => {
+    const unlistenRemoved = listen<string>("folder_file_removed", async () => 
+    {
       console.log("File removed! Refreshing repo + files...");
       await reloadFiles();
     });
   
-    return () => {
+    return () => 
+    {
       unlistenAdded.then((fn) => fn());
       unlistenRemoved.then((fn) => fn());
     };
   }, [selectedRepository]);
-  
-  // Store previous repository for detecting changes.
-  const prevRepositoryRef = useRef(selectedRepository);
-  const ctrlKeyRef = useRef(false);
 
-  useEffect(() => {
-    const refreshAndLoadFiles = async () => {
+  useEffect(() => 
+  {
+    const refreshAndLoadFiles = async () => 
+    {
       if (!selectedRepository) return;
-      try {
+      try 
+      {
         await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
         const preservedSelection = [...selectedFiles];
         loadFiles(preservedSelection);
-      } catch (error) {
+      } catch (error) 
+      {
         console.error("Failed to refresh and load files:", error);
       }
     };
   
-    if (!isFingerprinting && prevRepositoryRef.current?.id !== selectedRepository?.id) {
+    if (!isFingerprinting && prevRepositoryRef.current?.id !== selectedRepository?.id) 
+    {
       prevRepositoryRef.current = selectedRepository;
       refreshAndLoadFiles();
     }
   }, [selectedRepository, selectedFiles, isFingerprinting]);
 
-  const repoInitialized = useRef<string | null>(null);
-
-  useEffect(() => {
+  useEffect(() => 
+  {
     if (!selectedRepository) return;
     reloadFiles();
   }, [selectedRepository]);
 
+  useEffect(() => 
+  {
+    const initializeRepository = async () => 
+      {
+        const currentSettings = await invoke("get_app_settings_command") as 
+        {
+          general_auto_fingerprint: boolean;
+          audio_autoplay: boolean;
+          setup_selected_repository: string;
+        };
 
-useEffect(() => {
-  const initializeRepository = async () => {
-      const currentSettings = await invoke("get_app_settings_command")as {
-        general_auto_fingerprint: boolean;
-        audio_autoplay: boolean;
-        setup_selected_repository: string;
-      };
-      const selectedRepoId = currentSettings.setup_selected_repository;
+        const selectedRepoId = currentSettings.setup_selected_repository;
 
-      if (selectedRepoId) {
+        if (selectedRepoId) 
+        {
           const repositories = useRepositoryStore.getState().repositories;
           const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
-          if (selectedRepo) {
-              useRepositoryStore.getState().setSelectedRepository(selectedRepo);
+          if (selectedRepo) 
+          {
+            useRepositoryStore.getState().setSelectedRepository(selectedRepo);
           }
+        } 
+      };
+      if (!selectedRepository) 
+      {
+        initializeRepository();
       }
-  };
+  }, [selectedRepository]);
 
-  if (!selectedRepository) {
-      initializeRepository();
-  }
-}, [selectedRepository]);
-
-  
-  useEffect(() => {
-    if (!selectedRepository) {
+  useEffect(() => 
+  {
+    if (!selectedRepository) 
+    {
       setAllFiles([]);
       setSelectedFiles([]);
       setTrackedFolders([]);
       repoInitialized.current = null;
       return;
     }
-
     const repoId = selectedRepository.id;
-
-    if (repoInitialized.current === repoId) {
+    if (repoInitialized.current === repoId) 
+    {
       return;
     }
-
     repoInitialized.current = repoId;
-
     let cancelled = false;
-
-    
-
     const handleRepositoryInit = async () => {
       try {
         await invoke("refresh_files_in_repository_command", { repoId });
@@ -217,7 +230,8 @@ useEffect(() => {
     };
   }, [selectedRepository]);
 
-  const filteredFiles = useMemo(() => {
+  const filteredFiles = useMemo(() => 
+  {
     const lowerQuery = searchQuery.toLowerCase();
     return allFiles.filter((file) => {
       const nameMatch = file.name.toLowerCase().includes(lowerQuery);
@@ -226,46 +240,43 @@ useEffect(() => {
     });
   }, [allFiles, searchQuery]);
 
-  const loadFiles = async (preservedSelection: FileMetadata[]) => {
+  const loadFiles = async (preservedSelection: FileMetadata[]) => 
+  {
     const repoId = selectedRepository?.id;
-    if (!repoId) {
+    if (!repoId) 
+    {
       setAllFiles([]);
       setSelectedFiles([]);
       return;
     }
-    try {
+    try 
+    {
       await invoke("refresh_files_in_repository_command", { repoId: selectedRepository.id });
       const newFiles: FileMetadata[] = await invoke("get_files_in_repository_command", { repoId });
       setAllFiles(newFiles);
-      const preserved = preservedSelection.filter((file) =>
-        newFiles.some((newFile) => newFile.id === file.id)
-      );
+      const preserved = preservedSelection.filter((file) => newFiles.some((newFile) => newFile.id === file.id));
       setSelectedFiles(preserved);
-      addEvent({
-          timestamp: new Date().toISOString(),
-          text: 'file-refresh',
-          description: `Files in repository ${repoId} have been refreshed. You may see this message multiple times.`,
-          status: 'success',
-        });
-    } catch (error) {
-      addEvent({
-          timestamp: new Date().toISOString(),
-          text: 'file-refresh-error',
-          description: `Failed to refresh files in repository ${repoId}. Error: ${error instanceof Error ? error.message : String(error)}`,
-          status: 'error',
-        });
+    }
+    catch (error) 
+    {
       console.error("Failed to load files:", error);
     }
   };
 
-  const sortedFiles = useMemo(() => {
-    const sorted = [...filteredFiles].sort((a, b) => {
+  const sortedFiles = useMemo(() => 
+  {
+    const sorted = [...filteredFiles].sort((a, b) => 
+    {
       let comp = 0;
-      switch (sortOption) {
+      switch (sortOption) 
+      {
         case 'alphabetical':
+        {
           comp = a.name.localeCompare(b.name);
           break;
-        case 'dateCreated': {
+        }
+        case 'dateCreated': 
+        {
           const matchA = a.date_created.match(/intervals:\s*(\d+)/);
           const matchB = b.date_created.match(/intervals:\s*(\d+)/);
           const numA = matchA ? parseInt(matchA[1], 10) : 0;
@@ -273,7 +284,8 @@ useEffect(() => {
           comp = numA - numB;
           break;
         }
-        case 'dateModified': {
+        case 'dateModified': 
+        {
           const matchA = a.date_modified.match(/intervals:\s*(\d+)/);
           const matchB = b.date_modified.match(/intervals:\s*(\d+)/);
           const numA = matchA ? parseInt(matchA[1], 10) : 0;
@@ -282,29 +294,32 @@ useEffect(() => {
           break;
         }
         case 'encoding':
+        {
           comp = a.encoding.localeCompare(b.encoding);
           break;
+        }
+
         default:
+        {
           comp = 0;
+        }
       }
       return sortOrder === 'asc' ? comp : -comp;
     });
     return sorted;
   }, [filteredFiles, sortOption, sortOrder]);
 
-  const handleFileAdd = async () => {
-    try {
-      if (!selectedRepository) {
+  const handleFileAdd = async () => 
+  {
+    try 
+    {
+      if (!selectedRepository) 
+      {
         console.warn("No repository selected!");
-        addEvent({
-          timestamp: new Date().toISOString(),
-          text: 'file-add-error',
-          description: 'Failed to add file: No repository selected.',
-          status: 'error',
-        });
         return;
       }
-      const selected = await open({
+      const selected = await open
+      ({
         multiple: false,
         filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'aac'] }],
       });
@@ -312,37 +327,33 @@ useEffect(() => {
       const filePath = selected;
       setProgressItemMessage('Adding File...');
       await fileAddScript(selectedRepository, filePath);
-      addEvent({
-        timestamp: new Date().toISOString(),
-        text: 'file-add',
-        description: `File ${filePath} added to repository ${selectedRepository.id}.`,
-        status: 'success',
-      });
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
-    } catch (error) {
-      addEvent({
-        timestamp: new Date().toISOString(),
-        text: 'file-add-error',
-        description: `Failed to add file: ${error instanceof Error ? error.message : String(error)}`,
-        status: 'error',
-      });
+    } 
+    catch (error) 
+    {
       console.error("Failed to add file:", error);
       setProgressItemMessage('');
     }
   };
 
-  const getAllAudioFilesRecursively = async (directory: string): Promise<string[]> => {
+  const getAllAudioFilesRecursively = async (directory: string): Promise<string[]> => 
+  {
     const entries = await readDir(directory);
     const audioExtensions = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
     const files: string[] = [];
-    for (const entry of entries) {
-      if ('children' in entry && (entry as any).children && (entry as any).children.length > 0) {
+    for (const entry of entries) 
+    {
+      if ('children' in entry && (entry as any).children && (entry as any).children.length > 0) 
+      {
         const nestedFiles = await getAllAudioFilesRecursively(`${directory}/${entry.name}`);
         files.push(...nestedFiles);
-      } else if (entry.name) {
+      } 
+      else if (entry.name) 
+      {
         const ext = entry.name.split('.').pop()?.toLowerCase();
-        if (ext && audioExtensions.includes(ext)) {
+        if (ext && audioExtensions.includes(ext)) 
+        {
           files.push(`${directory}/${entry.name}`);
         }
       }
@@ -350,72 +361,91 @@ useEffect(() => {
     return files;
   };
 
-  const handleFolderAdd = async () => {
-    try {
-      if (!selectedRepository) {
+  const handleFolderAdd = async () => 
+  {
+    try
+    {
+      if (!selectedRepository) 
+      {
         console.warn("No repository selected!");
         return;
       }
-  
-      const selectedDir = await open({
+      const selectedDir = await open
+      ({
         directory: true,
         multiple: false,
         recursive: true,
       });
       if (!selectedDir) return;
-  
       const audioFiles = await getAllAudioFilesRecursively(selectedDir);
       setProgressItemMessage(`Adding ${audioFiles.length} Files...`);
-      for (const filePath of audioFiles) {
+      for (const filePath of audioFiles) 
+      {
         await fileAddScript(selectedRepository, filePath);
       }
   
-      await invoke("watch_folder_command", {
+      await invoke("watch_folder_command", 
+      {
         repoId: selectedRepository.id,
         folderPath: selectedDir
       });
       
-      const folders: string[] = await invoke("get_tracked_folders_command", {
+      const folders: string[] = await invoke("get_tracked_folders_command", 
+      {
         repoId: selectedRepository.id
       });
       setTrackedFolders(folders);
-      
       setProgressItemMessage('Done!');
       setTimeout(() => setProgressItemMessage(''), 2000);
   
-    } catch (error) {
+    }
+    catch (error) 
+    {
       console.error("Failed to add folder:", error);
       setProgressItemMessage('');
     }
   };
   
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => 
+  {
     ctrlKeyRef.current = e.ctrlKey || e.metaKey;
   }, []);
 
   const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => {
-      setSelectedFiles((prevSelected) => {
+    (e: React.MouseEvent<HTMLDivElement>, file: FileMetadata, index: number) => 
+      {
+      setSelectedFiles((prevSelected) => 
+        {
         let newSelection: FileMetadata[] = [];
-        if (e.shiftKey) {
+        if (e.shiftKey) 
+          {
           const currentAnchor = anchorIndex !== null ? anchorIndex : index;
           setAnchorIndex(currentAnchor);
           setLastSelectedIndex(index);
-          newSelection = sortedFiles.slice(
+          newSelection = sortedFiles.slice
+          (
             Math.min(currentAnchor, index),
             Math.max(currentAnchor, index) + 1
           );
-        } else if (ctrlKeyRef.current) {
-          if (prevSelected.some((f) => f.id === file.id)) {
+        } 
+        else if (ctrlKeyRef.current) 
+        {
+          if (prevSelected.some((f) => f.id === file.id))
+          {
             newSelection = prevSelected.filter((f) => f.id !== file.id);
-          } else {
+          }
+          else
+          {
             newSelection = [...prevSelected, file];
-            if (prevSelected.length === 0) {
+            if (prevSelected.length === 0) 
+            {
               setAnchorIndex(index);
             }
           }
           setLastSelectedIndex(index);
-        } else {
+        }
+        else
+        {
           setAnchorIndex(index);
           setLastSelectedIndex(index);
           newSelection = [file];
@@ -423,12 +453,17 @@ useEffect(() => {
         return newSelection;
       });
       ctrlKeyRef.current = false;
-      if (!file.accessible) {
+      // This is the logic that controls the fingerprinting queue when a file is clicked
+      if (!autoFingerprint) return;
+      if (!file.accessible) 
+      {
         console.warn(`Skipping fingerprinting for inaccessible file: ${file.name}`);
         return;
       }
-      if (!file.audio_fingerprint && selectedRepository) {
-        if (fingerprintQueue.some((queuedFile) => queuedFile.id === file.id)) {
+      if (!file.audio_fingerprint && selectedRepository)
+      {
+        if (fingerprintQueue.some((queuedFile) => queuedFile.id === file.id))
+        {
           console.warn(`File ${file.name} is already in the fingerprint queue.`);
           return;
         }
@@ -438,7 +473,8 @@ useEffect(() => {
     [sortedFiles, anchorIndex, selectedRepository, setSelectedFiles]
   );
 
-  const truncateFileName = (fileName: string): string => {
+  const truncateFileName = (fileName: string): string => 
+  {
     const lastDotIndex = fileName.lastIndexOf('.');
     const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.slice(0, lastDotIndex);
     return nameWithoutExtension.length > 35
@@ -447,15 +483,18 @@ useEffect(() => {
   };
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+    (e: React.KeyboardEvent<HTMLDivElement>) => 
+    {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') 
+      {
         e.preventDefault();
         setSelectedFiles(sortedFiles);
         setAnchorIndex(0);
         setLastSelectedIndex(sortedFiles.length - 1);
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') 
+      {
         e.preventDefault();
         setSelectedFiles([]);
         return;
@@ -466,23 +505,31 @@ useEffect(() => {
       e.preventDefault();
       let currentIndex = lastSelectedIndex !== null ? lastSelectedIndex : 0;
       let newIndex = currentIndex;
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'ArrowDown') 
+      {
         newIndex = Math.min(sortedFiles.length - 1, currentIndex + 1);
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === 'ArrowUp') 
+      {
         newIndex = Math.max(0, currentIndex - 1);
       }
-      if (e.shiftKey) {
-        if (anchorIndex === null) {
+      if (e.shiftKey) 
+      {
+        if (anchorIndex === null) 
+        {
           setAnchorIndex(newIndex);
           setLastSelectedIndex(newIndex);
           setSelectedFiles([sortedFiles[newIndex]]);
-        } else {
+        }
+        else 
+        {
           const start = Math.min(anchorIndex, newIndex);
           const end = Math.max(anchorIndex, newIndex);
           setLastSelectedIndex(newIndex);
           setSelectedFiles(sortedFiles.slice(start, end + 1));
         }
-      } else {
+      }
+      else
+      {
         setAnchorIndex(newIndex);
         setLastSelectedIndex(newIndex);
         setSelectedFiles([sortedFiles[newIndex]]);
@@ -491,17 +538,17 @@ useEffect(() => {
     [sortedFiles, anchorIndex, lastSelectedIndex, setSelectedFiles]
   );
 
-
-  useEffect(() => {
-    // Listen for changes in the selected repository from Zustand
-    const unsubscribe = useRepositoryStore.subscribe((state) => {
+  useEffect(() => 
+  {
+    const unsubscribe = useRepositoryStore.subscribe((state) => 
+    {
       const newSelectedRepository = state.selectedRepository;
-  
-      if (newSelectedRepository) {
-        console.log("Detected repository change in FilePane. Reloading files for repo:", newSelectedRepository.id);
+      if (newSelectedRepository) 
+      {
         reloadFiles();
-      } else {
-        console.log("No repository selected. Clearing files.");
+      } 
+      else
+      {
         setAllFiles([]);
         setSelectedFiles([]);
       }
@@ -509,7 +556,6 @@ useEffect(() => {
   
     return () => unsubscribe();
   }, [setAllFiles, setSelectedFiles, reloadFiles]);
-
   
   return (
     <div className="file-pane">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { getAutoFingerprintSetting, setAutoFingerprintSetting } from "../../../../../scripts/FingerprintProcessing";
+import { useAppSettingsStore } from "../../../../../scripts/store/store";
 
 export default function STGeneral() {
   const [autoFingerprint, setAutoFingerprint] = useState<boolean>(false);
@@ -9,12 +10,7 @@ export default function STGeneral() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const settings = await invoke("get_app_settings_command") as {
-            general_auto_fingerprint: boolean;
-            audio_autoplay: boolean;
-            setup_selected_repository: string;
-        };
-        setAutoFingerprint(settings.general_auto_fingerprint);
+        setAutoFingerprint(await getAutoFingerprintSetting());
       } catch (error) {
         console.error("Failed to load app settings:", error);
       } finally {
@@ -32,21 +28,9 @@ export default function STGeneral() {
     setAutoFingerprint(checked);
   
     try {
-      // Retrieve the current settings to ensure you have the most recent state
-      const currentSettings = await invoke("get_app_settings_command") as {
-          general_auto_fingerprint: boolean;
-          audio_autoplay: boolean;
-          setup_selected_repository: string;
-      };
-  
-      await invoke("update_app_settings_command", {
-        args: {
-          general_auto_fingerprint: checked,
-          audio_autoplay: currentSettings.audio_autoplay,
-          setup_selected_repository: currentSettings.setup_selected_repository,
-        }
-      });
-      
+      await setAutoFingerprintSetting(checked);
+      useAppSettingsStore.setState({ autoFingerprint: checked });
+
     } catch (error) {
       console.error("Failed to update app settings:", error);
     }

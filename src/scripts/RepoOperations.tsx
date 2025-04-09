@@ -121,8 +121,6 @@ export const updateSelectedRepository = async (repo: Repository) => {
       setup_selected_repository: string;
     };
      
-    console.log('updating selected repository to:', repo.id);
-
     await invoke('update_app_settings_command', { 
       args: {
         general_auto_fingerprint: currentSettings.general_auto_fingerprint,
@@ -132,7 +130,6 @@ export const updateSelectedRepository = async (repo: Repository) => {
     });
 
     setSelectedRepository(repo); 
-    console.log('Selected repository updated in store:', repo.id);
   } catch (err) {
     console.error('Failed to update selected repository', err);
   }

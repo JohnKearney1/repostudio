@@ -7,7 +7,7 @@ import { useRepositoryStore } from '../../../scripts/store/store';
 import { Repository } from '../../../types/ObjectTypes';
 import { deleteRepository, createRepository } from '../../../scripts/RepoOperations';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEventLoggerStore } from '../../../scripts/store/EventLogger';
+import { useEventLoggerStore } from '../../../scripts/EventLogger';
 import { updateSelectedRepository } from '../../../scripts/RepoOperations';
 
 const RepositorySelector: React.FC = () => {
@@ -21,7 +21,6 @@ const RepositorySelector: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const confirmTimeoutRef = useRef<number | null>(null);
 
-  // Fetch repositories from backend and sync state/store.
   const fetchRepositories = async () => {
     try {
       const repos = await invoke<Repository[]>('get_repositories_command');
@@ -58,9 +57,6 @@ const RepositorySelector: React.FC = () => {
         audio_autoplay: boolean;
         setup_selected_repository: string;
       };
-
-      console.log('fetching repository:', currentSettings);
-      
       const selectedRepoId = currentSettings.setup_selected_repository;
       if (!selectedRepoId) return; 
   
@@ -72,9 +68,6 @@ const RepositorySelector: React.FC = () => {
       console.error('Failed to load selected repository', err);
     }
   };
-  
-  
-
 
   const handleFieldChange = (updatedRepo: Repository) => {
     setSelectedRepository(updatedRepo);
@@ -107,7 +100,7 @@ const RepositorySelector: React.FC = () => {
       await createRepository(newId, 'New Repository', '');
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `new-repository`,
+        text: `Create Repository`,
         description: 'New repository created successfully: ' + newId,
         status: 'success',
       });
@@ -116,50 +109,41 @@ const RepositorySelector: React.FC = () => {
       console.error('Failed to create repository', err);
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `new-repository`,
+        text: `Create Repository`,
         description: 'Failed to create new repository: ' + newId,
         status: 'error',
       });
     }
-
   };
 
   const handleRemoveRepository = async () => {
     if (repositories.length <= 1) {
-      alert('Whoops! Make a new repository before you delete this one.');
+      addEvent({
+        timestamp: new Date().toISOString(),
+        text: `Delete Repository`,
+        description: 'Cannot delete the last repository. Make another before you do!',
+        status: 'warning',
+      });
       return;
     }
 
     try {
       const deletedRepoId = selectedRepository?.id;
-      
       if (!deletedRepoId) return;
-
-      // Determine the index of the repository being deleted
       const deletedRepoIndex = repositories.findIndex(repo => repo.id === deletedRepoId);
-
-      // Remove the repository from the list
       await deleteRepository(deletedRepoId);
-
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `delete-repository`,
+        text: `Delete Repository`,
         description: `Repository deleted successfully: ${deletedRepoId}`,
         status: 'success',
       });
-
-      // Fetch updated repository list
       await fetchRepositories();
-      
-      // Determine which repository to select next
       let nextRepo: Repository | null = null;
-
       if (repositories.length > 0) {
         if (deletedRepoIndex < repositories.length - 1) {
-          // Select the next repository in the list
           nextRepo = repositories[deletedRepoIndex + 1];
         } else {
-          // Select the previous repository if no next exists
           nextRepo = repositories[deletedRepoIndex - 1];
         }
       }
@@ -169,30 +153,27 @@ const RepositorySelector: React.FC = () => {
         const { setSelectedRepository } = useRepositoryStore.getState();
         setSelectedRepository(nextRepo);
       } else {
-        setSelectedRepository(null); // No repositories left
+        setSelectedRepository(null);
       }
     }
     catch (err) {
       console.error('Failed to delete repository', err);
       addEvent({
         timestamp: new Date().toISOString(),
-        text: `delete-repository`,
+        text: `Delete Repository`,
         description: `Failed to delete repository: ${selectedRepository?.id}`,
         status: 'error',
       });
     }
   };
 
-  // New handler for the delete button confirmation logic.
   const handleDeleteButtonClick = () => {
     if (!confirmDelete) {
       setConfirmDelete(true);
-      // Set a 2-second timer to reset the button
       confirmTimeoutRef.current = window.setTimeout(() => {
         setConfirmDelete(false);
       }, 2000);
     } else {
-      // User confirmed deletion by clicking again within 2 seconds
       if (confirmTimeoutRef.current) {
         clearTimeout(confirmTimeoutRef.current);
         confirmTimeoutRef.current = null;
@@ -302,7 +283,6 @@ const RepositorySelector: React.FC = () => {
             onClick={() => {
               if (!selectedRepository || selectedRepository.id !== repository.id) {
                 updateSelectedRepository(repository).then(() => {
-                  // Ensure the store is updated after the database operation
                   const { setSelectedRepository } = useRepositoryStore.getState();
                   setSelectedRepository(repository);
                 });

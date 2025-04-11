@@ -129,12 +129,12 @@
 .selected {
     background-color: var(--border-color);
     /* Green left border */
-    border-left: 3px solid #00ff00;
+    border-left: 3px solid var(--accent-1);
 }
 
 .inaccessible {
     background-color: var(--colorMid);
-    border-left: 3px solid #fbff00;
+    border-left: 3px solid var(--accent-2);
 }
 
 .list-item.inaccessible.selected {

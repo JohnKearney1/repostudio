@@ -8,7 +8,7 @@ use crate::commands::structures::FileMetadata;
 use tauri::{Emitter, Window};
 
 /// Refreshes all file records for a single repository.
-pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> {
+pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
     let files = get_files_in_repository(repo_id)?;
     for file in files {
         let path = Path::new(&file.path);
@@ -53,7 +53,7 @@ pub fn refresh_files_in_repository(repo_id: &str) -> Result<(), Box<dyn Error>> 
 }
 
 /// Refreshes file records for ALL repositories in the database.
-pub fn refresh_files_in_all_repositories() -> Result<(), Box<dyn Error>> {
+pub fn refresh_files_in_all_repositories() -> Result<(), Box<dyn Error + Send + Sync>> {
     let repos = get_repositories()?;
     for repo in repos {
         refresh_files_in_repository(&repo.id)?;

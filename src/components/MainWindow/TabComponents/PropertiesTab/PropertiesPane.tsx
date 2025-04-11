@@ -1,13 +1,18 @@
 import React from 'react';
-import { CheckCircledIcon, CrossCircledIcon } from '@radix-ui/react-icons';
+import { CheckCircledIcon, CrossCircledIcon, FileIcon } from '@radix-ui/react-icons';
 import './PropertiesPane.css';
 import { useFileStore } from '../../../../scripts/store/store';
 import MetadataEditor from './MetadataEditor';
 import MultiMetadataEditor from './MultiMetadataEditor';
+import { invoke } from '@tauri-apps/api/core';
+import { FileMetadata } from '../../../../types/ObjectTypes';
+import { useRepositoryStore } from '../../../../scripts/store/store';
 
 const PropertiesPane: React.FC = () => {
   const selectedFiles = useFileStore((state) => state.selectedFiles);
   const singleSelected = selectedFiles.length === 1 ? selectedFiles[0] : null;
+  const selectedRepo = useRepositoryStore((state) => state.selectedRepository);
+
   interface IParseSystemTime {
     (str: string): Date | null;
   }
@@ -19,6 +24,7 @@ const PropertiesPane: React.FC = () => {
     return new Date(unixTime);
   };
   
+
   const createdDate = singleSelected ? parseSystemTime(singleSelected.date_created) : null;
   const modifiedDate = singleSelected ? parseSystemTime(singleSelected.date_modified) : null;
   
@@ -45,8 +51,37 @@ const PropertiesPane: React.FC = () => {
               </div>
             ) : (
               <div className="prop-detail">
-                <h5>Warning: This file is not currently accessible...</h5>
+                <div>
+                  <h6>Warning: This file is not currently accessible...</h6>
+                  <br />
+                  <h5>Replace it in the original destination, or remove the outdated reference.</h5>
+                  <br />
+                  <h5>Renamed it from another app? Try adding it again from the file manager!</h5>
+                </div>
+                <button
+                  className='remove-file-btn'
+                  onClick={async () => {
+                    if (!singleSelected) return;
+                    try {
+                      await invoke("delete_file_command", {
+                        repoId: selectedRepo?.id, 
+                        fileId: singleSelected.id
+                      });
+                      const allFiles: FileMetadata[] = await invoke("get_files_in_repository_command", {
+                        repoId: selectedRepo?.id
+                      });
+                      useFileStore.getState().setAllFiles(allFiles);
+                      useFileStore.getState().setSelectedFiles([]);
+                    } catch (error) {
+                      console.error("Failed to delete file:", error);
+                    }
+                  }}
+                >
+                  <CrossCircledIcon color='red' style={{ marginRight: '0.5rem' }} />
+                  Remove
+                </button>
               </div>
+
             )}
           </div>
         ) : (
@@ -77,14 +112,15 @@ const PropertiesPane: React.FC = () => {
         <div className="properties-details">
           <div className="file-info" style={{ padding: '0.5rem' }}>
             <div className="fileinfo-detail">
+              <h6><FileIcon />{selectedFiles.length} Files Selected</h6>
               <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                Encodings: 
+                <h6>Encodings: </h6>
                 <h5>
                   {uniqueEncodings.length} ({uniqueEncodings.join(", ")})
                 </h5>
               </div>
               <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <h6>Size on Disk: </h6><h5>{totalSizeDisplay}</h5>
+                <h6>Cumulative Size on Disk: </h6><h5>{totalSizeDisplay}</h5>
               </div>
             </div>
             <MultiMetadataEditor />

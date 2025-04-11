@@ -193,7 +193,7 @@ async fn convert_audio_file(
     let original_stem = input_path.file_stem().unwrap().to_string_lossy();
     let original_parent = input_path.parent().unwrap();
 
-    let output_temp = original_parent.join(format!("{}_converted.{}", original_stem, target_format));
+    let output_temp = original_parent.join(format!("{}_converted5334112025.{}", original_stem, target_format));
     let final_output = original_parent.join(format!("{}.{}", original_stem, target_format));
 
     // Step 2: Select codec arguments based on desired format

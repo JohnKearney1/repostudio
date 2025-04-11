@@ -20,7 +20,7 @@ pub fn watch_folder(
     folder_path: String,
 ) -> notify::Result<()> {
     let path = PathBuf::from(folder_path.clone());
-
+    
     // 1. Lock only for the check
     {
         let watchers = WATCHERS.lock().unwrap();
@@ -99,6 +99,14 @@ pub fn watch_folder(
 }
 
 fn handle_new_file(window: WebviewWindow, repo_id: &str, path: PathBuf) {
+
+    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+        if stem.ends_with("_converted5334112025") {
+            println!("Ignoring folder with '_converted5334112025' suffix: {}", stem);
+            return; // Ignore this file
+        }
+    }
+
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         let audio_extensions = ["mp3", "wav", "flac", "ogg", "aac"];
         if audio_extensions.contains(&ext.to_lowercase().as_str()) {

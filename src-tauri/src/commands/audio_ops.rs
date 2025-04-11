@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
-
+use crate::commands::structures::FileMetadata;
 use rusty_chromaprint::Configuration;
 use rusty_chromaprint::Fingerprinter;
 use symphonia::core::audio::SampleBuffer;
@@ -11,11 +11,14 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::default::{get_codecs, get_probe};
-
-use tauri::{Emitter, Window};
-
 use crate::commands::db::update_file;
-use crate::commands::structures::FileMetadata;
+
+use tauri::{Emitter, Window, AppHandle};
+use std::fs;
+use tauri_plugin_shell::ShellExt;
+use crate::commands::db::{get_file, delete_file, create_file};
+use crate::commands::file_ops::get_audio_metadata_from_file;
+use uuid::Uuid;
 
 /// Generates an audio fingerprint for a given file and updates its record in the database.
 pub fn generate_audio_fingerprint_for_file(
@@ -157,4 +160,90 @@ pub async fn generate_audio_fingerprint_for_file_command(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Tauri command to convert an audio file to a new format using ffmpeg sidecar.
+#[tauri::command]
+pub async fn convert_audio_file_command(
+    app: AppHandle,
+    window: Window,
+    repo_id: String,
+    file_id: String,
+    target_format: String,
+) -> Result<(), String> {
+    convert_audio_file(&app, &window, &repo_id, &file_id, &target_format)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+
+/// Actual conversion logic, to be run in spawn_blocking.
+async fn convert_audio_file(
+    app: &AppHandle,
+    window: &Window,
+    repo_id: &str,
+    file_id: &str,
+    target_format: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    window.emit("conversion_progress", format!("Starting conversion for {}", file_id)).ok();
+
+    // Step 1: Fetch file metadata from DB
+    let file = get_file(repo_id, file_id)?;
+    let input_path = Path::new(&file.path);
+    let original_stem = input_path.file_stem().unwrap().to_string_lossy();
+    let original_parent = input_path.parent().unwrap();
+
+    let output_temp = original_parent.join(format!("{}_converted.{}", original_stem, target_format));
+    let final_output = original_parent.join(format!("{}.{}", original_stem, target_format));
+
+    // Step 2: Select codec arguments based on desired format
+    let codec_args = match target_format.to_lowercase().as_str() {
+        "mp3" => vec!["-acodec", "libmp3lame"],
+        "flac" => vec!["-acodec", "flac"],
+        "wav" => vec!["-acodec", "pcm_s16le"],
+        "ogg" => vec!["-acodec", "libvorbis"],
+        "aac" => vec!["-acodec", "aac"],
+        "m4a" => vec!["-acodec", "aac"],
+        _ => vec![],
+    };
+
+    // Step 3: Run ffmpeg sidecar
+    let ffmpeg_cmd = app
+        .shell()
+        .sidecar("ffmpeg")?
+        .args([
+            "-y",
+            "-i", input_path.to_str().unwrap(),
+        ].into_iter()
+        .chain(codec_args)
+        .chain([output_temp.to_str().unwrap()]));
+
+    let output = ffmpeg_cmd.output().await?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    eprintln!("ffmpeg stdout:\n{}", stdout);
+    eprintln!("ffmpeg stderr:\n{}", stderr);
+
+    if !output.status.success() {
+        return Err(format!("ffmpeg failed: {}", stderr).into());
+    }
+
+    // Step 4: Replace original file with final converted version
+    fs::remove_file(&input_path)?;
+    if final_output.exists() {
+        fs::remove_file(&final_output)?; // prevent overwrite error
+    }
+    fs::rename(&output_temp, &final_output)?;
+
+    // Step 5: Update database with new file
+    delete_file(repo_id, &file.id)?;
+
+    let mut new_metadata = get_audio_metadata_from_file(final_output.to_str().unwrap())?;
+    new_metadata.id = Uuid::new_v4().to_string();
+
+    create_file(repo_id, &new_metadata)?;
+
+    window.emit("conversion_progress", format!("Finished converting {}", file.name)).ok();
+    Ok(())
 }

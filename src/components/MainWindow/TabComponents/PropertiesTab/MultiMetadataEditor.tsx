@@ -99,7 +99,14 @@ const MultiMetadataEditor: React.FC = () => {
     };
 
     try {
-      for (const file of selectedFiles) {
+
+      // create a list of only files that are accessible
+      const accessibleFiles = selectedFiles.filter(file => file.accessible);
+      if (accessibleFiles.length === 0) {
+        console.error("No accessible files to update.");
+        return;
+      }
+      for (const file of accessibleFiles) {
         const updatedFile: FileMetadata = { ...file, ...formData };
         await invoke('update_file_command', { repoId, file: updatedFile });
         await invoke('write_audio_metadata_to_file_command', { fileMetadata: updatedFile });

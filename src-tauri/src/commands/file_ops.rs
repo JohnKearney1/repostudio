@@ -126,7 +126,9 @@ pub async fn bundle_files_command(
     .map_err(|join_error| format!("Async task failed: {}", join_error))?
 }
 
-pub fn get_audio_metadata_from_file(path: &str) -> Result<FileMetadata, Box<dyn Error>> {
+pub fn get_audio_metadata_from_file(
+    path: &str,
+) -> Result<FileMetadata, Box<dyn Error + Send + Sync>> {
     let path_obj = Path::new(path);
     if !path_obj.is_file() {
         return Err("Provided path is not a file.".into());

@@ -36,7 +36,8 @@
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--colorDark);
@@ -95,4 +96,18 @@
     align-items: flex-start;
     justify-content: center;
     padding: 0.5rem;
+}
+
+.remove-file-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: var(--colorMid);
+    color: var(--colorText);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
 }

@@ -14,10 +14,10 @@
     --colorMid: #e0e0e0;
     --colorLight: #ffffff;
     --colorText: black;
-    --colorSubtitle: rgb(53, 53, 53);
+    --colorSubtitle: rgb(77, 77, 77);
     --border-color: #aaaaaa;
     --accent-1: #00a2ff;
-    --accent-2: #b3e3ff;
+    --accent-2: #8fcef3;
 }
 
 .theme-medium {

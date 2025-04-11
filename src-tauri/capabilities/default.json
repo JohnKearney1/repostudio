@@ -12,7 +12,10 @@
     "fs:allow-write",
     "fs:allow-write-file",
     "fs:allow-app-write",
+    "fs:allow-resource-write",
+    "fs:allow-app-write-recursive",
     "opener:default",
+    "core:resources:default",
     "dialog:default",
     "core:window:default",
     "core:window:allow-create",
@@ -107,6 +110,27 @@
     "fs:read-meta",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister"
+    "global-shortcut:allow-unregister",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "binaries/ffmpeg",
+          "sidecar": true,
+          "args": [
+            "-y",
+            "-i",
+            {
+              "validator": "\\S+"
+            },
+            {
+              "validator": "\\S+"
+            }
+          ]
+        }
+      ]
+    },
+    "shell:allow-open",
+    "shell:default"
   ]
 }

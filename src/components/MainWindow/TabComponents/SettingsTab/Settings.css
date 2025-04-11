@@ -38,7 +38,7 @@
 
 .settings-tab.selected {
     background: linear-gradient(to right, var(--colorLight), var(--colorMid));
-    border-left: 3px solid #00ff00;
+    border-left: 3px solid var(--accent-1);
 }
 
 .settings-main {

@@ -60,6 +60,7 @@ interface TabStore {
   openTab: (tab: Tab) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
+  hidden?: boolean; // Optional field for future use
 }
 export const useTabStore = create<TabStore, [["zustand/persist", TabStore]]>(
   persist((set) => ({

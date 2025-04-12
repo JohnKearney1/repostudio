@@ -31,7 +31,7 @@ export default function EventLogTab() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <h4>Event Log</h4>
+            <h4>History</h4>
             <h5 style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 { events.length === 0 ? "No events logged yet" : `${events.length} events logged. Click to expand details.`}
                 <br />

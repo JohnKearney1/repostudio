@@ -1,5 +1,6 @@
 // ConsoleOperations.tsx
 import { create } from 'zustand';
+import { useTabStore } from './store/store';
 
 export interface ConsoleMessage {
   id: number;
@@ -29,6 +30,7 @@ export const processCommand = (command: string): ConsoleMessage | null => {
   const trimmed = command.trim();
   const tokens = trimmed.split(/\s+/);
   const baseCommand = tokens[0].toLowerCase();
+  const openTab = useTabStore.getState().openTab; // Assuming setOpenTab is defined in your store
 
   let output: string;
 
@@ -47,6 +49,26 @@ export const processCommand = (command: string): ConsoleMessage | null => {
       output = tokens.length === 1 
         ? `The current time is ${new Date().toLocaleTimeString()}`
         : `Unknown command: ${command}`;
+      break;
+    case 'tab':
+      if (tokens.length === 2) {
+        const allowedTabs = ['actions', 'settings', 'console', 'bundles', 'history'];
+        if (!allowedTabs.includes(tokens[1].toLowerCase())) {
+          return {
+            id: Date.now(),
+            text: `Invalid tab: ${tokens[1]}. Allowed tabs are: ${allowedTabs.join(', ')}`,
+            timestamp: new Date().toLocaleTimeString(),
+          }; // Invalid tab, no message added
+        }
+        const tabId = tokens[1].charAt(0).toUpperCase() + tokens[1].slice(1).toLowerCase();
+        // Logic to open a tab (placeholder)
+        if (!useTabStore.getState().tabs.find(t => t.id === tabId)) {
+          openTab({ id: tabId.toLowerCase(), name: tabId, iconName: `${tabId}Icon`, componentId: `${tabId}Tab` });
+        }
+        output = `Tab ${tabId} opened`;
+      } else {
+        output = `Usage: tab [tabId]`;
+      }
       break;
     case 'clear':
       useConsoleStore.getState().clearMessages();

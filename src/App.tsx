@@ -15,20 +15,22 @@ import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
 import Settings from "./components/MainWindow/TabComponents/SettingsTab/Settings";
 import { useTabStore } from "./scripts/store/store";
-import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon, CounterClockwiseClockIcon, CodeIcon } from "@radix-ui/react-icons";
+import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon, CounterClockwiseClockIcon, CodeIcon, Component1Icon } from "@radix-ui/react-icons";
 import ActionsPane from "./components/MainWindow/TabComponents/ActionsTab/ActionsPane";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
 import ConsoleTab from "./components/MainWindow/TabComponents/ConsoleTab/ConsoleTab";
 import EventLogTab from "./components/MainWindow/TabComponents/EventLog/EventLogTab";
 import { invoke } from "@tauri-apps/api/core";
+import BundlesTab from "./components/MainWindow/TabComponents/BundlesTab/BundlesTab";
 
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
-  'ActionsPane': ActionsPane,
-  'Settings': () => Settings(true),
-  'Console': ConsoleTab,
-  'EventLog': EventLogTab,
+  'ActionsTab': ActionsPane,
+  'SettingsTab': () => Settings(true),
+  'ConsoleTab': ConsoleTab,
+  'EventLogTab': EventLogTab,
+  'BundlesTab': BundlesTab,
   // Add other panes here
 };
 
@@ -38,6 +40,7 @@ const IconMap: Record<string, React.ReactNode> = {
   'SettingsIcon': <GearIcon />,
   'ConsoleIcon': <CodeIcon />,
   'HistoryIcon': <CounterClockwiseClockIcon />,
+  'BundlesIcon': <Component1Icon />,
   // Add other icons here
 };
 
@@ -68,14 +71,16 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const setVh = () => {
+    const setV = () => {
       const vh = window.innerHeight * 0.01;
+      const vw = window.innerWidth * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      document.documentElement.style.setProperty('--vw', `${vw}px`);
     };
-    setVh();
-    window.addEventListener('resize', setVh);
+    setV();
+    window.addEventListener('resize', setV);
     return () => {
-      window.removeEventListener('resize', setVh);
+      window.removeEventListener('resize', setV);
     };
   }, []);  
 
@@ -118,37 +123,48 @@ function Home() {
 
 function TabBar() {
   const { tabs, activeTabId, closeTab, setActiveTab } = useTabStore();
+  
   // List of all potential additional tabs
   const availableTabs = [
     {
       id: 'actions',
       name: 'Actions',
       iconName: 'ActionsIcon',
-      componentId: 'ActionsPane',
+      componentId: 'ActionsTab',
+    },
+    {
+      id: 'bundles',
+      name: 'Bundles',
+      iconName: 'BundlesIcon',
+      componentId: 'BundlesTab',
+      hidden: true, // Initially hidden
     },
     {
       id: 'console',
       name: 'Console',
       iconName: 'ConsoleIcon',
-      componentId: 'Console',
+      componentId: 'ConsoleTab',
     },
     {
-      id: 'event-log',
+      id: 'history',
       name: 'History',
       iconName: 'HistoryIcon',
-      componentId: 'EventLog',
+      componentId: 'HistoryTab',
+      hidden: true, // Initially hidden
     },
     {
       id: 'settings',
       name: 'Settings',
       iconName: 'SettingsIcon',
-      componentId: 'Settings',
+      componentId: 'SettingsTab',
     }
   ];
 
   // Determine which of these tabs are not open
   const openTabIds = new Set(tabs.map(tab => tab.id));
-  const closedTabs = availableTabs.filter(tab => !openTabIds.has(tab.id));
+  const closedTabs = availableTabs.filter(
+    tab => !openTabIds.has(tab.id) && (tab.hidden !== true)
+  );
 
   return (
     <div className="tab-bar">

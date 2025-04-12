@@ -197,7 +197,6 @@ const FilePane: React.FC = () => {
 
       const selectedRepoId = currentSettings.setup_selected_repository;
       if (selectedRepoId) {
-        console.warn("Loading last selected repository from settings:", selectedRepoId);
         const repositories = useRepositoryStore.getState().repositories;
         const selectedRepo = repositories.find(repo => repo.id === selectedRepoId);
         if (selectedRepo) {

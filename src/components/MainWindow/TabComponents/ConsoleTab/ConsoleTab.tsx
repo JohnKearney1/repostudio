@@ -41,13 +41,20 @@ const ConsoleTab: React.FC = () => {
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
+      // Only process if we’re navigating history.
       if (commandHistory.length > 0 && historyIndex !== null) {
-        const newIndex = Math.min(commandHistory.length - 1, historyIndex + 1);
-        setHistoryIndex(newIndex);
-        setInputValue(commandHistory[newIndex] || "");
+        const newIndex = historyIndex + 1;
+        // If newIndex exceeds the command history, reset the history and clear the input
+        if (newIndex >= commandHistory.length) {
+          setHistoryIndex(null);
+          setInputValue("");
+        } else {
+          setHistoryIndex(newIndex);
+          setInputValue(commandHistory[newIndex]);
+        }
       }
     }
-  };
+  }    
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setInputValue(e.target.value);

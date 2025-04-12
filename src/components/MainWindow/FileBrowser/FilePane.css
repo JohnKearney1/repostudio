@@ -38,13 +38,17 @@
     justify-content: flex-start;
     padding: 0.5rem 0.75rem;
     align-items: center;
-    background-color: var(--colorDark);
+    background-color: var(--colorMid);
     width: 100%;
     color: var(--colorText);
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
     user-select: none;
+}
+
+.repo-toolbar-button:hover {
+    background-color: var(--colorLight);
 }
 
 .toolbar-button {
@@ -52,7 +56,7 @@
     justify-content: center;
     padding: 0.5rem 0.75rem;
     align-items: center;
-    background-color: var(--colorDark);
+    background-color: var(--colorMid);
     width: 100%;
     color: var(--colorText);
     border: none;
@@ -61,11 +65,15 @@
     user-select: none;
 }
 
+.toolbar-button:hover {
+    background-color: var(--colorLight);
+}
+
 .searchbar {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: var(--colorDark);
+    background-color: var(--colorMid);
     padding: 0.5rem 0.75rem;
     color: var(--colorText);
     border: none;
@@ -73,9 +81,15 @@
     border-top: var(--border-color) solid 1px;
     border-bottom: var(--border-color) solid 1px;
     user-select: none;
+    transition: all 0.2s;
+}
+
+.searchbar:hover {
+    background-color: var(--colorLight);
 }
 
 .searchbar:focus {
+    background-color: var(--colorLight);
     outline: none;
 }
 
@@ -84,6 +98,7 @@
     overflow-y: auto;
     user-select: none;
     overflow-x: hidden;
+    background-color: var(--colorMid);
 }
 
 .file-view:focus {
@@ -163,13 +178,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    background-color: var(--colorMid);
     color: var(--colorText);
     border-top: var(--border-color) solid 1px;
 }
 
 /* Dropdown menu styling */
 .dropdown-menu {
-    background-color: var(--colorDark);
+    background-color: var(--colorMid);
     color: var(--colorText);
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
@@ -192,7 +208,7 @@
   
   /* Ascending/descending toggle button styling */
   .sort-toggle-button {
-    background-color: var(--colorDark);
+    background-color: var(--colorMid);
     color: var(--colorText);
     padding: 0.5rem;
     border: none;

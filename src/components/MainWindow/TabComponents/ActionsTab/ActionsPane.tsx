@@ -1,9 +1,10 @@
 import {
   Component1Icon,
+  CubeIcon,
   // CubeIcon,
   DownloadIcon,
   // EnvelopeClosedIcon,
-  InputIcon,
+  // InputIcon,
   LightningBoltIcon,
   MixerHorizontalIcon,
   SymbolIcon,
@@ -26,7 +27,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { usePopupContentStore, usePopupStore } from '../../../../scripts/store/store';
 import ConvertPopup from '../../PopupComponents/ConvertPopup/ConvertPopup';
-import RenamePopup from '../../PopupComponents/RenamePopup/RenamePopup';
+import RepositorySelector from '../../PopupComponents/RepositorySelector/RepositorySelector';
+// import RenamePopup from '../../PopupComponents/RenamePopup/RenamePopup';
 
 export default function ActionsPane() {
   const allFiles = useFileStore((state) => state.allFiles);
@@ -230,6 +232,20 @@ export default function ActionsPane() {
           Repository Actions
         </h5>
 
+        <button
+            className="actions-details-button"
+            onClick={() => {
+              handleShowPopup(<RepositorySelector />);
+            }}
+            disabled={allFiles.length === 0 || fingerprintQueue.length > 0}
+          >
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CubeIcon width={'15px'} height={'15px'} />
+              Manage Repositories
+            </h4>
+            <h5>View, Create, and Delete Repos</h5>
+          </button>
+
         {fingerprintQueue.length > 0 ? (
           <button
             className="actions-details-button"
@@ -243,7 +259,7 @@ export default function ActionsPane() {
               <LightningBoltIcon width={'15px'} height={'15px'} />
               Pause Processing
             </h4>
-            <h5>Clears the Processing Queue</h5>
+            <h5>Halts the Processing Queue</h5>
           </button>
         ) : (
           <button
@@ -253,9 +269,9 @@ export default function ActionsPane() {
           >
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <LightningBoltIcon width={'15px'} height={'15px'} />
-              Process Repository
+              Process Files
             </h4>
-            <h5>Generates Fingerprints for all Files</h5>
+            <h5>Analyzes Files in this Repository</h5>
           </button>
         )}
 
@@ -303,7 +319,7 @@ export default function ActionsPane() {
           </h4>
           <h5>Change Audio Encodings</h5>
         </button>
-        <button
+        {/* <button
           className="actions-details-button"
           onClick={() => {
             handleShowPopup(<RenamePopup />);
@@ -314,7 +330,7 @@ export default function ActionsPane() {
             Rename
           </h4>
           <h5>Add Prefix or Suffix to Filename(s)</h5>
-        </button>
+        </button> */}
 
         <h5
           style={{

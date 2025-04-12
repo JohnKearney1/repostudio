@@ -1,0 +1,100 @@
+.BundlesTab {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.5rem;
+    height: calc((var(--vh, 1vh) * 100) - 150px);
+    overflow-y: auto;
+    user-select: none;
+  }
+  
+  .BundleItem {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: var(--colorLight);
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .BundleItem:hover {
+    background-color: var(--colorDark);
+  }
+  
+  .BundleItem__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .BundleItem__info {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .BundleItem__name {
+    font-weight: bold;
+    color: var(--colorText);
+  }
+  
+  .BundleItem__size,
+  .BundleItem__count {
+    font-size: 0.9rem;
+    color: var(--colorSubtitle);
+  }
+  
+  .BundleItem__toggle {
+    font-size: 1rem;
+    color: var(--colorSubtitle);
+  }
+  
+  .BundleItem__details {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+
+  .BundleItem__fileIds {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: flex-start;                                        
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .BundleItem__button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: var(--colorMid);
+    color: var(--colorText);
+    cursor: pointer;
+    width: 95%;
+    transition: all 0.3s ease;
+  }
+  
+  .BundleItem__button:hover {
+    background-color: var(--accent-2);
+  }
+  
+  .BundleItem__fileId {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--colorSubtitle);
+    width: 100%;
+  }

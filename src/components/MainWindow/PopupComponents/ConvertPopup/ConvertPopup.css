@@ -122,7 +122,7 @@
 
 .convert-list-item:hover {
     background-color: var(--colorLight);
-    color: var(--accent-2);
+    color: var(--accent-1);
 }
 
 .convert-list-container {

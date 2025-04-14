@@ -1,128 +1,139 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
+import './Contacts.css';
 
 interface Contact {
-    id: number;
-    name: string;
-    phone?: string;
-    email?: string;
+  id: number;
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
+interface ContactList {
+  id: number;
+  name: string;
+  contacts: Contact[];
 }
 
 export default function Contacts() {
-    const [contacts, setContacts] = useState<Contact[]>([]);
-    const [editingId, setEditingId] = useState<number | null>(null);
-    const [form, setForm] = useState<Omit<Contact, 'id'>>({
-        name: '',
-        phone: '',
-        email: '',
-    });
-    const [nextId, setNextId] = useState(1);
+    return (
+        <div className="contacts-container">
+            <ContactListManager />
+            <ContactManager />
+        </div>
+    )
+}
 
-    const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+export function ContactListManager() {
+    const [listName, setListName] = useState('');
+    const [contactLists, setContactLists] = useState<ContactList[]>([]);
+
+    const handleListNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setListName(event.target.value);
     };
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!form.name.trim()) return; // Name is required
-
-        if (editingId === null) {
-            // Adding a new contact
-            setContacts([...contacts, { id: nextId, ...form }]);
-            setNextId(nextId + 1);
-        } else {
-            // Editing an existing contact
-            setContacts(
-                contacts.map(contact =>
-                    contact.id === editingId ? { id: editingId, ...form } : contact
-                )
-            );
-            setEditingId(null);
-        }
-        setForm({ name: '', phone: '', email: '' });
-    };
-
-    const handleEdit = (id: number) => {
-        const contact = contacts.find(c => c.id === id);
-        if (contact) {
-            setEditingId(id);
-            setForm({
-                name: contact.name,
-                phone: contact.phone || '',
-                email: contact.email || '',
-            });
+    const handleSubmit = (event: FormEvent) => {
+        event.preventDefault();
+        if (listName) {
+            const newList: ContactList = {
+                id: Date.now(),
+                name: listName,
+                contacts: [],
+            };
+            setContactLists([...contactLists, newList]);
+            setListName('');
         }
     };
 
-    const handleDelete = (id: number) => {
-        setContacts(contacts.filter(c => c.id !== id));
-        if (editingId === id) {
-            setEditingId(null);
-            setForm({ name: '', phone: '', email: '' });
-        }
+    const handleDeleteList = (id: number) => {
+        setContactLists(contactLists.filter(list => list.id !== id));
     };
 
-    const cancelEdit = () => {
-        setEditingId(null);
-        setForm({ name: '', phone: '', email: '' });
+    const handleAddContact = (listId: number, contact: Contact) => {
+        setContactLists(contactLists.map(list => {
+            if (list.id === listId) {
+                return { ...list, contacts: [...list.contacts, contact] };
+            }
+            return list;
+        }));
     };
+
 
     return (
-        <div>
-            <h1>Contacts</h1>
+        <div className="contact-list-manager">
+            <h2>Contact Lists</h2>
             <form onSubmit={handleSubmit}>
-                <div>
-                    <label>
-                        Name*:
-                        <input
-                            type="text"
-                            name="name"
-                            value={form.name}
-                            onChange={handleInputChange}
-                            required
-                        />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        Phone:
-                        <input
-                            type="text"
-                            name="phone"
-                            value={form.phone}
-                            onChange={handleInputChange}
-                        />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        Email:
-                        <input
-                            type="email"
-                            name="email"
-                            value={form.email}
-                            onChange={handleInputChange}
-                        />
-                    </label>
-                </div>
-                <button type="submit">{editingId === null ? 'Add Contact' : 'Update Contact'}</button>
-                {editingId !== null && (
-                    <button type="button" onClick={cancelEdit}>
-                        Cancel
-                    </button>
-                )}
+                <input type="text" placeholder="List Name" value={listName} onChange={handleListNameChange} />
+                <button type="submit">Add List</button>
             </form>
-            <hr />
             <ul>
-                {contacts.map(contact => (
-                    <li key={contact.id}>
-                        <strong>{contact.name}</strong>
-                        {contact.phone && <> | Phone: {contact.phone}</>}
-                        {contact.email && <> | Email: {contact.email}</>}
-                        <button onClick={() => handleEdit(contact.id)}>Edit</button>
-                        <button onClick={() => handleDelete(contact.id)}>Delete</button>
+                {contactLists.map((list) => (
+                    <li key={list.id}>
+                        {list.name}
+                        <button onClick={() => handleDeleteList(list.id)}>Delete</button>
                     </li>
                 ))}
             </ul>
         </div>
-    );
+    )
+}
+
+export function ContactManager() {
+
+    const [contactName, setContactName] = useState('');
+    const [contactPhone, setContactPhone] = useState('');
+    const [contactEmail, setContactEmail] = useState('');
+    const [contacts, setContacts] = useState<Contact[]>([]);
+
+    const handleContactNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setContactName(event.target.value);
+    };
+
+    const handleContactPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setContactPhone(event.target.value);
+    };
+
+    const handleContactEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setContactEmail(event.target.value);
+    };
+
+    const handleSubmit = (event: FormEvent) => {
+        event.preventDefault();
+        if (contactName) {
+            const newContact: Contact = {
+                id: Date.now(),
+                name: contactName,
+                phone: contactPhone,
+                email: contactEmail,
+            };
+            setContacts([...contacts, newContact]);
+            setContactName('');
+            setContactPhone('');
+            setContactEmail('');
+        }
+    };
+
+    const handleDeleteContact = (id: number) => {
+        setContacts(contacts.filter(contact => contact.id !== id));
+    };
+
+
+    return (
+        <div className="contact-manager">
+            <h2>Contacts</h2>
+            <form onSubmit={handleSubmit}>
+                <input type="text" placeholder="Contact Name" value={contactName} onChange={handleContactNameChange} />
+                <input type="text" placeholder="Phone" value={contactPhone} onChange={handleContactPhoneChange} />
+                <input type="text" placeholder="Email" value={contactEmail} onChange={handleContactEmailChange} />
+                <button type="submit">Add Contact</button>
+            </form>
+            <ul>
+                {contacts.map((contact) => (
+                    <li key={contact.id}>
+                        {contact.name} - {contact.phone} - {contact.email}
+                        <button onClick={() => handleDeleteContact(contact.id)}>Delete</button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    )
 }

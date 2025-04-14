@@ -15,7 +15,7 @@ import AudioPlayer from "./components/MainWindow/AudioPlayer/AudioPlayer";
 import { loadRepositoriesScript } from "./scripts/RepoOperations";
 import Settings from "./components/MainWindow/TabComponents/SettingsTab/Settings";
 import { useTabStore } from "./scripts/store/store";
-import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon, CounterClockwiseClockIcon, CodeIcon, Component1Icon } from "@radix-ui/react-icons";
+import { Cross2Icon, GearIcon, InfoCircledIcon, PlusIcon, RocketIcon, CounterClockwiseClockIcon, CodeIcon, Component1Icon, IdCardIcon, EnvelopeClosedIcon } from "@radix-ui/react-icons";
 import ActionsPane from "./components/MainWindow/TabComponents/ActionsTab/ActionsPane";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
@@ -23,14 +23,18 @@ import ConsoleTab from "./components/MainWindow/TabComponents/ConsoleTab/Console
 import EventLogTab from "./components/MainWindow/TabComponents/EventLog/EventLogTab";
 import { invoke } from "@tauri-apps/api/core";
 import BundlesTab from "./components/MainWindow/TabComponents/BundlesTab/BundlesTab";
+import Contacts from "./components/MainWindow/TabComponents/Contacts/Contacts";
+import MailKit from "./components/MainWindow/TabComponents/MailKit/MailKit";
 
 const ComponentMap: Record<string, React.FC> = {
   'PropertiesPane': PropertiesPane,
   'ActionsTab': ActionsPane,
   'SettingsTab': () => Settings(true),
   'ConsoleTab': ConsoleTab,
-  'EventLogTab': EventLogTab,
+  'HistoryTab': EventLogTab,
   'BundlesTab': BundlesTab,
+  'ContactsTab': Contacts,
+  'MailKitTab': MailKit
   // Add other panes here
 };
 
@@ -41,6 +45,8 @@ const IconMap: Record<string, React.ReactNode> = {
   'ConsoleIcon': <CodeIcon />,
   'HistoryIcon': <CounterClockwiseClockIcon />,
   'BundlesIcon': <Component1Icon />,
+  'ContactsIcon': <IdCardIcon />,
+  'MailKitIcon': <EnvelopeClosedIcon />,
   // Add other icons here
 };
 
@@ -125,7 +131,7 @@ function TabBar() {
   const { tabs, activeTabId, closeTab, setActiveTab } = useTabStore();
   
   // List of all potential additional tabs
-  const availableTabs = [
+  const availableTabs: Array<{ id: string; name: string; iconName: string; componentId: string; hidden?: boolean }> = [
     {
       id: 'actions',
       name: 'Actions',
@@ -137,7 +143,19 @@ function TabBar() {
       name: 'Bundles',
       iconName: 'BundlesIcon',
       componentId: 'BundlesTab',
-      hidden: true, // Initially hidden
+      // hidden: true, // Initially hidden
+    },
+    {
+      id: 'contacts',
+      name: 'Contacts',
+      iconName: 'ContactsIcon',
+      componentId: 'ContactsTab',
+    },
+    {
+      id: 'mailkit',
+      name: 'MailKit',
+      iconName: 'MailKitIcon',
+      componentId: 'MailKitTab',
     },
     {
       id: 'console',
@@ -150,7 +168,7 @@ function TabBar() {
       name: 'History',
       iconName: 'HistoryIcon',
       componentId: 'HistoryTab',
-      hidden: true, // Initially hidden
+      // hidden: true, // Initially hidden
     },
     {
       id: 'settings',

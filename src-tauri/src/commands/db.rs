@@ -58,6 +58,30 @@ pub fn establish_connection() -> Result<Connection> {
         [],
     )?;
 
+    // Create the bundles table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS Bundles (
+            id          TEXT PRIMARY KEY,
+            name        TEXT,
+            description TEXT,
+            date_created TEXT NOT NULL,
+            included_files TEXT NOT NULL,
+            recipients TEXT NOT NULL
+        )",
+        [],
+    )?;
+
+    // Create the contacts table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS Contacts (
+            id          TEXT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            email       TEXT NOT NULL,
+            phone       TEXT
+        )",
+        [],
+    )?;
+
     let app_settings_exists: bool =
         conn.query_row("SELECT EXISTS(SELECT 1 FROM AppSettings)", [], |row| {
             row.get(0)
@@ -66,7 +90,7 @@ pub fn establish_connection() -> Result<Connection> {
         conn.execute(
             "INSERT INTO AppSettings (general_auto_fingerprint, general_theme, audio_autoplay, setup_selected_repository)
              VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![0, "theme-dark", 0, "default"],
+            rusqlite::params![0, "theme-light", 0, "default"],
         )?;
     }
 

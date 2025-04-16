@@ -34,7 +34,7 @@ const ComponentMap: Record<string, React.FC> = {
   'HistoryTab': EventLogTab,
   'BundlesTab': BundlesTab,
   'ContactsTab': Contacts,
-  'MailKitTab': MailKit
+  'MailkitTab': MailKit
   // Add other panes here
 };
 
@@ -46,7 +46,7 @@ const IconMap: Record<string, React.ReactNode> = {
   'HistoryIcon': <CounterClockwiseClockIcon />,
   'BundlesIcon': <Component1Icon />,
   'ContactsIcon': <IdCardIcon />,
-  'MailKitIcon': <EnvelopeClosedIcon />,
+  'MailkitIcon': <EnvelopeClosedIcon />,
   // Add other icons here
 };
 
@@ -154,10 +154,10 @@ function TabBar() {
     },
     {
       id: 'mailkit',
-      name: 'MailKit',
-      iconName: 'MailKitIcon',
-      componentId: 'MailKitTab',
-      hidden: true, // Initially hidden
+      name: 'Mailkit',
+      iconName: 'MailkitIcon',
+      componentId: 'MailkitTab',
+      // hidden: true, // Initially hidden
     },
     {
       id: 'console',

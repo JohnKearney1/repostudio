@@ -12,9 +12,12 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 200px;
     max-width: 250px;
     background-color: var(--colorDark);
     border-right: 1px solid var(--border-color);
+    height: calc((var(--vh, 1vh) * 100) - 135px);
+    overflow-y: auto;
 }
 
 .Contacts-Content {
@@ -22,8 +25,10 @@
     flex-direction: column;
     flex-grow: 1;
     flex: 2;
-    overflow-y: auto;
     background-color: var(--colorDark);
+    height: calc((var(--vh, 1vh) * 100) - 135px);
+    overflow-y: auto;
+    width: 100%;
 }
 
 .contact-dropdown {
@@ -38,9 +43,118 @@
     cursor: pointer;
     transition: all 0.3s ease;
     color: var(--colorText);
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .contact-dropdown:hover {
     background-color: var(--colorLight);
 }
 
+.contact-dropdown2 {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 10px;
+    font-size: 0.8rem;
+    background-color: var(--colorDark);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--colorText);
+}
+
+.contact-dropdown2:hover {
+    background-color: var(--colorMid);
+}
+
+.contact-dropdown2.selected  {
+    background-color: var(--colorLight);
+}
+
+.ContactItem {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.ContactItemDetails {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 0.8rem;
+}
+
+.ContactItemButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem 0.5rem;
+    background-color: var(--colorLight);
+    color: var(--colorText);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ContactItemButton:hover {
+    background-color: var(--colorMid);
+}
+
+.NewContactView, .SelectedContactView {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    background-color: var(--colorDark);
+    color: var(--colorText);
+    padding: 0.5rem;
+}
+
+.NewContactView form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.NewContactView input, textarea {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--colorMid);
+    color: var(--colorText);
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.NewContactView input:focus, textarea:focus, input:hover, textarea:hover {
+    background-color: var(--colorLight);
+    outline: none;
+}
+
+
+.NewContactView button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--colorMid);
+    color: var(--colorText);
+    border: none;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.NewContactView button:hover {
+    background-color: var(--colorLight);
+}

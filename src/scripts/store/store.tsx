@@ -17,6 +17,8 @@ export interface Contact {
   name: string;
   phone?: string;
   email?: string;
+  profession?: string;
+  handle?: string;
 }
 
 export interface ContactList {

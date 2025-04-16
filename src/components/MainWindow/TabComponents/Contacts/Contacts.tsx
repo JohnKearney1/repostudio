@@ -1,139 +1,76 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
 import './Contacts.css';
-
-interface Contact {
-  id: number;
-  name: string;
-  phone?: string;
-  email?: string;
-}
-
-interface ContactList {
-  id: number;
-  name: string;
-  contacts: Contact[];
-}
+import { useState } from 'react';
+import {  FaceIcon, PlusIcon } from '@radix-ui/react-icons';
+import { usePopupContentStore, usePopupStore, useContactStore } from '../../../../scripts/store/store';
+import ContactListPopup from '../../PopupComponents/ContactListPopup/ContactListPopup';
 
 export default function Contacts() {
+    const setPopupContent = usePopupContentStore((state) => state.setContent);
+    const setPopupVisible = usePopupStore((state) => state.setVisible);
+    const selectedContactList = useContactStore((state) => state.selectedContactList);
+    const [contactsContent, setContactsContent] = useState<JSX.Element | null>(null);
+
     return (
-        <div className="contacts-container">
-            <ContactListManager />
-            <ContactManager />
+        <div className="Contacts">
+            <div className='Contacts-Menu'>
+                <button className='contact-dropdown' onClick={() => {
+                    setPopupVisible(true);
+                    setPopupContent(<ContactListPopup />);
+                }}>
+                    <FaceIcon />
+                    {selectedContactList?.name || 'Manage Lists'}
+                </button>
+
+                <button className='contact-dropdown' onClick={() => {
+                    setContactsContent(<NewContactView />);
+                }}>
+                    <PlusIcon />
+                    Add Contact
+                </button>
+                {/* For each contact, show a ContactItem */}
+                {selectedContactList?.contacts.map((contact, index) => (
+                    <button key={index} className='contact-dropdown' onClick={() => {
+                        setContactsContent(<SelectedContactView />);
+                    }}>
+                        <ContactItem contact={contact} />
+                    </button>
+                ))}
+            </div>
+            <div className='Contacts-Content'>
+                {contactsContent}
+            </div>
         </div>
     )
 }
 
-export function ContactListManager() {
-    const [listName, setListName] = useState('');
-    const [contactLists, setContactLists] = useState<ContactList[]>([]);
-
-    const handleListNameChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setListName(event.target.value);
-    };
-
-    const handleSubmit = (event: FormEvent) => {
-        event.preventDefault();
-        if (listName) {
-            const newList: ContactList = {
-                id: Date.now(),
-                name: listName,
-                contacts: [],
-            };
-            setContactLists([...contactLists, newList]);
-            setListName('');
-        }
-    };
-
-    const handleDeleteList = (id: number) => {
-        setContactLists(contactLists.filter(list => list.id !== id));
-    };
-
-    const handleAddContact = (listId: number, contact: Contact) => {
-        setContactLists(contactLists.map(list => {
-            if (list.id === listId) {
-                return { ...list, contacts: [...list.contacts, contact] };
-            }
-            return list;
-        }));
-    };
-
-
+function NewContactView() {
     return (
-        <div className="contact-list-manager">
-            <h2>Contact Lists</h2>
-            <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="List Name" value={listName} onChange={handleListNameChange} />
-                <button type="submit">Add List</button>
+        <div className='NewContactView'>
+            <h4>New Contact</h4>
+            <form>
+                <input type="text" id="name" name="name" required />
+                <input type="email" id="email" name="email" required />
+                <button type="submit" >Add Contact</button>
             </form>
-            <ul>
-                {contactLists.map((list) => (
-                    <li key={list.id}>
-                        {list.name}
-                        <button onClick={() => handleDeleteList(list.id)}>Delete</button>
-                    </li>
-                ))}
-            </ul>
         </div>
-    )
+    );
 }
 
-export function ContactManager() {
-
-    const [contactName, setContactName] = useState('');
-    const [contactPhone, setContactPhone] = useState('');
-    const [contactEmail, setContactEmail] = useState('');
-    const [contacts, setContacts] = useState<Contact[]>([]);
-
-    const handleContactNameChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setContactName(event.target.value);
-    };
-
-    const handleContactPhoneChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setContactPhone(event.target.value);
-    };
-
-    const handleContactEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setContactEmail(event.target.value);
-    };
-
-    const handleSubmit = (event: FormEvent) => {
-        event.preventDefault();
-        if (contactName) {
-            const newContact: Contact = {
-                id: Date.now(),
-                name: contactName,
-                phone: contactPhone,
-                email: contactEmail,
-            };
-            setContacts([...contacts, newContact]);
-            setContactName('');
-            setContactPhone('');
-            setContactEmail('');
-        }
-    };
-
-    const handleDeleteContact = (id: number) => {
-        setContacts(contacts.filter(contact => contact.id !== id));
-    };
-
-
+function SelectedContactView() {
     return (
-        <div className="contact-manager">
-            <h2>Contacts</h2>
-            <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="Contact Name" value={contactName} onChange={handleContactNameChange} />
-                <input type="text" placeholder="Phone" value={contactPhone} onChange={handleContactPhoneChange} />
-                <input type="text" placeholder="Email" value={contactEmail} onChange={handleContactEmailChange} />
-                <button type="submit">Add Contact</button>
-            </form>
-            <ul>
-                {contacts.map((contact) => (
-                    <li key={contact.id}>
-                        {contact.name} - {contact.phone} - {contact.email}
-                        <button onClick={() => handleDeleteContact(contact.id)}>Delete</button>
-                    </li>
-                ))}
-            </ul>
+        <div className='SelectedContactView'>
+            <h2>Selected Contact</h2>
+            <p>Details about the selected contact will go here.</p>
         </div>
-    )
+    );
+}
+
+
+function ContactItem(_props: { contact: any }) {
+    return (
+        <div className='ContactItem'>
+            <h3>Contact Name</h3>
+            <p>Contact details will go here.</p>
+        </div>
+    );
 }

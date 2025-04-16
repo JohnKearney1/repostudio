@@ -1,0 +1,46 @@
+.Contacts { 
+    display: flex;
+    flex-direction: row;
+    height: calc((var(--vh, 1vh) * 100) - 135px);
+    overflow: hidden;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    user-select: none;
+}
+
+.Contacts-Menu {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: 250px;
+    background-color: var(--colorDark);
+    border-right: 1px solid var(--border-color);
+}
+
+.Contacts-Content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex: 2;
+    overflow-y: auto;
+    background-color: var(--colorDark);
+}
+
+.contact-dropdown {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 10px;
+    font-size: 0.8rem;
+    background-color: var(--colorMid);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--colorText);
+}
+
+.contact-dropdown:hover {
+    background-color: var(--colorLight);
+}
+

@@ -143,19 +143,21 @@ function TabBar() {
       name: 'Bundles',
       iconName: 'BundlesIcon',
       componentId: 'BundlesTab',
-      // hidden: true, // Initially hidden
+      hidden: true, // Initially hidden
     },
     {
       id: 'contacts',
       name: 'Contacts',
       iconName: 'ContactsIcon',
       componentId: 'ContactsTab',
+      hidden: true, // Initially hidden
     },
     {
       id: 'mailkit',
       name: 'MailKit',
       iconName: 'MailKitIcon',
       componentId: 'MailKitTab',
+      hidden: true, // Initially hidden
     },
     {
       id: 'console',
@@ -168,7 +170,7 @@ function TabBar() {
       name: 'History',
       iconName: 'HistoryIcon',
       componentId: 'HistoryTab',
-      // hidden: true, // Initially hidden
+      hidden: true, // Initially hidden
     },
     {
       id: 'settings',

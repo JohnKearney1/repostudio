@@ -52,7 +52,7 @@ export const processCommand = (command: string): ConsoleMessage | null => {
       break;
     case 'tab':
       if (tokens.length === 2) {
-        const allowedTabs = ['actions', 'settings', 'console', 'bundles', 'history'];
+        const allowedTabs = ['actions', 'settings', 'console', 'bundles', 'history', 'contacts', 'mailkit'];
         if (!allowedTabs.includes(tokens[1].toLowerCase())) {
           return {
             id: Date.now(),

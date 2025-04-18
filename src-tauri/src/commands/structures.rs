@@ -1,6 +1,24 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Contact {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub phone: Option<String>,
+    pub profession: Option<String>,
+    pub notes: Option<String>,
+    pub handle: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ContactList {
+    pub id: String,
+    pub name: String,
+    pub contacts: Vec<Contact>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppSettings {
     pub general_auto_fingerprint: bool,
     pub general_theme: String,

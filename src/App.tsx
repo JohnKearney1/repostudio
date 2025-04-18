@@ -150,14 +150,14 @@ function TabBar() {
       name: 'Contacts',
       iconName: 'ContactsIcon',
       componentId: 'ContactsTab',
-      hidden: true, // Initially hidden
+      // hidden: true, // Initially hidden
     },
     {
       id: 'mailkit',
       name: 'Mailkit',
       iconName: 'MailkitIcon',
       componentId: 'MailkitTab',
-      // hidden: true, // Initially hidden
+      hidden: true, // Initially hidden
     },
     {
       id: 'console',

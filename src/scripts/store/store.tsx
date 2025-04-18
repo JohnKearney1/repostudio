@@ -13,7 +13,7 @@ import { FileMetadata, Repository } from '../../types/ObjectTypes';
 // ------------------------------------------------------------ //
 
 export interface Contact {
-  id: number;
+  id: string;
   name: string;
   phone?: string;
   email?: string;
@@ -22,7 +22,7 @@ export interface Contact {
 }
 
 export interface ContactList {
-  id: number;
+  id: string;
   name: string;
   contacts: Contact[];
 }

@@ -62,7 +62,7 @@
     background-color: var(--colorDark);
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease;
     color: var(--colorText);
 }
 
@@ -70,8 +70,9 @@
     background-color: var(--colorMid);
 }
 
-.contact-dropdown2.selected  {
-    background-color: var(--colorLight);
+.contact-dropdown2.selectedContact  {
+    background-color: var(--colorMid);
+    border-left: 3px solid var(--accent-1);
 }
 
 .ContactItem {
@@ -100,6 +101,9 @@
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-size: 0.8rem;
+    width: 100%;
+    gap: 0.5rem;
 }
 
 .ContactItemButton:hover {
@@ -124,7 +128,7 @@
     width: 100%;
 }
 
-.NewContactView input, textarea {
+.Contacts input, textarea {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
@@ -132,6 +136,13 @@
     color: var(--colorText);
     font-size: 0.8rem;
     transition: all 0.3s ease;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
 }
 
 .NewContactView input:focus, textarea:focus, input:hover, textarea:hover {
@@ -157,4 +168,13 @@
 
 .NewContactView button:hover {
     background-color: var(--colorLight);
+}
+
+.SelectedContactButtons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 100%;
+    gap: 0.5rem;
 }

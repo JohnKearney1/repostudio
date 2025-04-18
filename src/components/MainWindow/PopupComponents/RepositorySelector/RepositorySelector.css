@@ -142,10 +142,10 @@
     align-items: center;
     gap: 0.5rem;
     position: absolute; 
-    top: 50%;
+    top: 13%;
     right: 0%; 
     transform: translateY(-50%);
-    background-color: #4caf50;
+    background-color: var(--accent-1);
     color: var(--colorText);
     padding: 4px 8px;
     border-radius: 4px;

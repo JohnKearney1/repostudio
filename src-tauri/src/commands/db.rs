@@ -1,7 +1,7 @@
 // src/commands/db.rs
 //! This module handles all reads and writes to the SQLite database,
 //! including operations on repositories, file metadata, and settings.
-use crate::commands::structures::{AppSettings, FileMetadata, Repository, TrackedFolder};
+use crate::commands::structures::{AppSettings, FileMetadata, Repository, TrackedFolder, Contact, ContactList};
 use chrono::{DateTime, FixedOffset, Utc};
 use once_cell::sync::OnceCell;
 use regex::Regex;
@@ -26,7 +26,7 @@ fn get_db_path() -> String {
 pub fn establish_connection() -> Result<Connection> {
     let db_path = get_db_path();
     let conn = Connection::open(db_path)?;
-
+    
     // Create the Repositories table.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS Repositories (
@@ -77,10 +77,48 @@ pub fn establish_connection() -> Result<Connection> {
             id          TEXT PRIMARY KEY,
             name        TEXT NOT NULL,
             email       TEXT NOT NULL,
-            phone       TEXT
+            phone       TEXT,
+            handle      TEXT,
+            notes       TEXT,
+            profession  TEXT
+
         )",
         [],
     )?;
+
+    // Create the ContactLists table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS ContactLists (
+            id   TEXT PRIMARY KEY,
+            name TEXT NOT NULL
+        )",
+        [],
+    )?;
+
+    // Junction table for mapping contacts into lists (many‑to‑many)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS ContactListContacts (
+            list_id    TEXT NOT NULL,
+            contact_id TEXT NOT NULL,
+            PRIMARY KEY (list_id, contact_id),
+            FOREIGN KEY (list_id)    REFERENCES ContactLists(id) ON DELETE CASCADE,
+            FOREIGN KEY (contact_id) REFERENCES Contacts(id)     ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Ensure the default “All Contacts” list exists
+    let default_list_exists: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM ContactLists WHERE id = ?1)",
+        params!["all"],
+        |row| row.get(0),
+    )?;
+    if !default_list_exists {
+        conn.execute(
+            "INSERT INTO ContactLists (id, name) VALUES (?1, ?2)",
+            params!["all", "All Contacts"],
+        )?;
+    }
 
     let app_settings_exists: bool =
         conn.query_row("SELECT EXISTS(SELECT 1 FROM AppSettings)", [], |row| {
@@ -582,6 +620,177 @@ pub fn get_tracked_folders() -> Result<Vec<TrackedFolder>> {
     Ok(folders)
 }
 
+const DEFAULT_LIST_ID: &str = "all";
+
+/// Fetch all contact‑lists.
+pub fn get_contact_lists() -> Result<Vec<ContactList>> {
+    let conn = establish_connection()?;
+    let mut stmt = conn.prepare("SELECT id, name FROM ContactLists ORDER BY name")?;
+    let lists = stmt
+        .query_map([], |row| {
+            Ok(ContactList {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                contacts: Vec::new(),
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+    Ok(lists)
+}
+
+/// Create a new custom contact‑list.
+pub fn create_contact_list(name: &str) -> Result<String> {
+    let conn = establish_connection()?;
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO ContactLists (id, name) VALUES (?1, ?2)",
+        params![&id, name],
+    )?;
+    Ok(id)
+}
+
+/// Rename (update) a contact‑list.
+pub fn update_contact_list(id: &str, name: &str) -> Result<()> {
+    if id == DEFAULT_LIST_ID {
+        // do nothing — “All Contacts” is immutable
+        return Ok(());
+    }
+    let conn = establish_connection()?;
+    conn.execute(
+        "UPDATE ContactLists SET name = ?1 WHERE id = ?2",
+        params![name, id],
+    )?;
+    Ok(())
+}
+
+/// Delete a custom contact‑list.
+pub fn delete_contact_list(id: &str) -> Result<()> {
+    if id == DEFAULT_LIST_ID {
+        // prevent deletion of “All Contacts”
+        return Ok(());
+    }
+    let conn = establish_connection()?;
+    conn.execute(
+        "DELETE FROM ContactLists WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
+}
+
+/// Fetch contacts for a given list (or all, if id == "all").
+pub fn get_contacts_for_list(list_id: &str) -> Result<Vec<Contact>> {
+    let conn = establish_connection()?;
+    let mut contacts = Vec::new();
+    if list_id == DEFAULT_LIST_ID {
+        // return every contact
+        let mut stmt = conn.prepare(
+            "SELECT id, name, email, phone, handle, notes, profession
+             FROM Contacts ORDER BY name",
+        )?;
+        for row in stmt.query_map([], |r| {
+            Ok(Contact {
+                id:       r.get(0)?,
+                name:     r.get(1)?,
+                email:    r.get(2)?,
+                phone:    r.get::<_, Option<String>>(3)?,
+                handle:   r.get::<_, Option<String>>(4)?,
+                notes:    r.get::<_, Option<String>>(5)?,
+                profession: r.get::<_, Option<String>>(6)?,
+            })
+        })? {
+            contacts.push(row?);
+        }
+    } else {
+        // only those mapped into this list
+        let mut stmt = conn.prepare(
+            "SELECT c.id, c.name, c.email, c.phone, c.handle, c.notes, c.profession
+             FROM Contacts c
+             JOIN ContactListContacts m ON c.id = m.contact_id
+             WHERE m.list_id = ?1
+             ORDER BY c.name",
+        )?;
+        for row in stmt.query_map(params![list_id], |r| {
+            Ok(Contact {
+                id:         r.get(0)?,
+                name:       r.get(1)?,
+                email:      r.get(2)?,
+                phone:      r.get(3)?,
+                handle:     r.get(4)?,
+                notes:      r.get(5)?,
+                profession: r.get(6)?,
+            })
+        })? {
+            contacts.push(row?);
+        }
+    }
+    Ok(contacts)
+}
+
+/// Insert a new contact (returns its new ID).
+pub fn create_contact(
+    name: &str,
+    email: &str,
+    phone: Option<&str>,
+    handle: Option<&str>,
+    notes: Option<&str>,
+    profession: Option<&str>,
+) -> Result<String> {
+    let conn = establish_connection()?;
+    let id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO Contacts (id, name, email, phone, handle, notes, profession)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![&id, name, email, phone, handle, notes, profession],
+    )?;
+    Ok(id)
+}
+
+/// Map an existing contact into a custom list.
+pub fn add_contact_to_list(list_id: &str, contact_id: &str) -> Result<()> {
+    if list_id == DEFAULT_LIST_ID {
+        // no-op for “all”
+        return Ok(());
+    }
+    let conn = establish_connection()?;
+    conn.execute(
+        "INSERT OR IGNORE INTO ContactListContacts (list_id, contact_id)
+         VALUES (?1, ?2)",
+        params![list_id, contact_id],
+    )?;
+    Ok(())
+}
+
+/// Update an existing contact’s fields.
+pub fn update_contact(contact: &Contact) -> Result<()> {
+    let conn = establish_connection()?;
+    conn.execute(
+        "UPDATE Contacts SET
+            name = ?1, email = ?2, phone = ?3,
+            handle = ?4, notes = ?5, profession = ?6
+         WHERE id = ?7",
+        params![
+            &contact.name,
+            &contact.email,
+            &contact.phone,
+            &contact.handle,
+            &contact.notes,
+            &contact.profession,
+            &contact.id
+        ],
+    )?;
+    Ok(())
+}
+
+/// Delete a contact (and its list‑mappings via ON DELETE CASCADE).
+pub fn delete_contact(contact_id: &str) -> Result<()> {
+    let conn = establish_connection()?;
+    conn.execute(
+        "DELETE FROM Contacts WHERE id = ?1",
+        params![contact_id],
+    )?;
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Tauri command wrappers (using spawn_blocking)
 // These functions are exposed to the frontend via `invoke`.
@@ -921,4 +1130,130 @@ pub async fn update_app_settings_command(args: AppSettings) -> Result<(), String
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn get_contact_lists_command(
+    window: Window
+) -> Result<Vec<ContactList>, String> {
+    let emit = window.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        get_contact_lists().map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    // optional: emit an event
+    emit.emit("get_contact_lists_completed", "Loaded contact lists").ok();
+    result
+}
+
+#[tauri::command]
+pub async fn create_contact_list_command(
+    window: Window,
+    name: String
+) -> Result<String, String> {
+    let emit = window.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        create_contact_list(&name).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    let id = result?;
+    emit.emit("create_contact_list_completed", &id).ok();
+    Ok(id)
+}
+
+// …and similarly for update_contact_list_command, delete_contact_list_command
+
+#[tauri::command]
+pub async fn get_contacts_command(
+    window: Window,
+    list_id: String
+) -> Result<Vec<Contact>, String> {
+    let emit = window.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        get_contacts_for_list(&list_id).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    let contacts = result?;
+    emit.emit("get_contacts_completed", format!("Loaded {} contacts", contacts.len())).ok();
+    Ok(contacts)
+}
+
+#[tauri::command]
+pub async fn create_contact_command(
+    window: Window,
+    name: String,
+    email: String,
+    phone: Option<String>,
+    handle: Option<String>,
+    notes: Option<String>,
+    profession: Option<String>,
+    list_id: String,
+) -> Result<String, String> {
+    let emit = window.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+        // 1) insert into Contacts
+        let cid = create_contact(&name, &email, phone.as_deref(), handle.as_deref(), notes.as_deref(), profession.as_deref())
+            .map_err(|e| e.to_string())?;
+        // 2) if not default list, map it
+        add_contact_to_list(&list_id, &cid).map_err(|e| e.to_string())?;
+        Ok(cid)
+    }).await.map_err(|e| e.to_string())?;
+    let cid = result?;
+    emit.emit("create_contact_completed", &cid).ok();
+    Ok(cid)
+}
+
+#[tauri::command]
+pub async fn delete_contact_command(
+    window: Window,
+    contact_id: String
+) -> Result<(), String> {
+    let emit = window.clone();
+    let contact_id_clone = contact_id.clone();
+    let _result = tauri::async_runtime::spawn_blocking(move || {
+        delete_contact(&contact_id_clone).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    emit.emit("delete_contact_completed", &contact_id).ok();
+    Ok(())
+}
+
+// Update contact command
+#[tauri::command]
+pub async fn update_contact_command(
+    window: Window,
+    contact: Contact
+) -> Result<(), String> {
+    let contact_id = contact.id.clone();
+    let emit = window.clone();
+    let _result = tauri::async_runtime::spawn_blocking(move || {
+        update_contact(&contact).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    emit.emit("update_contact_completed", &contact_id).ok();
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_contact_list_command(
+    window: Window,
+    id: String,
+    name: String
+) -> Result<(), String> {
+    let emit = window.clone();
+    let id_emit = id.clone();
+    let _result = tauri::async_runtime::spawn_blocking(move || {
+        update_contact_list(&id, &name).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    emit.emit("update_contact_list_completed", &id_emit).ok();
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_contact_list_command(
+    window: Window,
+    id: String
+) -> Result<(), String> {
+    let emit = window.clone();
+    let id_emit = id.clone();
+    let _result = tauri::async_runtime::spawn_blocking(move || {
+        delete_contact_list(&id).map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())?;
+    emit.emit("delete_contact_list_completed", &id_emit).ok();
+    Ok(())
 }

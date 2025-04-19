@@ -10,6 +10,37 @@ import { persist } from 'zustand/middleware';
 import { FileMetadata, Repository } from '../../types/ObjectTypes';
 
 
+// ------------------------------------------------------------ //
+
+export interface Contact {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  profession?: string;
+  handle?: string;
+}
+
+export interface ContactList {
+  id: string;
+  name: string;
+  contacts: Contact[];
+}
+
+export interface ContactStore {
+  contactLists: ContactList[];
+  setContactLists: (lists: ContactList[]) => void;
+  selectedContactList: ContactList | null;
+  setSelectedContactList: (list: ContactList | null) => void;
+}
+
+export const useContactStore = create<ContactStore>((set) => ({
+  contactLists: [],
+  setContactLists: (lists: ContactList[]) => set({ contactLists: lists }),
+  selectedContactList: null,
+  setSelectedContactList: (list: ContactList | null) => set({ selectedContactList: list }),
+}));
+
 // ------------------------------------------------------------------- //
 
 // Theme store

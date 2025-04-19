@@ -41,6 +41,15 @@ pub fn run() {
             // Settings
             commands::get_app_settings_command,
             commands::update_app_settings_command,
+            // Contacts
+            commands::get_contact_lists_command,
+            commands::create_contact_list_command,
+            commands::update_contact_list_command,
+            commands::delete_contact_list_command,
+            commands::get_contacts_command,
+            commands::create_contact_command,
+            commands::update_contact_command,
+            commands::delete_contact_command,
             // ---------------------------------- //
             //            file_ops.rs             //
             // ---------------------------------- //

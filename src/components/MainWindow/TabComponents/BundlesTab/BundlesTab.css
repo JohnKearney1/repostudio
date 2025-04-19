@@ -87,7 +87,7 @@
   }
   
   .BundleItem__button:hover {
-    background-color: var(--accent-2);
+    background-color: var(--colorLight);
   }
   
   .BundleItem__fileId {

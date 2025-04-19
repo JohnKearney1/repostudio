@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Cross2Icon, CheckCircledIcon, SymbolIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, CheckCircledIcon, SymbolIcon, FileIcon } from '@radix-ui/react-icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -165,7 +165,11 @@ export default function ConvertPopup() {
                     file.accessible ? {} : { opacity: 0.5, pointerEvents: 'none' }
                   }
                   >
-                  {file.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <FileIcon />
+                      {file.name}
+                    </div>
+
                   <Cross2Icon />
                 </div>
               ))}

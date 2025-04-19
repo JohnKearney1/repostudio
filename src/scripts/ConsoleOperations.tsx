@@ -52,7 +52,7 @@ export const processCommand = (command: string): ConsoleMessage | null => {
       break;
     case 'tab':
       if (tokens.length === 2) {
-        const allowedTabs = ['actions', 'settings', 'console', 'bundles', 'history'];
+        const allowedTabs = ['actions', 'settings', 'console', 'bundles', 'history', 'contacts', 'mailkit'];
         if (!allowedTabs.includes(tokens[1].toLowerCase())) {
           return {
             id: Date.now(),
@@ -68,6 +68,14 @@ export const processCommand = (command: string): ConsoleMessage | null => {
         output = `Tab ${tabId} opened`;
       } else {
         output = `Usage: tab [tabId]`;
+      }
+      break;
+    case 'dl':
+      if (tokens.length === 2) {
+        const linktoParse = tokens[1];
+        output = `Downloading ${linktoParse}...`;
+      } else {
+        output = `Usage: dl [link]`;
       }
       break;
     case 'clear':
